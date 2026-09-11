@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Production build outputs
+dist/
+build/
+*/dist/
+*/build/
+
+# Environment and secrets (protect API keys)
+.env
+.env.*
+*/.env
+*/.env.*
+!.env.example
+!*/.env.example
+!**/.env.example
+
+# SQLite Databases and WAL/journal files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
+server/data/sources/*.db
+server/data/sources/*.db-shm
+server/data/sources/*.db-wal
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Assistant & analysis artifacts
+.claude/
+graphify-out/
