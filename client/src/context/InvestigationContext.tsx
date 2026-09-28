@@ -11,12 +11,7 @@ export type ActiveView =
   | 'graph'
   | 'map'
   | 'resolution'
-  | 'dashboard'
-  | 'anomalies'
-  | 'explorer'
-  | 'ingestion'
-  | 'ai-analyst'
-  | 'entity-profile';
+  | 'ingestion';
 
 interface InvestigationContextType {
   activeView: ActiveView;
