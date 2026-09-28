@@ -279,6 +279,51 @@ export interface GraphData {
   edges: GraphEdge[];
 }
 
+export interface FactClaim {
+  text: string;
+  evidenceIds: string[];
+  verified?: boolean;
+  verificationNote?: string;
+}
+
+export interface InferenceClaim {
+  text: string;
+  basedOnFactIndexes: number[];
+  reasoning: string;
+}
+
+export interface HypothesisClaim {
+  text: string;
+  whyPlausible: string;
+  plausibility: 'low' | 'medium' | 'high';
+  confirmWith: string;
+  refuteWith: string;
+  suggestedTool?: string;
+  unverifiedNote?: string;
+}
+
+export interface BackgroundClaim {
+  text: string;
+}
+
+export interface NextStepClaim {
+  text: string;
+}
+
+export interface ProposedRelationshipItem {
+  source_id: string;
+  target_id: string;
+  type: string;
+  rationale: string;
+  status: 'PROPOSED';
+}
+
+export interface TraceStep {
+  step: string;
+  detail?: any;
+  timestamp: string;
+}
+
 export interface AiInvestigationResponse {
   investigationId?: string;
   entitySummary?: string;
@@ -292,6 +337,18 @@ export interface AiInvestigationResponse {
   suggestedHopExpansions: string[];
   confidenceScore: number;
   rawGrokResponse?: string;
+  // Pipeline Engine & Claim Tiers
+  engine?: 'llm' | 'deterministic-fallback';
+  fallbackReason?: string;
+  trace?: TraceStep[];
+  facts?: FactClaim[];
+  inferences?: InferenceClaim[];
+  hypotheses?: HypothesisClaim[];
+  background?: BackgroundClaim[];
+  nextSteps?: NextStepClaim[];
+  groundingSummary?: string;
+  dataGaps?: string[];
+  proposedRelationships?: ProposedRelationshipItem[];
 }
 
 // Revana Moving Entity & Maritime Types

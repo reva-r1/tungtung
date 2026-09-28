@@ -16,6 +16,9 @@ import {
   Bot,
   User,
   Zap,
+  ShieldCheck,
+  Lightbulb,
+  BookOpen,
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -140,18 +143,97 @@ export const FloatingReasoningSpace: React.FC = () => {
     }
   };
 
-  // Helper to render markdown-like lines
+  // Helper to render markdown-like lines with distinct claim tiers
   const renderFormattedContent = (content: string) => {
     const lines = content.split('\n');
     return lines.map((line, idx) => {
       // Headers
+      if (line.startsWith('#### ')) {
+        return (
+          <h4 key={idx} className="text-xs font-bold text-slate-300 uppercase tracking-wider mt-2.5 mb-1 flex items-center gap-1.5 border-b border-slate-800/80 pb-1">
+            {line.replace('#### ', '')}
+          </h4>
+        );
+      }
       if (line.startsWith('### ')) {
         return <h3 key={idx} className="text-sm font-bold text-cyan-300 mt-2 mb-1">{line.replace('### ', '')}</h3>;
       }
       if (line.startsWith('## ')) {
         return <h2 key={idx} className="text-base font-bold text-slate-100 mt-2 mb-1">{line.replace('## ', '')}</h2>;
       }
-      // Bullet points
+
+      // Check for Claim Tiers in bullet points or paragraphs
+      if (line.includes('[FACT]') || line.includes('**[FACT]**')) {
+        const textOnly = line.replace(/^[•\-\*]\s*/, '').replace(/\*\*\[FACT\]\*\*\s*/, '').replace(/\[FACT\]\s*/, '');
+        return (
+          <div key={idx} className="my-1.5 p-2 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-xs text-slate-200">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                FACT
+              </span>
+              <span className="text-[10px] text-emerald-300/80 font-mono">Verified Observation</span>
+            </div>
+            <div className="leading-relaxed">{renderInlineStyles(textOnly)}</div>
+          </div>
+        );
+      }
+
+      if (line.includes('[INFERENCE]') || line.includes('**[INFERENCE]**')) {
+        const textOnly = line.replace(/^[•\-\*]\s*/, '').replace(/\*\*\[INFERENCE\]\*\*\s*/, '').replace(/\[INFERENCE\]\s*/, '');
+        return (
+          <div key={idx} className="my-1.5 p-2 rounded-lg bg-indigo-950/25 border border-indigo-500/30 text-xs text-slate-200">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                <Cpu className="w-3 h-3 text-indigo-400" />
+                INFERENCE
+              </span>
+              <span className="text-[10px] text-indigo-300/80 font-mono">Logical Deduction</span>
+            </div>
+            <div className="leading-relaxed">{renderInlineStyles(textOnly)}</div>
+          </div>
+        );
+      }
+
+      if (line.includes('[HYPOTHESIS') || line.includes('**[HYPOTHESIS')) {
+        const textOnly = line.replace(/^[•\-\*]\s*/, '').replace(/\*\*\[HYPOTHESIS.*?\]\*\*\s*/, '').replace(/\[HYPOTHESIS.*?\]\s*/, '');
+        // Extract plausibility tag if present
+        const plausibilityMatch = line.match(/HYPOTHESIS\s*\(([A-Z]+)\)/i);
+        const plausibility = plausibilityMatch ? plausibilityMatch[1].toUpperCase() : 'SPECULATIVE';
+
+        return (
+          <div key={idx} className="my-1.5 p-2 rounded-lg bg-amber-950/20 border border-amber-500/30 text-xs text-slate-200">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                <Lightbulb className="w-3 h-3 text-amber-400" />
+                HYPOTHESIS
+              </span>
+              <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-amber-900/40 text-amber-200 border border-amber-600/30">
+                {plausibility} PLAUSIBILITY
+              </span>
+            </div>
+            <div className="leading-relaxed">{renderInlineStyles(textOnly)}</div>
+          </div>
+        );
+      }
+
+      if (line.includes('[BACKGROUND]') || line.includes('**[BACKGROUND]**')) {
+        const textOnly = line.replace(/^[•\-\*]\s*/, '').replace(/\*\*\[BACKGROUND\]\*\*\s*/, '').replace(/\[BACKGROUND\]\s*/, '');
+        return (
+          <div key={idx} className="my-1.5 p-2 rounded-lg bg-slate-900/50 border border-purple-800/30 text-xs text-slate-300">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-950 text-purple-300 border border-purple-700/40">
+                <BookOpen className="w-3 h-3 text-purple-400" />
+                BACKGROUND
+              </span>
+              <span className="text-[10px] text-purple-300/70 font-mono">General Domain Knowledge</span>
+            </div>
+            <div className="leading-relaxed">{renderInlineStyles(textOnly)}</div>
+          </div>
+        );
+      }
+
+      // Standard Bullet points
       if (line.startsWith('• ') || line.startsWith('- ') || line.startsWith('* ')) {
         const bulletText = line.substring(2);
         return (
