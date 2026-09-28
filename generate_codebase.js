@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const excludeDirs = ['node_modules', '.git', 'dist', 'build', '.next', 'out', 'coverage', '.vscode'];
+const excludeDirs = ['node_modules', '.git', 'dist', 'build', '.next', 'out', 'coverage', '.vscode', 'gods-eye-view', 'graphify-out', '.gev-cache'];
 const includeExts = ['.ts', '.tsx', '.js', '.jsx', '.json', '.md', '.css', '.html'];
 const rootDir = process.cwd();
 const outputFile = path.join(rootDir, 'codebase.md');

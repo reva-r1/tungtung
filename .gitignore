@@ -46,3 +46,6 @@ Thumbs.db
 # Assistant & analysis artifacts
 .claude/
 graphify-out/
+.gev-cache/
+gods-eye-view/
+

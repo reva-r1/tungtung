@@ -481,7 +481,7 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
             />
           )}
 
-          {/* Base Layer: Esri World Imagery (Same source as God's Eye View) */}
+          {/* Base Layer: Esri World Imagery (Satellite tile layer) */}
           {mapMode === 'ESRI_SATELLITE' && (
             <>
               <TileLayer
