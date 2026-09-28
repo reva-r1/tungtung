@@ -2,6 +2,7 @@ import React from 'react';
 import { useInvestigation, ActiveView } from '../../context/InvestigationContext';
 import {
   LayoutDashboard,
+  Globe,
   Database,
   Users,
   Search,
@@ -26,6 +27,11 @@ export const Sidebar: React.FC = () => {
       id: 'overview',
       label: 'Overview',
       icon: LayoutDashboard,
+    },
+    {
+      id: 'mirror',
+      label: 'Digital Mirror',
+      icon: Globe,
     },
     {
       id: 'sources',

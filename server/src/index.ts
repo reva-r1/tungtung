@@ -14,7 +14,13 @@ import { aiRouter } from './routes/ai.routes.js';
 import { investigationsRouter } from './routes/investigations.routes.js';
 import { dashboardRouter } from './routes/dashboard.routes.js';
 import { sourcesRouter } from './routes/sources.routes.js';
+import { maritimeRouter } from './routes/maritime.routes.js';
+import { MaritimeService } from './services/maritime/maritime.service.js';
 import { SourceService } from './services/source.service.js';
+
+import { worldRouter } from './routes/world.routes.js';
+import { simulationRouter } from './routes/simulation.routes.js';
+import { providersRouter } from './routes/providers.routes.js';
 
 dotenv.config();
 
@@ -30,13 +36,13 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'OPERATIONAL',
-    system: 'AEGIS INTEL PLATFORM',
+    system: 'REVANA TECHNOLOGIES PLATFORM',
     version: '2.0.0-MULTI-SOURCE',
     timestamp: new Date().toISOString(),
   });
 });
 
-// Mount Routes
+// Mount Routes (Legacy & Core AEGIS)
 app.use('/api/sources', sourcesRouter);
 app.use('/api/entities', entitiesRouter);
 app.use('/api/graph', graphRouter);
@@ -48,6 +54,15 @@ app.use('/api/ingestion', ingestionRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/investigations', investigationsRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/maritime', maritimeRouter);
+
+// World Model & Connector Layer Routes (accessible via /world, /simulation, /providers and /api/*)
+app.use('/world', worldRouter);
+app.use('/api/world', worldRouter);
+app.use('/simulation', simulationRouter);
+app.use('/api/simulation', simulationRouter);
+app.use('/providers', providersRouter);
+app.use('/api/providers', providersRouter);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -59,12 +74,15 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // Bootstrapping
 initDatabase();
+MaritimeService.initialize().catch((err) => console.error('Failed to init Maritime Service:', err));
 
 app.listen(PORT, () => {
+  const hasGroq = Boolean(process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes('your_'));
   console.log(`=======================================================`);
-  console.log(`  AEGIS INTEL // INTELLIGENCE PLATFORM`);
+  console.log(`  REVANA TECHNOLOGIES // INTELLIGENCE PLATFORM`);
   console.log(`  Port: http://localhost:${PORT}`);
-  console.log(`  AI Engine: Groq Tool-Calling Agent / Local Grounded`);
+  console.log(`  AI Engine: Groq (${hasGroq ? '✔ API Key Verified & Active' : 'Offline Grounded Mode'})`);
+  console.log(`  Digital Mirror: http://localhost:${PORT}/world/state`);
   console.log(`=======================================================`);
 });
 

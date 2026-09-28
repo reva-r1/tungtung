@@ -1,11 +1,11 @@
-# AEGIS INTEL // Tactical Intelligence & Graph Analysis Platform
-> Inspired by the architecture and capabilities of **Palantir Gotham** — designed for multi-source data fusion, graph analytics, geospatial telemetry tracking, rule-based anomaly detection, and AI-assisted investigation powered by **Grok (xAI API)**.
+# Revana Technologies // Tactical Intelligence & Real-World Mirror Platform
+> Inspired by the architecture and capabilities of **Palantir Gotham** — designed for multi-source data fusion, graph analytics, geospatial telemetry tracking, rule-based anomaly detection, and AI-assisted investigation powered by **Grok (xAI API)** and **Groq (120B Reasoning)**.
 
 ---
 
 ## 1. System Overview
 
-AEGIS Intel transforms fragmented, multi-agency datasets into an interconnected, actionable intelligence graph:
+Revana Technologies transforms fragmented, multi-agency datasets and real-time sensor telemetry into an interconnected, actionable intelligence graph:
 
 ```text
 DATA INGESTION (CSV/JSON/XLSX)
@@ -46,7 +46,7 @@ GROK AI INVESTIGATION AGENT & NATURAL LANGUAGE DISCOVERY (xAI Grounded Briefings
    XAI_BASE_URL=https://api.x.ai/v1
    XAI_MODEL=grok-2-latest
    ```
-   > **Note**: If `XAI_API_KEY` is not provided, AEGIS Intel automatically switches to its built-in **Deterministic Local Reasoning Engine**, allowing complete end-to-end testing of graph traversal, speed physics, and intelligence synthesis offline without error!
+   > **Note**: If `GROQ_API_KEY` or `XAI_API_KEY` is not provided, Revana Technologies automatically switches to its built-in **Deterministic Local Reasoning Engine**, allowing complete end-to-end testing of graph traversal, speed physics, and intelligence synthesis offline without error!
 
 3. **Start the Platform**
    - **Terminal 1 (Backend REST API & SQLite Store)**:

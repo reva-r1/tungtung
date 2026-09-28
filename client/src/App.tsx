@@ -10,6 +10,8 @@ import { EntityGraph } from './components/graph/EntityGraph';
 import { TacticalMap } from './components/map/TacticalMap';
 import { EntityResolutionView } from './components/resolution/EntityResolutionView';
 import { DataIngestionView } from './components/ingestion/DataIngestionView';
+import { DigitalMirrorView } from './components/mirror/DigitalMirrorView';
+import { FloatingReasoningSpace } from './components/ai/FloatingReasoningSpace';
 
 const MainContent: React.FC = () => {
   const { activeView } = useInvestigation();
@@ -17,6 +19,7 @@ const MainContent: React.FC = () => {
   return (
     <div className="flex-1 flex overflow-hidden">
       {activeView === 'overview' && <OverviewPage />}
+      {activeView === 'mirror' && <DigitalMirrorView />}
       {activeView === 'sources' && <DataSourcesPage />}
       {activeView === 'ingestion' && <DataIngestionView />}
       {activeView === 'investigation' && <InvestigationPage />}
@@ -39,12 +42,13 @@ const MainContent: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <InvestigationProvider>
-      <div className="flex flex-col h-screen w-screen bg-[#090d16] text-[#e2e8f0] overflow-hidden font-sans select-none">
+      <div className="flex flex-col h-screen w-screen bg-[#090d16] text-[#e2e8f0] overflow-hidden font-sans select-none relative">
         <Header />
         <div className="flex-1 flex overflow-hidden">
           <Sidebar />
           <MainContent />
         </div>
+        <FloatingReasoningSpace />
       </div>
     </InvestigationProvider>
   );

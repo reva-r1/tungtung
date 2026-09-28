@@ -51,7 +51,7 @@ export const Header: React.FC = () => {
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-sans font-bold text-sm text-white tracking-tight">AEGIS INTEL</span>
+            <span className="font-sans font-bold text-sm text-white tracking-tight">REVANA TECHNOLOGIES</span>
             <span className="px-1.5 py-0.2 text-[10px] font-mono rounded bg-slate-800 text-slate-300 border border-slate-700">
               Multi-Database Engine
             </span>

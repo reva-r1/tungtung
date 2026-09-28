@@ -1,8 +1,9 @@
 {
-  "name": "aegis-intel-platform",
+  "name": "revana-technologies",
   "version": "1.0.0",
-  "description": "AEGIS INTEL // Palantir Gotham-Inspired Intelligence Analysis & Graph Platform",
+  "description": "Revana Technologies // Tactical Intelligence & Real-World Mirror Platform",
   "scripts": {
+    "dev": "npm --prefix client run dev",
     "server": "npm --prefix server run dev",
     "client": "npm --prefix client run dev",
     "build:server": "npm --prefix server run build",

@@ -294,3 +294,75 @@ export interface AiInvestigationResponse {
   rawGrokResponse?: string;
 }
 
+// AEGIS R1 Moving Entity & Maritime Types
+export interface MovingEntity {
+  id: string; // e.g. SHIP_419001234
+  type: 'ship' | 'aircraft' | 'truck' | 'train' | 'shipment' | 'vehicle';
+  mmsi?: string;
+  imo?: string;
+  name: string;
+  vessel_type?: string;
+  latitude: number;
+  longitude: number;
+  speed?: number; // Knots
+  course?: number; // Degrees
+  heading?: number; // Degrees
+  destination?: string;
+  eta?: string;
+  status?: string; // in_transit, at_anchor, moored, etc.
+  last_updated_at: string;
+  properties?: Record<string, any>;
+}
+
+export interface EntityPosition {
+  id: string;
+  entity_id: string;
+  latitude: number;
+  longitude: number;
+  speed?: number;
+  course?: number;
+  timestamp: string;
+  epoch_sec: number;
+}
+
+export interface MaritimePatternHypothesis {
+  id: string;
+  description: string;
+  supporting_evidence: string[];
+  confidence: number | null;
+  status: 'supported' | 'weakly_supported' | 'unsupported' | 'unresolved' | 'investigating';
+}
+
+export interface MaritimePattern {
+  pattern_id: string;
+  type: string; // traffic_concentration, corridor_convergence, route_divergence
+  region: string;
+  time_window: string;
+  entities_observed: number;
+  baseline: number;
+  deviation_percent: number;
+  observation: string;
+  hypotheses: MaritimePatternHypothesis[];
+  status: 'detected' | 'investigating' | 'supported' | 'weakly_supported' | 'unsupported' | 'unresolved';
+  detected_at: string;
+  updated_at: string;
+  ai_reasoning?: string;
+}
+
+export interface AisVesselRawUpdate {
+  mmsi: string;
+  imo?: string;
+  name?: string;
+  type?: string;
+  latitude: number;
+  longitude: number;
+  speed?: number;
+  course?: number;
+  heading?: number;
+  destination?: string;
+  eta?: string;
+  status?: string;
+  timestamp?: string;
+}
+
+

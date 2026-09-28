@@ -11,6 +11,10 @@ import {
   DataSource,
   SourceInspection,
   SourceRecord,
+  MovingEntity,
+  EntityPositionHistory,
+  MaritimePattern,
+  AisProviderStatus,
 } from '../types';
 
 const API_BASE = '/api';
@@ -335,4 +339,176 @@ export const api = {
     if (!res.ok) throw new Error('Failed to add note');
     return res.json();
   },
+
+  // Maritime AIS Tracking & Pattern Discovery
+  async getMaritimeVessels(limit: number = 300): Promise<{ total: number; vessels: MovingEntity[] }> {
+    const res = await fetch(`${API_BASE}/maritime/vessels?limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to fetch maritime vessels');
+    return res.json();
+  },
+
+  async getMaritimeVessel(id: string): Promise<MovingEntity> {
+    const res = await fetch(`${API_BASE}/maritime/vessels/${id}`);
+    if (!res.ok) throw new Error(`Failed to fetch vessel ${id}`);
+    return res.json();
+  },
+
+  async getMaritimeVesselTrack(id: string, limit: number = 64): Promise<{ entity_id: string; point_count: number; track: EntityPositionHistory[] }> {
+    const res = await fetch(`${API_BASE}/maritime/vessels/${id}/track?limit=${limit}`);
+    if (!res.ok) throw new Error(`Failed to fetch historical track for vessel ${id}`);
+    return res.json();
+  },
+
+  async getMaritimePatterns(): Promise<{ total: number; patterns: MaritimePattern[] }> {
+    const res = await fetch(`${API_BASE}/maritime/patterns`);
+    if (!res.ok) throw new Error('Failed to fetch maritime patterns');
+    return res.json();
+  },
+
+  async investigateMaritimePattern(patternId: string): Promise<{ pattern: MaritimePattern; analysis: any }> {
+    const res = await fetch(`${API_BASE}/maritime/patterns/${patternId}/investigate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error(`Failed to investigate pattern ${patternId}`);
+    return res.json();
+  },
+
+  async getMaritimeStatus(): Promise<AisProviderStatus> {
+    const res = await fetch(`${API_BASE}/maritime/status`);
+    if (!res.ok) throw new Error('Failed to fetch maritime AIS status');
+    return res.json();
+  },
+
+  // =========================================================================
+  // LIVE WORLD MODEL & DATA CONNECTOR LAYER
+  // =========================================================================
+  async getWorldState(): Promise<any> {
+    const res = await fetch(`${API_BASE}/world/state`);
+    if (!res.ok) throw new Error('Failed to fetch world state');
+    return res.json();
+  },
+
+  async getWorldEntities(type?: string, category?: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    if (category) params.append('category', category);
+    const res = await fetch(`${API_BASE}/world/entities?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch world entities');
+    return res.json();
+  },
+
+  async getWorldEntity(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/world/entities/${id}`);
+    if (!res.ok) throw new Error(`Failed to fetch world entity ${id}`);
+    return res.json();
+  },
+
+  async getWorldChanges(minutes: number = 60, since?: string): Promise<any> {
+    const params = new URLSearchParams();
+    if (minutes) params.append('minutes', String(minutes));
+    if (since) params.append('since', since);
+    const res = await fetch(`${API_BASE}/world/changes?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch temporal changes');
+    return res.json();
+  },
+
+  async getWorldEvents(severity?: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (severity) params.append('severity', severity);
+    const res = await fetch(`${API_BASE}/world/events?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch world events');
+    return res.json();
+  },
+
+  async getWorldRelationships(): Promise<any[]> {
+    const res = await fetch(`${API_BASE}/world/relationships`);
+    if (!res.ok) throw new Error('Failed to fetch world relationships');
+    return res.json();
+  },
+
+  async getProviderStatus(): Promise<any> {
+    const res = await fetch(`${API_BASE}/providers/status`);
+    if (!res.ok) throw new Error('Failed to fetch provider status');
+    return res.json();
+  },
+
+  async syncAllProviders(): Promise<any> {
+    const res = await fetch(`${API_BASE}/providers/sync-all`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to sync all providers');
+    return res.json();
+  },
+
+  // =========================================================================
+  // SIMULATION / DIGITAL TWIN SANDBOX
+  // =========================================================================
+  async listSimulations(): Promise<any[]> {
+    const res = await fetch(`${API_BASE}/simulation`);
+    if (!res.ok) throw new Error('Failed to list simulations');
+    return res.json();
+  },
+
+  async createSimulation(name: string, description: string = ''): Promise<any> {
+    const res = await fetch(`${API_BASE}/simulation/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description }),
+    });
+    if (!res.ok) throw new Error('Failed to create simulation');
+    return res.json();
+  },
+
+  async modifySimulation(id: string, modifications: { entity_id: string; properties: Record<string, any> }[]): Promise<any> {
+    const res = await fetch(`${API_BASE}/simulation/${id}/modify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modifications }),
+    });
+    if (!res.ok) throw new Error(`Failed to modify simulation ${id}`);
+    return res.json();
+  },
+
+  async getSimulationState(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/simulation/${id}/state`);
+    if (!res.ok) throw new Error(`Failed to fetch simulation state ${id}`);
+    return res.json();
+  },
+
+  async resetSimulation(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/simulation/${id}/reset`, { method: 'POST' });
+    if (!res.ok) throw new Error(`Failed to reset simulation ${id}`);
+    return res.json();
+  },
+
+  async deleteSimulation(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/simulation/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`Failed to delete simulation ${id}`);
+    return res.json();
+  },
+
+  // =========================================================================
+  // OMNI-SENSOR AI REASONING SPACE & CHAT MEMORY
+  // =========================================================================
+  async sendChatMessage(message: string, sessionId?: string): Promise<{ sessionId: string; reply: string; reasoning?: string; sources: string[]; timestamp: string }> {
+    const res = await fetch(`${API_BASE}/ai/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, sessionId }),
+    });
+    if (!res.ok) throw new Error('Failed to send message to AI reasoning space');
+    return res.json();
+  },
+
+  async getChatHistory(sessionId: string): Promise<{ sessionId: string; history: any[] }> {
+    const res = await fetch(`${API_BASE}/ai/chat/history/${sessionId}`);
+    if (!res.ok) throw new Error('Failed to load chat history');
+    return res.json();
+  },
+
+  async clearChatHistory(sessionId: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/ai/chat/history/${sessionId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to clear chat history');
+    return res.json();
+  },
 };
+

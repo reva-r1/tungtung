@@ -1,12 +1,13 @@
 {
-  "name": "aegis-intel-server",
+  "name": "revana-technologies-server",
   "version": "1.0.0",
-  "description": "AEGIS Intel - Intelligence Graph & Analysis Platform Backend",
+  "description": "Revana Technologies - Intelligence Graph & Analysis Platform Backend",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "test:connectors": "tsx src/tests/connectors.test.ts"
   },
   "dependencies": {
     "better-sqlite3": "^11.8.1",

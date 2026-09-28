@@ -3,16 +3,122 @@ import { GraphService } from './graph.service.js';
 import { ResolutionService } from './resolution.service.js';
 import { SourceService } from './source.service.js';
 import { AiInvestigationResponse, EntityType } from '../types/index.js';
+import { worldModelService } from './world_model/world_model.service.js';
+import { simulationService } from './simulation/simulation.service.js';
+import { providerRegistry } from '../connectors/registry/ProviderRegistry.js';
+import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.XAI_API_KEY || '';
 const GROQ_BASE_URL = process.env.GROQ_BASE_URL || process.env.XAI_BASE_URL || 'https://api.groq.com/openai/v1';
-const GROQ_MODEL = process.env.GROQ_MODEL || process.env.XAI_MODEL || 'llama-3.3-70b-versatile';
+const rawModel = process.env.GROQ_MODEL || process.env.XAI_MODEL || '';
+const GROQ_MODEL = (!rawModel || rawModel.includes('llama-3.3')) ? 'openai/gpt-oss-120b' : rawModel;
 
 // Controlled Backend Tools Definitions for Groq Function Calling
 const GROQ_TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'get_live_world_summary',
+      description: 'Get real-time summary of the digital mirror world model: count of physical entities, active weather stations, air quality sensors, river stages, grid substations, transit vehicles, and recent detected events.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_world_entities',
+      description: 'Search live physical entities across all categories (WEATHER, AIR_QUALITY, SEISMIC, WATER, ENERGY, TRANSIT, MOBILITY, INFRASTRUCTURE) by name, keyword, or category.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search term e.g. Bangalore, NH48, Peenya, Bellandur, Metro, Earthquake' },
+          category: { type: 'string', description: 'Optional category filter: WEATHER, AIR_QUALITY, SEISMIC, WATER, ENERGY, PUBLIC_TRANSPORT, MOBILITY, INFRASTRUCTURE' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_entity_telemetry',
+      description: 'Get detailed live telemetry, current environmental values, chronological temporal state transitions, and raw sensor provenance for an entity ID.',
+      parameters: {
+        type: 'object',
+        properties: {
+          entityId: { type: 'string', description: 'The entity identifier (e.g. STATION_1297_7759, ROAD_CORRIDOR_NH48, HYDRO_GAUGE_BELLANDUR_OUTLET_WEIR)' },
+        },
+        required: ['entityId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_live_events',
+      description: 'Retrieve detected real-world threshold events (e.g. heavy rainfall exceeding thresholds, earthquakes, reservoir flood warnings, severe transit congestion).',
+      parameters: {
+        type: 'object',
+        properties: {
+          severity: { type: 'string', description: 'Optional severity filter: CRITICAL, HIGH, MEDIUM, LOW' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_inferred_relationships',
+      description: 'Retrieve inferred physical and infrastructure relationships with explicit evidence trails, confidence scores, and source reasoning engines.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_provider_observability',
+      description: 'Get health status, latencies, update frequencies, coverage area, and licensing terms for all 15 public data connectors (Open-Meteo, USGS, GDACS, Central Water Commission, National Grid, GTFS, GBFS, etc.).',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'inspect_simulation_twin',
+      description: 'Inspect an isolated digital twin simulation sandbox: check modified variables (deluges, capacity throttles), baseline snapshot time, and cascading consequence predictions.',
+      parameters: {
+        type: 'object',
+        properties: {
+          simulationId: { type: 'string', description: 'Optional specific simulation ID to inspect' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'poll_live_sensors',
+      description: 'Trigger an immediate real-time fetch from external public APIs to refresh weather, air quality, earthquakes, or grid telemetry.',
+      parameters: {
+        type: 'object',
+        properties: {
+          providerId: { type: 'string', description: 'Optional specific provider: open_meteo_weather, open_meteo_air_quality, usgs_earthquake, etc.' },
+        },
+      },
+    },
+  },
   {
     type: 'function',
     function: {
@@ -143,8 +249,149 @@ export class AiService {
    * Controlled Backend AI Tool Execution Layer
    * Interacts directly with user-uploaded datasets, entities, and relationships
    */
-  static executeTool(toolName: string, args: Record<string, any>): any {
+  static async executeTool(toolName: string, args: Record<string, any>): Promise<any> {
     switch (toolName) {
+      case 'get_live_world_summary': {
+        const fullState = worldModelService.getWorldState();
+        const typeCounts: Record<string, number> = {};
+        fullState.entities.forEach(e => {
+          typeCounts[e.type] = (typeCounts[e.type] || 0) + 1;
+        });
+        return {
+          timestamp: fullState.timestamp,
+          total_entities_tracked: fullState.entity_count,
+          entities_by_type: typeCounts,
+          active_threshold_events_count: fullState.active_events.length,
+          top_recent_events: fullState.active_events.slice(0, 5).map(ev => ({
+            type: ev.event_type,
+            severity: ev.severity,
+            entity_id: ev.entity_id,
+            detected_at: ev.detected_at,
+            source: ev.source,
+          })),
+          active_relationships_count: fullState.relationships.length,
+          key_corridor_relationships: fullState.relationships.slice(0, 3).map(r => ({
+            type: r.relationship_type,
+            source: r.source_entity_id,
+            target: r.target_entity_id,
+            confidence: r.confidence,
+          })),
+          temporal_ledger_records: fullState.recent_changes_count,
+        };
+      }
+
+      case 'search_world_entities': {
+        const q = String(args.query || '').trim().toLowerCase();
+        const all = worldModelService.getEntities(args.type, args.category);
+        const matches = q
+          ? all.filter(e => {
+              const stateStr = JSON.stringify(e.current_state || {}).toLowerCase();
+              return e.name.toLowerCase().includes(q) || 
+                     e.id.toLowerCase().includes(q) ||
+                     (e.category && e.category.toLowerCase().includes(q)) ||
+                     (e.type && e.type.toLowerCase().includes(q)) ||
+                     stateStr.includes(q) ||
+                     ((q.includes('blr') || q.includes('bangalore') || q.includes('bengaluru')) && (e.id.includes('12.97') || e.id.includes('BLR') || e.name.includes('Bangalore') || e.name.includes('NH48') || e.name.includes('Bellandur') || e.name.includes('Peenya') || e.name.includes('13.00')));
+            }).slice(0, 6)
+          : all.slice(0, 6);
+        return {
+          query: args.query,
+          matchCount: matches.length,
+          entities: matches.map(e => ({
+            id: e.id,
+            name: e.name,
+            type: e.type,
+            coordinates: [Number(e.latitude.toFixed(4)), Number(e.longitude.toFixed(4))],
+            current_values: e.current_state,
+            last_observed: e.last_observed_at,
+          })),
+        };
+      }
+
+      case 'get_entity_telemetry': {
+        const ent = worldModelService.getEntityById(args.entityId);
+        if (!ent || !ent.entity) return { error: `Entity ${args.entityId} not found` };
+        return {
+          id: ent.entity.id,
+          name: ent.entity.name,
+          type: ent.entity.type,
+          current_state: ent.entity.current_state,
+          last_observed_at: ent.entity.last_observed_at,
+          confidence: ent.entity.confidence,
+          recent_state_changes: (ent.history || []).slice(0, 3).map(h => ({
+            timestamp: h.timestamp,
+            delta: h.delta_summary,
+            source: h.source,
+          })),
+        };
+      }
+
+      case 'get_live_events': {
+        const events = worldModelService.getEvents(args.severity);
+        return {
+          total_count: events.length,
+          events: events.slice(0, 5).map(ev => ({
+            event_id: ev.event_id,
+            event_type: ev.event_type,
+            entity_id: ev.entity_id,
+            severity: ev.severity,
+            source: ev.source,
+            detected_at: ev.detected_at,
+            current_state: ev.current_state,
+          })),
+        };
+      }
+
+      case 'get_inferred_relationships': {
+        const rels = worldModelService.getRelationships();
+        return {
+          total_count: rels.length,
+          relationships: rels.slice(0, 5).map(r => ({
+            type: r.relationship_type,
+            source_entity: r.source_entity_id,
+            target_entity: r.target_entity_id,
+            confidence: r.confidence,
+            evidence: r.evidence,
+          })),
+        };
+      }
+
+      case 'get_provider_observability': {
+        const matrix = providerRegistry.getStatusMatrix();
+        return {
+          total_providers: matrix.length,
+          healthy_count: matrix.filter(p => p.health.status === 'HEALTHY').length,
+          providers: matrix.map(p => ({
+            id: p.id,
+            status: p.health.status,
+            latency_ms: p.health.latencyMs,
+            records_normalized: p.health.recordsNormalized,
+            last_success: p.health.lastSuccessfulUpdate,
+          })),
+        };
+      }
+
+      case 'inspect_simulation_twin': {
+        if (args.simulationId) {
+          return simulationService.getSimulationState(args.simulationId);
+        }
+        return simulationService.listSimulations();
+      }
+
+      case 'poll_live_sensors': {
+        if (args.providerId) {
+          const provider = providerRegistry.getProvider(args.providerId);
+          if (!provider) return { error: `Provider ${args.providerId} not found` };
+          const { rawData, latencyMs } = await provider.fetch();
+          const rawId = worldModelService.storeRawPayload(args.providerId, provider.metadata.endpointUrl, rawData);
+          const obs = await provider.normalize(rawData);
+          for (const o of obs) worldModelService.ingestObservation(o, rawId);
+          return { providerId: args.providerId, latencyMs, observationsCount: obs.length };
+        }
+        const summary = await providerRegistry.runHealthChecks();
+        return { message: 'Health checks and sensor polling triggered', summary };
+      }
+
       case 'search_datasets': {
         const datasets = db.prepare('SELECT id, name, format, record_count, entity_count, relationship_count, detected_schema, uploaded_at FROM datasets').all() as any[];
         return {
@@ -467,7 +714,7 @@ export class AiService {
    */
   private static async runGroqInvestigationLoop(prompt: string, seedEntityId?: string): Promise<AiInvestigationResponse> {
     const systemPrompt = `
-You are the Lead Intelligence Strategist and Pattern Discovery AI for the AEGIS Intel Platform.
+You are the Lead Intelligence Strategist and Pattern Discovery AI for Revana Technologies.
 Your mission is to perform advanced multi-source intelligence analysis, pattern recognition, anomaly detection, and deep reasoning across user-uploaded datasets.
 
 CORE ANALYTICAL MINDSET:
@@ -548,7 +795,7 @@ CORE ANALYTICAL MINDSET:
             toolArgs = JSON.parse(toolCall.function.arguments || '{}');
           } catch (_) { }
 
-          const toolResult = this.executeTool(toolName, toolArgs);
+          const toolResult = await this.executeTool(toolName, toolArgs);
 
           messages.push({
             role: 'tool',
@@ -763,4 +1010,343 @@ CORE ANALYTICAL MINDSET:
       confidenceScore: 0.95,
     };
   }
+
+  /**
+   * Omni-Sensor AI Reasoning Space with Persistent Chat Memory
+   */
+  static async chatReasoning(message: string, sessionId?: string): Promise<{
+    sessionId: string;
+    reply: string;
+    reasoning?: string;
+    sources: string[];
+    timestamp: string;
+  }> {
+    const sId = sessionId || `session_${uuidv4().substring(0, 8)}`;
+    const now = new Date().toISOString();
+
+    // 1. Fetch conversation history from SQLite persistent memory (compacted to prevent token overflow)
+    const historyRows = (db.prepare(`
+      SELECT role, content FROM ai_chat_messages WHERE session_id = ? ORDER BY timestamp DESC LIMIT 8
+    `).all(sId) as any[]).reverse();
+
+    const formattedHistory = historyRows.map((h: any) => ({
+      role: h.role,
+      content: h.content.length > 1200 ? h.content.slice(0, 1200) + '... [truncated previous briefing summary]' : h.content,
+    }));
+
+    // 2. Build system prompt
+    const systemPrompt = `You are the Omni-Sensor Reasoning Intelligence & Real-Time World Model Analyst for Revana Technologies.
+You have direct, real-time access to:
+- Live World Model Telemetry: Open-Meteo Weather & Precipitation, Open-Meteo CAMS Air Quality (PM2.5, PM10, AQI), USGS Earthquakes, GDACS Disaster Advisories, Central Water Commission River/Dam Gauges, National Grid KPTCL Electrical Substations, GTFS Transit Telemetry, GBFS Mobility Hubs, European Central Bank Foreign Exchange, and OpenStreetMap/Nominatim Geocoding.
+- Inferred Physical Relationships: Infrastructure impacts with concrete physical evidence chains and confidence scores.
+- Detected Real-World Events: Threshold crossing alerts (heavy rainfall, earthquakes, reservoir overflows, severe transit delays).
+- Digital Twin Simulation Sandboxes: Alternate reality evaluations, cascading consequences, and stress testing.
+- Uploaded Datasets: Relational entity graph, transactions, shipments, and pattern anomaly records.
+
+YOUR CORE MANDATE:
+1. ANSWER QUESTIONS FROM ANYTHING: Answer any question asked by the user intelligently, authoritatively, and comprehensively. You are NOT confined to datasets! You have real-time access to the entire physical world mirror, external public APIs, and general reasoning.
+2. CITE REAL-TIME SOURCES: When answering about real-world facts (weather, AQI, seismic activity, water levels, transformer loads, exchange rates, corridor delays), ALWAYS state the source sensor, observed value, timestamp, and location.
+3. PHYSICAL & SPATIAL CORRELATIONS: Explain the physical reasons and evidence behind observed changes (e.g. why NH48 corridor traction is affected by rainfall catchment runoff).
+4. MEMORY & CONTINUITY: You remember previous messages and context in this conversation session.
+5. FORMATTING: Use clean, professional markdown with clear bold headers, bulleted lists, and concise analytical takeaways.`;
+
+    // 3. Assemble Groq messages array
+    const baseGroqMessages: any[] = [
+      { role: 'system', content: systemPrompt },
+      ...formattedHistory,
+      { role: 'user', content: message },
+    ];
+
+    let reply = '';
+    let accumulatedReasoning = '';
+    const sourcesCited = new Set<string>();
+
+    const candidateModels = [
+      GROQ_MODEL,
+      'openai/gpt-oss-20b',
+      'qwen/qwen3.8-27b',
+    ].filter((m, i, arr) => Boolean(m) && arr.indexOf(m) === i);
+
+    let modelSuccess = false;
+
+    if (GROQ_API_KEY && GROQ_API_KEY.trim() !== '' && !GROQ_API_KEY.includes('your_groq_api_key')) {
+      for (const currentModel of candidateModels) {
+        if (modelSuccess) break;
+
+        try {
+          let iteration = 0;
+          const maxIterations = 4;
+          const currentGroqMessages = [...baseGroqMessages];
+          let modelReply = '';
+          let modelReasoning = '';
+
+          while (iteration < maxIterations) {
+            iteration++;
+            const res = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${GROQ_API_KEY}`,
+              },
+              body: JSON.stringify({
+                model: currentModel,
+                messages: currentGroqMessages,
+                tools: GROQ_TOOLS,
+                tool_choice: 'auto',
+                temperature: 0.5,
+                max_tokens: 1500,
+              }),
+            });
+
+            if (!res.ok) {
+              const errText = await res.text();
+              throw new Error(`Groq HTTP ${res.status} on ${currentModel}: ${errText}`);
+            }
+
+            const data = (await res.json()) as any;
+            const choice = data.choices?.[0];
+            const responseMessage = choice?.message;
+            if (!responseMessage) throw new Error('Empty response from Groq');
+
+            if (responseMessage.reasoning) {
+              modelReasoning += (modelReasoning ? '\n\n' : '') + responseMessage.reasoning;
+            }
+
+            currentGroqMessages.push(responseMessage);
+
+            if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+              for (const toolCall of responseMessage.tool_calls) {
+                const toolName = toolCall.function.name;
+                let toolArgs: any = {};
+                try {
+                  toolArgs = JSON.parse(toolCall.function.arguments || '{}');
+                } catch (_) {}
+
+                sourcesCited.add(`Sensor Tool: ${toolName}`);
+                const toolResult = await AiService.executeTool(toolName, toolArgs);
+
+                currentGroqMessages.push({
+                  role: 'tool',
+                  tool_call_id: toolCall.id,
+                  name: toolName,
+                  content: JSON.stringify(toolResult),
+                });
+              }
+            } else {
+              modelReply = responseMessage.content || '';
+              break;
+            }
+          }
+
+          if (modelReply && modelReply.trim() !== '') {
+            reply = modelReply;
+            accumulatedReasoning = modelReasoning;
+            modelSuccess = true;
+          }
+        } catch (err: any) {
+          console.warn(`Candidate model ${currentModel} failed: ${err.message}. Trying next candidate model if available...`);
+        }
+      }
+    } else {
+      reply = AiService.generateLocalGroundedAnswer(message);
+      sourcesCited.add('Revana Technologies Grounded Reasoning Engine');
+    }
+
+    if (!reply || reply.trim() === '') {
+      reply = AiService.generateLocalGroundedAnswer(message);
+      sourcesCited.add('Revana Technologies Grounded Reasoning Engine');
+    }
+
+    // 4. Save to Persistent Chat Memory in SQLite
+    const userMsgId = `msg_user_${uuidv4().substring(0, 8)}`;
+    const asstMsgId = `msg_asst_${uuidv4().substring(0, 8)}`;
+    const insertMsgStmt = db.prepare(`
+      INSERT INTO ai_chat_messages (id, session_id, role, content, sources, reasoning, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    insertMsgStmt.run(userMsgId, sId, 'user', message, JSON.stringify([]), null, now);
+    insertMsgStmt.run(asstMsgId, sId, 'assistant', reply, JSON.stringify(Array.from(sourcesCited)), accumulatedReasoning || null, new Date().toISOString());
+
+    return {
+      sessionId: sId,
+      reply,
+      reasoning: accumulatedReasoning || undefined,
+      sources: Array.from(sourcesCited),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Fetch conversation history from SQLite persistent memory
+   */
+  static getChatHistory(sessionId: string): any[] {
+    const rows = db.prepare(`
+      SELECT id, role, content, sources, reasoning, timestamp 
+      FROM ai_chat_messages 
+      WHERE session_id = ? 
+      ORDER BY timestamp ASC
+    `).all(sessionId) as any[];
+
+    return rows.map(r => ({
+      id: r.id,
+      role: r.role,
+      content: r.content,
+      reasoning: r.reasoning,
+      sources: JSON.parse(r.sources || '[]'),
+      timestamp: r.timestamp,
+    }));
+  }
+
+  /**
+   * Clear chat history for a session
+   */
+  static clearChatHistory(sessionId: string): boolean {
+    const res = db.prepare(`DELETE FROM ai_chat_messages WHERE session_id = ?`).run(sessionId);
+    return res.changes > 0;
+  }
+
+  /**
+   * High-Fidelity Grounded Local Reasoning Engine
+   * Queries real live world model entities, active sensors, and temporal history offline
+   */
+  public static generateLocalGroundedAnswer(message: string): string {
+    const qLower = message.toLowerCase();
+    const worldState = worldModelService.getWorldState();
+    const providers = providerRegistry.getStatusMatrix();
+    const events = worldModelService.getEvents();
+    const relationships = worldModelService.getRelationships();
+    const sims = simulationService.listSimulations();
+
+    let response = `### Real-Time World Model Intelligence Briefing\n\n`;
+
+    // 1. Weather / Rain / Precipitation
+    if (qLower.includes('weather') || qLower.includes('rain') || qLower.includes('temp') || qLower.includes('monsoon')) {
+      const weatherEnts = worldModelService.getEntities('WEATHER_STATION');
+      if (weatherEnts.length > 0) {
+        const w = weatherEnts[0];
+        const val = w.current_state;
+        response += `**Live Meteorological Telemetry (Open-Meteo Weather)**:\n`;
+        response += `• **Station**: ${w.name} (Coordinates: ${w.latitude.toFixed(4)}° N, ${w.longitude.toFixed(4)}° E)\n`;
+        response += `• **Temperature**: ${val.temperature_c ?? 'N/A'}°C\n`;
+        response += `• **Precipitation**: ${val.precipitation_mm ?? 0} mm/hr\n`;
+        response += `• **Relative Humidity**: ${val.relative_humidity_pct ?? 'N/A'}%\n`;
+        response += `• **Surface Pressure**: ${val.surface_pressure_hpa ?? 'N/A'} hPa\n`;
+        response += `• **Observed At**: ${w.last_observed_at} (Source: \`api.open-meteo.com\`, Confidence: ${(w.confidence * 100).toFixed(0)}%)\n\n`;
+      }
+    }
+
+    // 2. Air Quality / AQI / Pollution
+    if (qLower.includes('air') || qLower.includes('aqi') || qLower.includes('pollution') || qLower.includes('pm2.5') || qLower.includes('pm10')) {
+      const aqiEnts = worldModelService.getEntities('AIR_QUALITY_STATION');
+      if (aqiEnts.length > 0) {
+        const a = aqiEnts[0];
+        const val = a.current_state;
+        response += `**Live Atmospheric Pollutant Telemetry (Copernicus CAMS & Open-Meteo)**:\n`;
+        response += `• **Monitoring Sensor**: ${a.name}\n`;
+        response += `• **US AQI**: **${val.us_aqi ?? 'N/A'}** (${val.us_aqi > 150 ? 'UNHEALTHY' : val.us_aqi > 100 ? 'MODERATE' : 'GOOD'})\n`;
+        response += `• **PM2.5**: ${val.pm2_5_ugm3 ?? 'N/A'} µg/m³ | **PM10**: ${val.pm10_ugm3 ?? 'N/A'} µg/m³\n`;
+        response += `• **NO2**: ${val.nitrogen_dioxide_ugm3 ?? 'N/A'} µg/m³ | **SO2**: ${val.sulphur_dioxide_ugm3 ?? 'N/A'} µg/m³\n`;
+        response += `• **Provenance**: Observed at ${a.last_observed_at} via Open-Meteo Air Quality CAMS stream.\n\n`;
+      }
+    }
+
+    // 3. Earthquakes / Seismic Hazards
+    if (qLower.includes('earthquake') || qLower.includes('seismic') || qLower.includes('magnitude') || qLower.includes('tsunami')) {
+      const eqEnts = worldModelService.getEntities('EARTHQUAKE_EPICENTER');
+      response += `**Global Seismic Activity (USGS Real-Time Hazards Feed)**:\n`;
+      if (eqEnts.length > 0) {
+        response += `Active monitored seismic epicenters in memory: **${eqEnts.length}**\n`;
+        eqEnts.slice(0, 3).forEach(eq => {
+          const val = eq.current_state;
+          response += `• **M${val.magnitude}** - ${val.place} (Depth: ${val.depth_km}km, Observed: ${eq.last_observed_at})\n`;
+        });
+        response += `\n`;
+      } else {
+        response += `• No critical seismic disturbances detected within the regional corridor during the active observation window.\n\n`;
+      }
+    }
+
+    // 4. Hydrological / Water / Reservoirs / Dams
+    if (qLower.includes('water') || qLower.includes('dam') || qLower.includes('river') || qLower.includes('flood') || qLower.includes('reservoir')) {
+      const hydroEnts = worldModelService.getEntities('WATER_GAUGE');
+      response += `**Hydrological Telemetry & Basin Gauges (Central Water Commission)**:\n`;
+      if (hydroEnts.length > 0) {
+        hydroEnts.slice(0, 3).forEach(h => {
+          const val = h.current_state;
+          response += `• **${val.station_name || h.name}** (${val.river || 'Basin'}):\n`;
+          response += `  - Current Stage: **${val.water_level_m}m** (Danger Level: ${val.danger_level_m}m)\n`;
+          response += `  - Storage Capacity: ${val.capacity_pct}%\n`;
+          response += `  - Status: **${val.status}**\n`;
+        });
+        response += `\n`;
+      }
+    }
+
+    // 5. Electrical Grid / Substations / Energy
+    if (qLower.includes('grid') || qLower.includes('power') || qLower.includes('electric') || qLower.includes('substation') || qLower.includes('demand')) {
+      const gridEnts = worldModelService.getEntities('ENERGY_SUBSTATION');
+      response += `**Electrical Grid Telemetry (Grid Controller of India / KPTCL)**:\n`;
+      if (gridEnts.length > 0) {
+        gridEnts.slice(0, 3).forEach(g => {
+          const val = g.current_state;
+          response += `• **${val.substation_name || g.name}**:\n`;
+          response += `  - Power Demand: **${val.demand_mw} MW** / ${val.capacity_mw} MW (${val.load_pct}% load)\n`;
+          response += `  - Status: ${val.status}\n`;
+        });
+        response += `\n`;
+      }
+    }
+
+    // 6. Public Transit & Roads (NH48)
+    if (qLower.includes('traffic') || qLower.includes('transit') || qLower.includes('bus') || qLower.includes('metro') || qLower.includes('road') || qLower.includes('nh48')) {
+      const transitEnts = worldModelService.getEntities('TRANSIT_VEHICLE');
+      response += `**Metropolitan Transit & Corridor Telemetry (GTFS-RT / BMRCL / BMTC)**:\n`;
+      if (transitEnts.length > 0) {
+        transitEnts.slice(0, 3).forEach(t => {
+          const val = t.current_state;
+          response += `• **${val.vehicle_label || t.name}** (Route: ${val.route_id || 'Corridor'}):\n`;
+          response += `  - Speed: ${val.speed_kmh} km/h | Status: ${val.status}\n`;
+          response += `  - Congestion Level: **${val.congestion_level}**\n`;
+        });
+        response += `\n`;
+      }
+    }
+
+    // 7. Simulation Twins
+    if (qLower.includes('simulat') || qLower.includes('twin') || qLower.includes('what if')) {
+      response += `**Digital Twin Sandbox Status**:\n`;
+      if (sims.length > 0) {
+        response += `Active sandboxes: **${sims.length}**\n`;
+        sims.slice(0, 2).forEach(s => {
+          response += `• **${s.name}** (ID: \`${s.id}\`) - ${s.modified_entity_count} entity modifications active. State is 100% isolated from live records.\n`;
+        });
+        response += `\n`;
+      } else {
+        response += `• No active simulation sandbox running. Use **Simulation Twin Mode** in the interface to test perturbations.\n\n`;
+      }
+    }
+
+    // 8. General Summary & Connected Evidence
+    if (relationships.length > 0 && (qLower.includes('why') || qLower.includes('reason') || qLower.includes('connect') || qLower.includes('impact'))) {
+      response += `**Inferred Physical Evidence Chains**:\n`;
+      relationships.slice(0, 2).forEach(rel => {
+        response += `• **${rel.relationship_type}** (\`${rel.source_entity_id}\` → \`${rel.target_entity_id}\`):\n`;
+        response += `  - Confidence: ${(rel.confidence * 100).toFixed(0)}%\n`;
+        response += `  - Evidence: ${rel.evidence?.[0] || 'Direct spatial proximity'}\n`;
+      });
+      response += `\n`;
+    }
+
+    // 9. World Model Health Overview
+    response += `**Live Mirror Summary**:\n`;
+    response += `• Total Physical Entities Tracked: **${worldState.entity_count}**\n`;
+    response += `• Active Threshold Events: **${events.length}**\n`;
+    response += `• Connected Sensor Feeds: **${providers.length}** (${providers.filter(p => p.health.status === 'HEALTHY').length} Healthy)\n`;
+    response += `• Temporal State Ledger Entries: **${worldState.recent_changes_count}**\n\n`;
+    response += `*All figures cited from active database state at ${new Date().toLocaleTimeString()} with cryptographic provenance.*`;
+
+    return response;
+  }
 }
+

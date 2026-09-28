@@ -11,6 +11,18 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
+      '/world': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/simulation': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/providers': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
     },
   },
 });

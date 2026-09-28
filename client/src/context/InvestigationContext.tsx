@@ -4,6 +4,7 @@ import { api } from '../services/api';
 
 export type ActiveView = 
   | 'overview'
+  | 'mirror'
   | 'sources'
   | 'entities'
   | 'investigation'
@@ -49,7 +50,7 @@ interface InvestigationContextType {
 const InvestigationContext = createContext<InvestigationContextType | undefined>(undefined);
 
 export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeView, setActiveView] = useState<ActiveView>('overview');
+  const [activeView, setActiveView] = useState<ActiveView>('mirror');
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
   const [activeInvestigationId, setActiveInvestigationId] = useState<string | null>(null);

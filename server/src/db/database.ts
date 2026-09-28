@@ -207,6 +207,196 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_esl_entity ON entity_source_links(entity_id);
     CREATE INDEX IF NOT EXISTS idx_esl_source_rec ON entity_source_links(source_record_id);
     CREATE INDEX IF NOT EXISTS idx_esl_source_db ON entity_source_links(source_db_id);
+
+    -- =========================================================================
+    -- AEGIS R1 MARITIME TRACKING & MOVING ENTITY LAYER
+    -- =========================================================================
+    CREATE TABLE IF NOT EXISTS moving_entities (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL DEFAULT 'ship',
+      mmsi TEXT,
+      imo TEXT,
+      name TEXT NOT NULL,
+      vessel_type TEXT,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      speed REAL,
+      course REAL,
+      heading REAL,
+      destination TEXT,
+      eta TEXT,
+      status TEXT DEFAULT 'in_transit',
+      last_updated_at TEXT NOT NULL,
+      properties TEXT -- JSON
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_moving_type ON moving_entities(type);
+    CREATE INDEX IF NOT EXISTS idx_moving_mmsi ON moving_entities(mmsi);
+    CREATE INDEX IF NOT EXISTS idx_moving_updated ON moving_entities(last_updated_at);
+
+    CREATE TABLE IF NOT EXISTS entity_positions (
+      id TEXT PRIMARY KEY,
+      entity_id TEXT NOT NULL,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      speed REAL,
+      course REAL,
+      timestamp TEXT NOT NULL,
+      epoch_sec INTEGER NOT NULL,
+      FOREIGN KEY (entity_id) REFERENCES moving_entities(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_pos_entity_time ON entity_positions(entity_id, timestamp);
+    CREATE INDEX IF NOT EXISTS idx_pos_entity_epoch ON entity_positions(entity_id, epoch_sec);
+
+    CREATE TABLE IF NOT EXISTS maritime_patterns (
+      pattern_id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      region TEXT NOT NULL,
+      time_window TEXT NOT NULL,
+      entities_observed INTEGER NOT NULL,
+      baseline INTEGER NOT NULL,
+      deviation_percent REAL NOT NULL,
+      observation TEXT NOT NULL,
+      hypotheses TEXT NOT NULL, -- JSON Array of MaritimePatternHypothesis
+      status TEXT NOT NULL DEFAULT 'detected',
+      detected_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      ai_reasoning TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_maritime_pat_status ON maritime_patterns(status);
+    CREATE INDEX IF NOT EXISTS idx_maritime_pat_region ON maritime_patterns(region);
+
+    -- =========================================================================
+    -- WORLD MODEL & DATA CONNECTOR LAYER
+    -- =========================================================================
+    CREATE TABLE IF NOT EXISTS raw_observations (
+      id TEXT PRIMARY KEY,
+      provider TEXT NOT NULL,
+      endpoint TEXT NOT NULL,
+      payload TEXT NOT NULL, -- JSON
+      received_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_raw_obs_provider ON raw_observations(provider);
+    CREATE INDEX IF NOT EXISTS idx_raw_obs_time ON raw_observations(received_at);
+
+    CREATE TABLE IF NOT EXISTS world_observations (
+      id TEXT PRIMARY KEY,
+      entity_id TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      data_type TEXT NOT NULL,
+      value TEXT NOT NULL, -- JSON
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      district TEXT,
+      city TEXT,
+      state TEXT,
+      country TEXT,
+      timestamp TEXT NOT NULL,
+      observed_at TEXT NOT NULL,
+      source TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      confidence REAL,
+      quality TEXT,
+      ttl INTEGER,
+      raw_payload_id TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_wobs_entity ON world_observations(entity_id);
+    CREATE INDEX IF NOT EXISTS idx_wobs_type ON world_observations(data_type);
+    CREATE INDEX IF NOT EXISTS idx_wobs_time ON world_observations(observed_at);
+    CREATE INDEX IF NOT EXISTS idx_wobs_coords ON world_observations(latitude, longitude);
+
+    CREATE TABLE IF NOT EXISTS world_entities (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      current_state TEXT NOT NULL, -- JSON
+      status TEXT DEFAULT 'ACTIVE',
+      confidence REAL DEFAULT 1.0,
+      last_observed_at TEXT NOT NULL,
+      last_provider TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_wents_type ON world_entities(type);
+    CREATE INDEX IF NOT EXISTS idx_wents_category ON world_entities(category);
+    CREATE INDEX IF NOT EXISTS idx_wents_coords ON world_entities(latitude, longitude);
+
+    CREATE TABLE IF NOT EXISTS world_relationships (
+      id TEXT PRIMARY KEY,
+      source_id TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      relationship_type TEXT NOT NULL,
+      source TEXT NOT NULL,
+      timestamp TEXT NOT NULL,
+      confidence REAL NOT NULL,
+      evidence TEXT NOT NULL, -- JSON Array
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_wrel_src ON world_relationships(source_id);
+    CREATE INDEX IF NOT EXISTS idx_wrel_tgt ON world_relationships(target_id);
+    CREATE INDEX IF NOT EXISTS idx_wrel_type ON world_relationships(relationship_type);
+
+    CREATE TABLE IF NOT EXISTS temporal_state_history (
+      id TEXT PRIMARY KEY,
+      entity_id TEXT NOT NULL,
+      timestamp TEXT NOT NULL,
+      previous_state TEXT, -- JSON
+      new_state TEXT NOT NULL, -- JSON
+      delta_summary TEXT NOT NULL, -- JSON
+      source TEXT NOT NULL,
+      recorded_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_tsh_entity ON temporal_state_history(entity_id);
+    CREATE INDEX IF NOT EXISTS idx_tsh_time ON temporal_state_history(timestamp);
+
+    CREATE TABLE IF NOT EXISTS world_events (
+      event_id TEXT PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      previous_state TEXT, -- JSON
+      current_state TEXT NOT NULL, -- JSON
+      detected_at TEXT NOT NULL,
+      source TEXT NOT NULL,
+      confidence REAL NOT NULL,
+      severity TEXT DEFAULT 'MEDIUM'
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_wevt_time ON world_events(detected_at);
+    CREATE INDEX IF NOT EXISTS idx_wevt_type ON world_events(event_type);
+    CREATE INDEX IF NOT EXISTS idx_wevt_entity ON world_events(entity_id);
+
+    CREATE TABLE IF NOT EXISTS simulations (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      base_snapshot_time TEXT NOT NULL,
+      status TEXT DEFAULT 'ACTIVE',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS simulation_entity_overrides (
+      simulation_id TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      properties TEXT NOT NULL, -- JSON
+      is_modified INTEGER DEFAULT 1,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (simulation_id, entity_id),
+      FOREIGN KEY (simulation_id) REFERENCES simulations(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_sim_overrides ON simulation_entity_overrides(simulation_id);
   `);
 
   // Safe schema migrations for existing tables
@@ -219,6 +409,29 @@ export function initDatabase() {
   try { db.exec("ALTER TABLE relationships ADD COLUMN source_db_id TEXT;"); } catch (_) {}
   try { db.exec("ALTER TABLE relationships ADD COLUMN source_table TEXT;"); } catch (_) {}
   try { db.exec("ALTER TABLE datasets ADD COLUMN is_active INTEGER DEFAULT 0;"); } catch (_) {}
+  try { db.exec("ALTER TABLE world_entities ADD COLUMN status TEXT DEFAULT 'ACTIVE';"); } catch (_) {}
+  try { db.exec("ALTER TABLE world_entities ADD COLUMN confidence REAL DEFAULT 1.0;"); } catch (_) {}
+  try { db.exec("ALTER TABLE world_entities ADD COLUMN last_observed_at TEXT;"); } catch (_) {}
+  try { db.exec("ALTER TABLE world_entities ADD COLUMN last_provider TEXT;"); } catch (_) {}
+  try { db.exec("ALTER TABLE world_entities ADD COLUMN created_at TEXT;"); } catch (_) {}
+  try { db.exec("ALTER TABLE world_entities ADD COLUMN updated_at TEXT;"); } catch (_) {}
+  try { db.exec("ALTER TABLE world_events ADD COLUMN event_id TEXT;"); } catch (_) {}
+  try { db.exec("ALTER TABLE simulations ADD COLUMN base_snapshot_time TEXT;"); } catch (_) {}
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ai_chat_messages (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      sources TEXT,
+      reasoning TEXT,
+      timestamp TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_chat_session ON ai_chat_messages(session_id);
+  `);
+
+  try { db.exec("ALTER TABLE ai_chat_messages ADD COLUMN reasoning TEXT;"); } catch (_) {}
 
   console.log('✔ AEGIS Database schema initialized.');
 }
