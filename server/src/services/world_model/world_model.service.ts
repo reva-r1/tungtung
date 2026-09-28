@@ -7,6 +7,9 @@ import {
   TemporalStateRecord,
   WorldEntityState,
 } from '../../connectors/base/types.js';
+import { haversineDistance, pointToPolylineDistance, isPointInRadius } from './geo.js';
+import { ROAD_CORRIDOR_NH48, AIRPORT_KEMPEGOWDA_BLR, CATCHMENT_CAUVERY_SOUTH } from './reference.js';
+import { computeConfidence, getProviderReliability } from './confidence.js';
 
 export class WorldModelService {
   private static instance: WorldModelService;
@@ -252,11 +255,20 @@ export class WorldModelService {
 
   /**
    * Event Detection: Identifies meaningful state transitions and threshold crossings
+   * Uses computeConfidence() with provider reliability and observation age instead of static literals.
    */
   private detectEvents(obs: NormalizedObservation, previousState: Record<string, any> | null): WorldEvent[] {
     const events: WorldEvent[] = [];
     const now = new Date().toISOString();
     const val = obs.value;
+
+    const obsAgeSeconds = Math.max(0, (Date.now() - new Date(obs.observed_at).getTime()) / 1000);
+    const providerRel = getProviderReliability(obs.provider);
+    const eventConfidence = computeConfidence({
+      sourceReliability: providerRel,
+      dataAgeSeconds: obsAgeSeconds,
+      corroboratingSources: 1,
+    });
 
     // A. Weather / Rainfall threshold crossing
     if (val.precipitation_mm !== undefined) {
@@ -272,7 +284,7 @@ export class WorldModelService {
           current_state: { precipitation_mm: precip },
           detected_at: now,
           source: obs.provider,
-          confidence: 0.95,
+          confidence: eventConfidence,
           severity: 'LOW',
         });
       }
@@ -286,7 +298,7 @@ export class WorldModelService {
           current_state: { precipitation_mm: precip },
           detected_at: now,
           source: obs.provider,
-          confidence: 0.98,
+          confidence: eventConfidence,
           severity: precip > 50 ? 'CRITICAL' : 'HIGH',
         });
       }
@@ -304,7 +316,7 @@ export class WorldModelService {
           current_state: { temperature_c: val.temperature_c },
           detected_at: now,
           source: obs.provider,
-          confidence: 0.9,
+          confidence: eventConfidence,
           severity: 'MEDIUM',
         });
       }
@@ -323,7 +335,7 @@ export class WorldModelService {
           current_state: { us_aqi: aqi },
           detected_at: now,
           source: obs.provider,
-          confidence: 0.96,
+          confidence: eventConfidence,
           severity: aqi >= 250 ? 'CRITICAL' : 'HIGH',
         });
       }
@@ -332,6 +344,11 @@ export class WorldModelService {
     // D. Earthquake Detected
     if (obs.entity_type === 'EARTHQUAKE_EPICENTER') {
       const mag = Number(val.magnitude);
+      const quakeConfidence = computeConfidence({
+        sourceReliability: obs.confidence ?? providerRel,
+        dataAgeSeconds: obsAgeSeconds,
+        corroboratingSources: 1,
+      });
       events.push({
         event_id: `evt_earthquake_${obs.entity_id}_${Date.now()}`,
         event_type: 'EARTHQUAKE_DETECTED',
@@ -340,7 +357,7 @@ export class WorldModelService {
         current_state: { magnitude: mag, place: val.place, depth_km: val.depth_km },
         detected_at: now,
         source: obs.provider,
-        confidence: obs.confidence ?? 0.95,
+        confidence: quakeConfidence,
         severity: mag >= 6.0 ? 'CRITICAL' : mag >= 4.5 ? 'HIGH' : 'MEDIUM',
       });
     }
@@ -356,7 +373,7 @@ export class WorldModelService {
           current_state: { water_level_m: val.water_level_m, danger_level_m: val.danger_level_m },
           detected_at: now,
           source: obs.provider,
-          confidence: 0.98,
+          confidence: eventConfidence,
           severity: 'HIGH',
         });
       }
@@ -372,7 +389,7 @@ export class WorldModelService {
         current_state: { congestion_level: val.congestion_level, stop_id: val.stop_id },
         detected_at: now,
         source: obs.provider,
-        confidence: 0.92,
+        confidence: eventConfidence,
         severity: 'MEDIUM',
       });
     }
@@ -382,90 +399,112 @@ export class WorldModelService {
 
   /**
    * Entity Resolution & Relationship Discovery
-   * Determines relationships across:
-   * - Weather -> District -> Infrastructure / Roads
-   * - Aircraft -> Airport -> Air Corridor
-   * - Water Gauge / Rainfall -> Watershed / Rivers -> Transit Road
+   * Determines relationships based on computed geometry and real spatial joins:
+   * - Weather Station within threshold km of NH48 polyline -> ROAD_CORRIDOR_NH48
+   * - Aircraft within terminal radar radius of Kempegowda -> AIRPORT_KEMPEGOWDA_BLR
+   * - Water Gauge within catchment drainage radius -> CATCHMENT_CAUVERY_SOUTH
    */
   private resolveEntityRelationships(obs: NormalizedObservation): InferredRelationship[] {
     const relationships: InferredRelationship[] = [];
     const now = new Date().toISOString();
     const lat = obs.location.latitude;
     const lon = obs.location.longitude;
+    const obsAgeSeconds = Math.max(0, (Date.now() - new Date(obs.observed_at).getTime()) / 1000);
 
-    // 1. Weather Station to Transportation Corridors (NH48 / Hosur / Whitefield)
+    // 1. Weather Station to Transportation Corridors (NH48)
     if (obs.entity_type === 'WEATHER_STATION') {
       const precip = Number(obs.value.precipitation_mm || 0);
-      // Link to road artery if rain is observed
-      relationships.push({
-        relationship_id: `rel_${obs.entity_id}_NH48_CORRIDOR`,
-        relationship_type: precip > 10 ? 'IMPACTS_SURFACE_TRACTION' : 'MONITORS_ATMOSPHERE_AROUND',
-        source_entity_id: obs.entity_id,
-        target_entity_id: 'ROAD_CORRIDOR_NH48',
-        source: 'spatial_corridor_matcher',
-        timestamp: now,
-        confidence: 0.92,
-        evidence: [
-          `Station coordinates (${lat.toFixed(3)}, ${lon.toFixed(3)}) within 5km bounding proximity of NH48 transit artery`,
-          `Observed precipitation: ${precip}mm at ${obs.observed_at}`,
-          'Hydrological surface runoff models indicate catchment drainage intersection',
-        ],
-      });
-    }
+      const { distanceKm } = pointToPolylineDistance(lat, lon, ROAD_CORRIDOR_NH48.polyline);
 
-    // 2. Aircraft to Airport
-    if (obs.entity_type === 'AIRCRAFT') {
-      // Check distance to Kempegowda International Airport (BLR: 13.1986, 77.7066)
-      const dBlr = this.haversineDistance(lat, lon, 13.1986, 77.7066);
-      if (dBlr <= 60) {
+      // Only establish relationship when station is within corridor proximity threshold
+      if (distanceKm <= ROAD_CORRIDOR_NH48.maxProximityThresholdKm) {
+        const confidence = computeConfidence({
+          sourceReliability: getProviderReliability(obs.provider),
+          dataAgeSeconds: obsAgeSeconds,
+          distanceKm,
+          maxDistanceKm: ROAD_CORRIDOR_NH48.maxProximityThresholdKm,
+        });
+
         relationships.push({
-          relationship_id: `rel_${obs.entity_id}_AIRPORT_VOBL`,
-          relationship_type: dBlr <= 15 ? 'IN_FINAL_APPROACH' : 'EN_ROUTE_TERMINAL_CONTROL_AREA',
+          relationship_id: `rel_${obs.entity_id}_NH48_CORRIDOR`,
+          relationship_type: precip > 10 ? 'IMPACTS_SURFACE_TRACTION' : 'MONITORS_ATMOSPHERE_AROUND',
           source_entity_id: obs.entity_id,
-          target_entity_id: 'AIRPORT_KEMPEGOWDA_BLR',
-          source: 'terminal_radar_geofence',
+          target_entity_id: ROAD_CORRIDOR_NH48.id,
+          source: 'spatial_corridor_matcher',
           timestamp: now,
-          confidence: 0.97,
+          confidence,
           evidence: [
-            `Aircraft telemetry position (${lat.toFixed(3)}, ${lon.toFixed(3)}) is ${Math.round(dBlr)}km from BLR Runway 09L/27R`,
-            `Altitude: ${obs.value.altitude_m || 'Unreported'}m, Speed: ${obs.value.speed_kmh || 'Unreported'} km/h`,
-            'Transponder state vector matches Bangalore Terminal Airspace sector Bravo',
+            `Station location (${lat.toFixed(4)}, ${lon.toFixed(4)}) is ${distanceKm.toFixed(2)} km from NH48 corridor polyline (threshold: ${ROAD_CORRIDOR_NH48.maxProximityThresholdKm} km)`,
+            `Observed precipitation: ${precip} mm at ${obs.observed_at}`,
           ],
         });
       }
     }
 
-    // 3. Water Gauge to Downstream Drainage Infrastructure
+    // 2. Aircraft to Airport
+    if (obs.entity_type === 'AIRCRAFT') {
+      const dBlr = haversineDistance(lat, lon, AIRPORT_KEMPEGOWDA_BLR.lat, AIRPORT_KEMPEGOWDA_BLR.lon);
+      if (dBlr <= AIRPORT_KEMPEGOWDA_BLR.terminalControlAreaRadiusKm) {
+        const confidence = computeConfidence({
+          sourceReliability: getProviderReliability(obs.provider),
+          dataAgeSeconds: obsAgeSeconds,
+          distanceKm: dBlr,
+          maxDistanceKm: AIRPORT_KEMPEGOWDA_BLR.terminalControlAreaRadiusKm,
+        });
+
+        const inFinalApproach = dBlr <= AIRPORT_KEMPEGOWDA_BLR.finalApproachRadiusKm;
+        relationships.push({
+          relationship_id: `rel_${obs.entity_id}_AIRPORT_VOBL`,
+          relationship_type: inFinalApproach ? 'IN_FINAL_APPROACH' : 'EN_ROUTE_TERMINAL_CONTROL_AREA',
+          source_entity_id: obs.entity_id,
+          target_entity_id: AIRPORT_KEMPEGOWDA_BLR.id,
+          source: 'terminal_radar_geofence',
+          timestamp: now,
+          confidence,
+          evidence: [
+            `Aircraft position (${lat.toFixed(4)}, ${lon.toFixed(4)}) is ${dBlr.toFixed(2)} km from ${AIRPORT_KEMPEGOWDA_BLR.name} ARP`,
+            `Reported altitude: ${obs.value.altitude_m !== undefined ? obs.value.altitude_m + ' m' : 'Unreported'}, speed: ${obs.value.speed_kmh !== undefined ? obs.value.speed_kmh + ' km/h' : 'Unreported'} at ${obs.observed_at}`,
+          ],
+        });
+      }
+    }
+
+    // 3. Water Gauge to Catchment Basin
     if (obs.entity_type === 'WATER_GAUGE') {
-      relationships.push({
-        relationship_id: `rel_${obs.entity_id}_DRAINAGE_GRID`,
-        relationship_type: 'FEEDS_WATERSHED_CATCHMENT',
-        source_entity_id: obs.entity_id,
-        target_entity_id: 'CATCHMENT_CAUVERY_SOUTH',
-        source: 'hydrological_basin_registry',
-        timestamp: now,
-        confidence: 0.99,
-        evidence: [
-          `Gauge ${obs.value.station_name || obs.entity_id} sits at elevation datum ${lat.toFixed(3)}, ${lon.toFixed(3)}`,
-          `Recorded water stage: ${obs.value.water_level_m}m against warning baseline`,
-          'Direct hydrological gradient flow into southern metropolitan canal network',
-        ],
-      });
+      const { inRange, distanceKm } = isPointInRadius(
+        lat,
+        lon,
+        CATCHMENT_CAUVERY_SOUTH.center.lat,
+        CATCHMENT_CAUVERY_SOUTH.center.lon,
+        CATCHMENT_CAUVERY_SOUTH.radiusKm
+      );
+
+      // Only establish relationship when gauge is within the catchment radius
+      if (inRange) {
+        const confidence = computeConfidence({
+          sourceReliability: getProviderReliability(obs.provider),
+          dataAgeSeconds: obsAgeSeconds,
+          distanceKm,
+          maxDistanceKm: CATCHMENT_CAUVERY_SOUTH.radiusKm,
+        });
+
+        relationships.push({
+          relationship_id: `rel_${obs.entity_id}_DRAINAGE_GRID`,
+          relationship_type: 'FEEDS_WATERSHED_CATCHMENT',
+          source_entity_id: obs.entity_id,
+          target_entity_id: CATCHMENT_CAUVERY_SOUTH.id,
+          source: 'hydrological_basin_registry',
+          timestamp: now,
+          confidence,
+          evidence: [
+            `Gauge location (${lat.toFixed(4)}, ${lon.toFixed(4)}) is ${distanceKm.toFixed(2)} km from ${CATCHMENT_CAUVERY_SOUTH.name} center (within ${CATCHMENT_CAUVERY_SOUTH.radiusKm} km radius)`,
+            `Observed water stage: ${obs.value.water_level_m !== undefined ? obs.value.water_level_m + ' m' : 'Unreported'} at ${obs.observed_at}`,
+          ],
+        });
+      }
     }
 
     return relationships;
-  }
-
-  private haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371; // km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
   }
 
   /**

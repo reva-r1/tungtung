@@ -3,6 +3,7 @@ import { providerRegistry } from '../connectors/registry/ProviderRegistry.js';
 import { worldModelService } from '../services/world_model/world_model.service.js';
 import { simulationService } from '../services/simulation/simulation.service.js';
 import { initDatabase } from '../db/database.js';
+import { runWorldModelLogicTests } from './world_model_logic.test.js';
 
 interface TestResult {
   name: string;
@@ -267,6 +268,9 @@ export async function runAllConnectorTests() {
     const simEntityReset = simStateReset.entities.find(e => e.id === testEntId);
     assert(simEntityReset?.current_state.rainfall_mm === 10, 'Reset simulation must revert to baseline');
   });
+
+  // Execute Phase 3 World Model Logic Verification Suite
+  await runWorldModelLogicTests();
 
   // Summary
   const passedCount = results.filter(r => r.passed).length;
