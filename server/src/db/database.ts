@@ -209,7 +209,7 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_esl_source_db ON entity_source_links(source_db_id);
 
     -- =========================================================================
-    -- AEGIS R1 MARITIME TRACKING & MOVING ENTITY LAYER
+    -- REVANA MARITIME TRACKING & MOVING ENTITY LAYER
     -- =========================================================================
     CREATE TABLE IF NOT EXISTS moving_entities (
       id TEXT PRIMARY KEY,
@@ -433,6 +433,6 @@ export function initDatabase() {
 
   try { db.exec("ALTER TABLE ai_chat_messages ADD COLUMN reasoning TEXT;"); } catch (_) {}
 
-  console.log('✔ AEGIS Database schema initialized.');
+  console.log('✔ Revana Database schema initialized.');
 }
 

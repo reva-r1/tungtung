@@ -5,7 +5,7 @@ import { MaritimePattern } from '../../types/index.js';
 
 export class MaritimeReasoningService {
   /**
-   * Evaluates a detected maritime pattern through the AEGIS intelligence reasoning engine
+   * Evaluates a detected maritime pattern through the Revana intelligence reasoning engine
    */
   static async investigatePattern(patternId: string): Promise<{ pattern: MaritimePattern; analysis: any }> {
     const pattern = MaritimePatternDetector.getPatternById(patternId);
@@ -24,7 +24,7 @@ export class MaritimeReasoningService {
     const vesselSummary = sampleVessels.map((v) => `${v.name} (${v.vessel_type}, Speed: ${v.speed} kts, Dest: ${v.destination})`).join('\n• ');
 
     const prompt = `
-AEGIS MARITIME INTELLIGENCE INVESTIGATION
+REVANA MARITIME INTELLIGENCE INVESTIGATION
 Pattern ID: ${pattern.pattern_id}
 Region: ${pattern.region}
 Observation: ${pattern.observation}
@@ -44,11 +44,11 @@ CRITICAL ANALYTICAL DIRECTIVES:
 5. Provide concrete follow-up investigative steps for the analyst.
 `;
 
-    // Invoke AEGIS AI Engine (Groq / Grounded Deterministic)
+    // Invoke Revana AI Engine (Groq / Grounded Deterministic)
     const aiResult = await AiService.investigate(prompt);
 
     // Update pattern with AI reasoning notes
-    const reasoningText = `AEGIS Pattern Assessment:\n${aiResult.aiInterpretation}\n\nUncertainty Assessment: ${aiResult.uncertainty}`;
+    const reasoningText = `Revana Pattern Assessment:\n${aiResult.aiInterpretation}\n\nUncertainty Assessment: ${aiResult.uncertainty}`;
     db.prepare('UPDATE maritime_patterns SET ai_reasoning = ?, updated_at = ? WHERE pattern_id = ?').run(
       reasoningText,
       new Date().toISOString(),

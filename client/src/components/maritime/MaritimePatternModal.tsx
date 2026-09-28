@@ -85,7 +85,7 @@ export const MaritimePatternModal: React.FC<MaritimePatternModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                  AEGIS MARITIME INTELLIGENCE DOSSIER
+                  REVANA MARITIME INTELLIGENCE DOSSIER
                 </span>
                 <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded">
                   {pattern.pattern_id}
@@ -115,7 +115,7 @@ export const MaritimePatternModal: React.FC<MaritimePatternModalProps> = ({
                 Analytical Integrity Principle: Observation ≠ Explanation
               </div>
               <div className="text-[11px] text-slate-400 leading-relaxed font-sans">
-                Observations and statistical anomalies are mathematically verified. Hypotheses represent candidate explanations and remain unproven unless verified by corroborating multi-source evidence. AEGIS never manufactures a conclusion when evidence is insufficient.
+                Observations and statistical anomalies are mathematically verified. Hypotheses represent candidate explanations and remain unproven unless verified by corroborating multi-source evidence. Revana never manufactures a conclusion when evidence is insufficient.
               </div>
             </div>
           </div>
@@ -213,7 +213,7 @@ export const MaritimePatternModal: React.FC<MaritimePatternModalProps> = ({
             <div className="space-y-2 animate-in fade-in duration-300">
               <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
                 <Sparkles className="w-4 h-4 text-cyan-400" />
-                3. AEGIS Lead Intelligence Synthesis
+                3. Revana Lead Intelligence Synthesis
               </div>
               <div className="p-4 bg-cyan-950/20 border border-cyan-800/40 rounded-lg space-y-3 font-sans text-xs">
                 <div>
@@ -260,7 +260,7 @@ export const MaritimePatternModal: React.FC<MaritimePatternModalProps> = ({
               className="px-3 py-1.5 bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/50 text-cyan-200 text-xs font-bold rounded-lg transition flex items-center gap-2 disabled:opacity-50"
             >
               <Brain className={`w-3.5 h-3.5 ${isInvestigating ? 'animate-spin' : ''}`} />
-              {isInvestigating ? 'Engaging AEGIS Reasoning...' : 'Engage AEGIS Reasoning Engine'}
+              {isInvestigating ? 'Engaging Revana Reasoning...' : 'Engage Revana Reasoning Engine'}
             </button>
             <button
               onClick={onClose}

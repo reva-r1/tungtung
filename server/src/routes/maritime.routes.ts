@@ -61,7 +61,7 @@ maritimeRouter.get('/patterns/:id', (req, res) => {
   res.json(pattern);
 });
 
-// POST /api/maritime/patterns/:id/investigate - Trigger AEGIS AI hypothesis reasoning
+// POST /api/maritime/patterns/:id/investigate - Trigger Revana AI hypothesis reasoning
 maritimeRouter.post('/patterns/:id/investigate', async (req, res) => {
   try {
     const result = await MaritimeReasoningService.investigatePattern(req.params.id);

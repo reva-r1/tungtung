@@ -1,4 +1,4 @@
-// AEGIS Intel Domain Types
+// Revana Technologies Domain Types
 
 export type EntityType = 
   | 'COMPANY'
@@ -294,7 +294,7 @@ export interface AiInvestigationResponse {
   rawGrokResponse?: string;
 }
 
-// AEGIS R1 Moving Entity & Maritime Types
+// Revana Moving Entity & Maritime Types
 export interface MovingEntity {
   id: string; // e.g. SHIP_419001234
   type: 'ship' | 'aircraft' | 'truck' | 'train' | 'shipment' | 'vehicle';

@@ -179,7 +179,7 @@ export abstract class DataProvider {
 
     const headers: Record<string, string> = {
       'Accept': 'application/json',
-      'User-Agent': 'AegisIntel-WorldModel/2.0',
+      'User-Agent': 'Revana-WorldModel/2.0',
       ...(options.headers as Record<string, string> || {})
     };
 

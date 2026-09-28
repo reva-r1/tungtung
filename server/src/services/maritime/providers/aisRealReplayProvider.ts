@@ -114,7 +114,7 @@ function generateMalaccaConvergenceFleet(): SeedVessel[] {
 }
 
 export class AisRealReplayProvider implements AisProvider {
-  name = 'AEGIS Real-World AIS Replay Feed (Indian Ocean & Malacca)';
+  name = 'Revana Real-World AIS Replay Feed (Indian Ocean & Malacca)';
   private isRunning = false;
   private timer: NodeJS.Timeout | null = null;
   private messageCount = 0;

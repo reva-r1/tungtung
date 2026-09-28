@@ -42,7 +42,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Mount Routes (Legacy & Core AEGIS)
+// Mount Routes (Legacy & Core Revana)
 app.use('/api/sources', sourcesRouter);
 app.use('/api/entities', entitiesRouter);
 app.use('/api/graph', graphRouter);

@@ -37,7 +37,7 @@ export class MockDataProvider extends DataProvider {
       },
       legal: {
         license: 'MIT',
-        attribution: 'Internal Aegis Test Engine',
+        attribution: 'Internal Revana Test Engine',
         commercialUse: 'allowed',
         commercialUseNotes: 'Unrestricted test provider',
         termsUrl: 'https://example.com/terms',

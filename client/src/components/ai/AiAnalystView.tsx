@@ -31,7 +31,7 @@ export const AiAnalystView: React.FC = () => {
     {
       id: 'msg-1',
       sender: 'assistant',
-      text: 'AEGIS AI Lead Intelligence Analyst operational. Grounded directly in structured graph topology, speed telemetry physics, and anomaly ledgers. What entity, corridor, or threat vector would you like to investigate?',
+      text: 'Revana AI Lead Intelligence Analyst operational. Grounded directly in structured graph topology, speed telemetry physics, and anomaly ledgers. What entity, corridor, or threat vector would you like to investigate?',
       timestamp: new Date().toISOString(),
     },
   ]);

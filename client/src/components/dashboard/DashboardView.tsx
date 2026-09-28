@@ -105,7 +105,7 @@ export const DashboardView: React.FC = () => {
       <div className="flex-1 flex items-center justify-center p-8 bg-[#090d16]">
         <div className="flex items-center gap-3 text-cyan-400 font-mono text-xs">
           <Activity className="w-5 h-5 animate-spin" />
-          <span>SYNCHRONIZING AEGIS GRAPH METRICS...</span>
+          <span>SYNCHRONIZING REVANA GRAPH METRICS...</span>
         </div>
       </div>
     );

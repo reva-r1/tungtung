@@ -40,10 +40,10 @@ export const FloatingReasoningSpace: React.FC = () => {
 
   // Initialize persistent session ID from localStorage
   useEffect(() => {
-    let savedSession = localStorage.getItem('aegis_reasoning_session_id');
+    let savedSession = localStorage.getItem('revana_reasoning_session_id') || localStorage.getItem('aegis_reasoning_session_id');
     if (!savedSession) {
       savedSession = `session_${Math.random().toString(36).substring(2, 9)}`;
-      localStorage.setItem('aegis_reasoning_session_id', savedSession);
+      localStorage.setItem('revana_reasoning_session_id', savedSession);
     }
     setSessionId(savedSession);
 
@@ -125,7 +125,7 @@ export const FloatingReasoningSpace: React.FC = () => {
     try {
       await api.clearChatHistory(sessionId);
       const newSession = `session_${Math.random().toString(36).substring(2, 9)}`;
-      localStorage.setItem('aegis_reasoning_session_id', newSession);
+      localStorage.setItem('revana_reasoning_session_id', newSession);
       setSessionId(newSession);
       setMessages([
         {

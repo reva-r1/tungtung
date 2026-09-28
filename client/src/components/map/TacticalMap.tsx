@@ -168,7 +168,7 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
   const [showPinNames, setShowPinNames] = useState<boolean>(true);
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number; zoom: number; id: number } | null>(null);
 
-  // AEGIS R1 Maritime Moving Entity States
+  // Revana Maritime Moving Entity States
   const [showMaritime, setShowMaritime] = useState<boolean>(true);
   const [showTrails, setShowTrails] = useState<boolean>(true);
   const [vessels, setVessels] = useState<MovingEntity[]>([]);

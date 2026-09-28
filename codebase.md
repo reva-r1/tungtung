@@ -222,7 +222,7 @@ export const AiAnalystView: React.FC = () => {
     {
       id: 'msg-1',
       sender: 'assistant',
-      text: 'AEGIS AI Lead Intelligence Analyst operational. Grounded directly in structured graph topology, speed telemetry physics, and anomaly ledgers. What entity, corridor, or threat vector would you like to investigate?',
+      text: 'Revana AI Lead Intelligence Analyst operational. Grounded directly in structured graph topology, speed telemetry physics, and anomaly ledgers. What entity, corridor, or threat vector would you like to investigate?',
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -519,10 +519,10 @@ export const FloatingReasoningSpace: React.FC = () => {
 
   // Initialize persistent session ID from localStorage
   useEffect(() => {
-    let savedSession = localStorage.getItem('aegis_reasoning_session_id');
+    let savedSession = localStorage.getItem('revana_reasoning_session_id') || localStorage.getItem('aegis_reasoning_session_id');
     if (!savedSession) {
       savedSession = `session_${Math.random().toString(36).substring(2, 9)}`;
-      localStorage.setItem('aegis_reasoning_session_id', savedSession);
+      localStorage.setItem('revana_reasoning_session_id', savedSession);
     }
     setSessionId(savedSession);
 
@@ -604,7 +604,7 @@ export const FloatingReasoningSpace: React.FC = () => {
     try {
       await api.clearChatHistory(sessionId);
       const newSession = `session_${Math.random().toString(36).substring(2, 9)}`;
-      localStorage.setItem('aegis_reasoning_session_id', newSession);
+      localStorage.setItem('revana_reasoning_session_id', newSession);
       setSessionId(newSession);
       setMessages([
         {
@@ -1271,7 +1271,7 @@ export const DashboardView: React.FC = () => {
       <div className="flex-1 flex items-center justify-center p-8 bg-[#090d16]">
         <div className="flex items-center gap-3 text-cyan-400 font-mono text-xs">
           <Activity className="w-5 h-5 animate-spin" />
-          <span>SYNCHRONIZING AEGIS GRAPH METRICS...</span>
+          <span>SYNCHRONIZING REVANA GRAPH METRICS...</span>
         </div>
       </div>
     );
@@ -1829,7 +1829,7 @@ export const DataExplorerView: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `aegis_intel_entities_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `revana_entities_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -4521,7 +4521,7 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
   const [showPinNames, setShowPinNames] = useState<boolean>(true);
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number; zoom: number; id: number } | null>(null);
 
-  // AEGIS R1 Maritime Moving Entity States
+  // Revana Maritime Moving Entity States
   const [showMaritime, setShowMaritime] = useState<boolean>(true);
   const [showTrails, setShowTrails] = useState<boolean>(true);
   const [vessels, setVessels] = useState<MovingEntity[]>([]);
@@ -5210,7 +5210,7 @@ export const MaritimePatternModal: React.FC<MaritimePatternModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                  AEGIS MARITIME INTELLIGENCE DOSSIER
+                  REVANA MARITIME INTELLIGENCE DOSSIER
                 </span>
                 <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded">
                   {pattern.pattern_id}
@@ -5240,7 +5240,7 @@ export const MaritimePatternModal: React.FC<MaritimePatternModalProps> = ({
                 Analytical Integrity Principle: Observation ≠ Explanation
               </div>
               <div className="text-[11px] text-slate-400 leading-relaxed font-sans">
-                Observations and statistical anomalies are mathematically verified. Hypotheses represent candidate explanations and remain unproven unless verified by corroborating multi-source evidence. AEGIS never manufactures a conclusion when evidence is insufficient.
+                Observations and statistical anomalies are mathematically verified. Hypotheses represent candidate explanations and remain unproven unless verified by corroborating multi-source evidence. Revana never manufactures a conclusion when evidence is insufficient.
               </div>
             </div>
           </div>
@@ -5338,7 +5338,7 @@ export const MaritimePatternModal: React.FC<MaritimePatternModalProps> = ({
             <div className="space-y-2 animate-in fade-in duration-300">
               <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
                 <Sparkles className="w-4 h-4 text-cyan-400" />
-                3. AEGIS Lead Intelligence Synthesis
+                3. Revana Lead Intelligence Synthesis
               </div>
               <div className="p-4 bg-cyan-950/20 border border-cyan-800/40 rounded-lg space-y-3 font-sans text-xs">
                 <div>
@@ -5385,7 +5385,7 @@ export const MaritimePatternModal: React.FC<MaritimePatternModalProps> = ({
               className="px-3 py-1.5 bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/50 text-cyan-200 text-xs font-bold rounded-lg transition flex items-center gap-2 disabled:opacity-50"
             >
               <Brain className={`w-3.5 h-3.5 ${isInvestigating ? 'animate-spin' : ''}`} />
-              {isInvestigating ? 'Engaging AEGIS Reasoning...' : 'Engage AEGIS Reasoning Engine'}
+              {isInvestigating ? 'Engaging Revana Reasoning...' : 'Engage Revana Reasoning Engine'}
             </button>
             <button
               onClick={onClose}
@@ -8678,7 +8678,7 @@ export interface AiInvestigationResponse {
   rawGrokResponse?: string;
 }
 
-// AEGIS R1 Moving Entity & Maritime Types
+// Revana Moving Entity & Maritime Types
 export interface MovingEntity {
   id: string; // e.g. SHIP_419001234
   type: 'ship' | 'aircraft' | 'truck' | 'train' | 'shipment' | 'vehicle';
@@ -9291,7 +9291,7 @@ export abstract class DataProvider {
 
     const headers: Record<string, string> = {
       'Accept': 'application/json',
-      'User-Agent': 'AegisIntel-WorldModel/2.0',
+      'User-Agent': 'Revana-WorldModel/2.0',
       ...(options.headers as Record<string, string> || {})
     };
 
@@ -10287,7 +10287,7 @@ export class OSMNominatimProvider extends DataProvider {
     try {
       const { data, latency } = await this.secureFetch(url, {
         headers: {
-          'User-Agent': 'AegisIntel-WorldModel/2.0 (contact: ops@aegisintel.io)',
+          'User-Agent': 'Revana-WorldModel/2.0 (contact: ops@revana.io)',
         }
       }, 8000);
       this.setCached(cacheKey, data, this.metadata.rateLimit.cacheTtlSeconds);
@@ -10846,7 +10846,7 @@ export class MockDataProvider extends DataProvider {
       },
       legal: {
         license: 'MIT',
-        attribution: 'Internal Aegis Test Engine',
+        attribution: 'Internal Revana Test Engine',
         commercialUse: 'allowed',
         commercialUseNotes: 'Unrestricted test provider',
         termsUrl: 'https://example.com/terms',
@@ -12033,7 +12033,7 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_esl_source_db ON entity_source_links(source_db_id);
 
     -- =========================================================================
-    -- AEGIS R1 MARITIME TRACKING & MOVING ENTITY LAYER
+    -- REVANA MARITIME TRACKING & MOVING ENTITY LAYER
     -- =========================================================================
     CREATE TABLE IF NOT EXISTS moving_entities (
       id TEXT PRIMARY KEY,
@@ -12257,7 +12257,7 @@ export function initDatabase() {
 
   try { db.exec("ALTER TABLE ai_chat_messages ADD COLUMN reasoning TEXT;"); } catch (_) {}
 
-  console.log('✔ AEGIS Database schema initialized.');
+  console.log('✔ Revana Database schema initialized.');
 }
 
 
@@ -12276,7 +12276,7 @@ export function seedDatabase(force: boolean = false) {
     return;
   }
 
-  console.log('⚡ Seeding AEGIS Intel with Karnataka-South Transit Intelligence dataset...');
+  console.log('⚡ Seeding Revana with Karnataka-South Transit Intelligence dataset...');
 
   // Clear existing records
   db.exec(`
@@ -13941,7 +13941,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Mount Routes (Legacy & Core AEGIS)
+// Mount Routes (Legacy & Core Revana)
 app.use('/api/sources', sourcesRouter);
 app.use('/api/entities', entitiesRouter);
 app.use('/api/graph', graphRouter);
@@ -14760,7 +14760,7 @@ maritimeRouter.get('/patterns/:id', (req, res) => {
   res.json(pattern);
 });
 
-// POST /api/maritime/patterns/:id/investigate - Trigger AEGIS AI hypothesis reasoning
+// POST /api/maritime/patterns/:id/investigate - Trigger Revana AI hypothesis reasoning
 maritimeRouter.post('/patterns/:id/investigate', async (req, res) => {
   try {
     const result = await MaritimeReasoningService.investigatePattern(req.params.id);
@@ -18384,7 +18384,7 @@ import { MaritimePattern } from '../../types/index.js';
 
 export class MaritimeReasoningService {
   /**
-   * Evaluates a detected maritime pattern through the AEGIS intelligence reasoning engine
+   * Evaluates a detected maritime pattern through the Revana intelligence reasoning engine
    */
   static async investigatePattern(patternId: string): Promise<{ pattern: MaritimePattern; analysis: any }> {
     const pattern = MaritimePatternDetector.getPatternById(patternId);
@@ -18403,7 +18403,7 @@ export class MaritimeReasoningService {
     const vesselSummary = sampleVessels.map((v) => `${v.name} (${v.vessel_type}, Speed: ${v.speed} kts, Dest: ${v.destination})`).join('\n• ');
 
     const prompt = `
-AEGIS MARITIME INTELLIGENCE INVESTIGATION
+REVANA MARITIME INTELLIGENCE INVESTIGATION
 Pattern ID: ${pattern.pattern_id}
 Region: ${pattern.region}
 Observation: ${pattern.observation}
@@ -18423,11 +18423,11 @@ CRITICAL ANALYTICAL DIRECTIVES:
 5. Provide concrete follow-up investigative steps for the analyst.
 `;
 
-    // Invoke AEGIS AI Engine (Groq / Grounded Deterministic)
+    // Invoke Revana AI Engine (Groq / Grounded Deterministic)
     const aiResult = await AiService.investigate(prompt);
 
     // Update pattern with AI reasoning notes
-    const reasoningText = `AEGIS Pattern Assessment:\n${aiResult.aiInterpretation}\n\nUncertainty Assessment: ${aiResult.uncertainty}`;
+    const reasoningText = `Revana Pattern Assessment:\n${aiResult.aiInterpretation}\n\nUncertainty Assessment: ${aiResult.uncertainty}`;
     db.prepare('UPDATE maritime_patterns SET ai_reasoning = ?, updated_at = ? WHERE pattern_id = ?').run(
       reasoningText,
       new Date().toISOString(),
@@ -18462,7 +18462,7 @@ interface CorridorDefinition {
   thresholdPercent: number; // Alert threshold % deviation
 }
 
-// Key strategic maritime corridors monitored by AEGIS
+// Key strategic maritime corridors monitored by Revana
 const MONITORED_CORRIDORS: CorridorDefinition[] = [
   {
     id: 'CORRIDOR_MALACCA',
@@ -18613,7 +18613,7 @@ export class MaritimePatternDetector {
         ];
 
         // Overall Pattern Status
-        // AEGIS Rule: Never force into "supported" if evidence is insufficient -> "unresolved" / "weakly_supported"
+        // Revana Rule: Never force into "supported" if evidence is insufficient -> "unresolved" / "weakly_supported"
         const pattern: MaritimePattern = {
           pattern_id: patternId,
           type: 'traffic_concentration',
@@ -18856,7 +18856,7 @@ function generateMalaccaConvergenceFleet(): SeedVessel[] {
 }
 
 export class AisRealReplayProvider implements AisProvider {
-  name = 'AEGIS Real-World AIS Replay Feed (Indian Ocean & Malacca)';
+  name = 'Revana Real-World AIS Replay Feed (Indian Ocean & Malacca)';
   private isRunning = false;
   private timer: NodeJS.Timeout | null = null;
   private messageCount = 0;
@@ -21789,7 +21789,7 @@ if (process.argv[1]?.includes('connectors.test')) {
 ## File: server/src/types/index.ts
 
 ```ts
-// AEGIS Intel Domain Types
+// Revana Technologies Domain Types
 
 export type EntityType = 
   | 'COMPANY'
@@ -22085,7 +22085,7 @@ export interface AiInvestigationResponse {
   rawGrokResponse?: string;
 }
 
-// AEGIS R1 Moving Entity & Maritime Types
+// Revana Moving Entity & Maritime Types
 export interface MovingEntity {
   id: string; // e.g. SHIP_419001234
   type: 'ship' | 'aircraft' | 'truck' | 'train' | 'shipment' | 'vehicle';
@@ -22175,7 +22175,7 @@ import path from 'path';
 
 async function runVerification() {
   console.log('\n===============================================================');
-  console.log('  AEGIS INTEL // MULTI-DATABASE INTELLIGENCE VERIFICATION TEST');
+  console.log('  REVANA TECHNOLOGIES // MULTI-DATABASE INTELLIGENCE VERIFICATION TEST');
   console.log('===============================================================\n');
 
   // STEP 0: Reset unified database to prove zero hardcoded relationships from seedData

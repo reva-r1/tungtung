@@ -47,7 +47,7 @@ export class OSMNominatimProvider extends DataProvider {
     try {
       const { data, latency } = await this.secureFetch(url, {
         headers: {
-          'User-Agent': 'AegisIntel-WorldModel/2.0 (contact: ops@aegisintel.io)',
+          'User-Agent': 'Revana-WorldModel/2.0 (contact: ops@revana.io)',
         }
       }, 8000);
       this.setCached(cacheKey, data, this.metadata.rateLimit.cacheTtlSeconds);

@@ -8,7 +8,7 @@ export function seedDatabase(force: boolean = false) {
     return;
   }
 
-  console.log('⚡ Seeding AEGIS Intel with Karnataka-South Transit Intelligence dataset...');
+  console.log('⚡ Seeding Revana with Karnataka-South Transit Intelligence dataset...');
 
   // Clear existing records
   db.exec(`

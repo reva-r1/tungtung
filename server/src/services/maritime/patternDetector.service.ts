@@ -12,7 +12,7 @@ interface CorridorDefinition {
   thresholdPercent: number; // Alert threshold % deviation
 }
 
-// Key strategic maritime corridors monitored by AEGIS
+// Key strategic maritime corridors monitored by Revana
 const MONITORED_CORRIDORS: CorridorDefinition[] = [
   {
     id: 'CORRIDOR_MALACCA',
@@ -163,7 +163,7 @@ export class MaritimePatternDetector {
         ];
 
         // Overall Pattern Status
-        // AEGIS Rule: Never force into "supported" if evidence is insufficient -> "unresolved" / "weakly_supported"
+        // Revana Rule: Never force into "supported" if evidence is insufficient -> "unresolved" / "weakly_supported"
         const pattern: MaritimePattern = {
           pattern_id: patternId,
           type: 'traffic_concentration',
