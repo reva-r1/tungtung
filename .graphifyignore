@@ -1,0 +1,8 @@
+# graphify ignore patterns
+codebase.md
+gods-eye-view/
+.gev-cache/
+graphify-out/
+node_modules/
+dist/
+build/
