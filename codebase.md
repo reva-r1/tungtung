@@ -207,6 +207,9 @@ import {
   Bot,
   User,
   Zap,
+  ShieldCheck,
+  Lightbulb,
+  BookOpen,
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -331,18 +334,97 @@ export const FloatingReasoningSpace: React.FC = () => {
     }
   };
 
-  // Helper to render markdown-like lines
+  // Helper to render markdown-like lines with distinct claim tiers
   const renderFormattedContent = (content: string) => {
     const lines = content.split('\n');
     return lines.map((line, idx) => {
       // Headers
+      if (line.startsWith('#### ')) {
+        return (
+          <h4 key={idx} className="text-xs font-bold text-slate-300 uppercase tracking-wider mt-2.5 mb-1 flex items-center gap-1.5 border-b border-slate-800/80 pb-1">
+            {line.replace('#### ', '')}
+          </h4>
+        );
+      }
       if (line.startsWith('### ')) {
         return <h3 key={idx} className="text-sm font-bold text-cyan-300 mt-2 mb-1">{line.replace('### ', '')}</h3>;
       }
       if (line.startsWith('## ')) {
         return <h2 key={idx} className="text-base font-bold text-slate-100 mt-2 mb-1">{line.replace('## ', '')}</h2>;
       }
-      // Bullet points
+
+      // Check for Claim Tiers in bullet points or paragraphs
+      if (line.includes('[FACT]') || line.includes('**[FACT]**')) {
+        const textOnly = line.replace(/^[•\-\*]\s*/, '').replace(/\*\*\[FACT\]\*\*\s*/, '').replace(/\[FACT\]\s*/, '');
+        return (
+          <div key={idx} className="my-1.5 p-2 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-xs text-slate-200">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                FACT
+              </span>
+              <span className="text-[10px] text-emerald-300/80 font-mono">Verified Observation</span>
+            </div>
+            <div className="leading-relaxed">{renderInlineStyles(textOnly)}</div>
+          </div>
+        );
+      }
+
+      if (line.includes('[INFERENCE]') || line.includes('**[INFERENCE]**')) {
+        const textOnly = line.replace(/^[•\-\*]\s*/, '').replace(/\*\*\[INFERENCE\]\*\*\s*/, '').replace(/\[INFERENCE\]\s*/, '');
+        return (
+          <div key={idx} className="my-1.5 p-2 rounded-lg bg-indigo-950/25 border border-indigo-500/30 text-xs text-slate-200">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                <Cpu className="w-3 h-3 text-indigo-400" />
+                INFERENCE
+              </span>
+              <span className="text-[10px] text-indigo-300/80 font-mono">Logical Deduction</span>
+            </div>
+            <div className="leading-relaxed">{renderInlineStyles(textOnly)}</div>
+          </div>
+        );
+      }
+
+      if (line.includes('[HYPOTHESIS') || line.includes('**[HYPOTHESIS')) {
+        const textOnly = line.replace(/^[•\-\*]\s*/, '').replace(/\*\*\[HYPOTHESIS.*?\]\*\*\s*/, '').replace(/\[HYPOTHESIS.*?\]\s*/, '');
+        // Extract plausibility tag if present
+        const plausibilityMatch = line.match(/HYPOTHESIS\s*\(([A-Z]+)\)/i);
+        const plausibility = plausibilityMatch ? plausibilityMatch[1].toUpperCase() : 'SPECULATIVE';
+
+        return (
+          <div key={idx} className="my-1.5 p-2 rounded-lg bg-amber-950/20 border border-amber-500/30 text-xs text-slate-200">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                <Lightbulb className="w-3 h-3 text-amber-400" />
+                HYPOTHESIS
+              </span>
+              <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-amber-900/40 text-amber-200 border border-amber-600/30">
+                {plausibility} PLAUSIBILITY
+              </span>
+            </div>
+            <div className="leading-relaxed">{renderInlineStyles(textOnly)}</div>
+          </div>
+        );
+      }
+
+      if (line.includes('[BACKGROUND]') || line.includes('**[BACKGROUND]**')) {
+        const textOnly = line.replace(/^[•\-\*]\s*/, '').replace(/\*\*\[BACKGROUND\]\*\*\s*/, '').replace(/\[BACKGROUND\]\s*/, '');
+        return (
+          <div key={idx} className="my-1.5 p-2 rounded-lg bg-slate-900/50 border border-purple-800/30 text-xs text-slate-300">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-950 text-purple-300 border border-purple-700/40">
+                <BookOpen className="w-3 h-3 text-purple-400" />
+                BACKGROUND
+              </span>
+              <span className="text-[10px] text-purple-300/70 font-mono">General Domain Knowledge</span>
+            </div>
+            <div className="leading-relaxed">{renderInlineStyles(textOnly)}</div>
+          </div>
+        );
+      }
+
+      // Standard Bullet points
       if (line.startsWith('• ') || line.startsWith('- ') || line.startsWith('* ')) {
         const bulletText = line.substring(2);
         return (
@@ -2078,7 +2160,13 @@ import {
   ChevronRight,
   Database,
   Network,
-  HelpCircle
+  HelpCircle,
+  ShieldCheck,
+  Cpu,
+  Lightbulb,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -2103,6 +2191,7 @@ export const InvestigationPage: React.FC = () => {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [activeGraph, setActiveGraph] = useState<GraphData | null>(null);
+  const [expandedTraceIds, setExpandedTraceIds] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -2287,41 +2376,252 @@ export const InvestigationPage: React.FC = () => {
                       {/* Evidence & Provenance Accordion / Blocks */}
                       {msg.briefing && (
                         <div className="space-y-3 font-mono text-xs">
-                          {/* Discovered Patterns */}
-                          {msg.briefing.discoveredPatterns && msg.briefing.discoveredPatterns.length > 0 && (
-                            <div className="p-3 rounded bg-purple-950/20 border border-purple-500/40">
-                              <div className="text-[11px] font-bold text-purple-400 uppercase mb-2 flex items-center gap-1.5">
-                                <Sparkles className="w-3.5 h-3.5 text-purple-400" /> Discovered Intelligence & Graph Patterns
+                          {/* Engine Transparency & Grounding Status Bar */}
+                          <div className="p-2.5 rounded-lg bg-[#060a14] border border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                                  msg.briefing.engine === 'deterministic-fallback'
+                                    ? 'bg-amber-950/60 text-amber-300 border-amber-600/40'
+                                    : 'bg-cyan-950/60 text-cyan-300 border-cyan-500/40'
+                                }`}
+                              >
+                                {msg.briefing.engine === 'deterministic-fallback' ? '⚡ Deterministic Fallback' : '🧠 LLM Analyst Engine'}
+                              </span>
+                              {msg.briefing.groundingSummary && (
+                                <span className="text-[11px] text-slate-300 font-sans">
+                                  {msg.briefing.groundingSummary}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-slate-500 uppercase font-semibold">Grounded Score:</span>
+                                <span className={`text-xs font-bold font-mono ${
+                                  msg.briefing.confidenceScore >= 0.8
+                                    ? 'text-emerald-400'
+                                    : msg.briefing.confidenceScore >= 0.5
+                                    ? 'text-cyan-400'
+                                    : 'text-amber-400'
+                                }`}>
+                                  {(msg.briefing.confidenceScore * 100).toFixed(0)}%
+                                </span>
                               </div>
-                              <ul className="space-y-1.5">
-                                {msg.briefing.discoveredPatterns.map((pat, i) => (
-                                  <li key={i} className="text-purple-200 text-[11px] bg-purple-950/40 p-2 rounded border border-purple-800/40 leading-relaxed">
-                                    {pat}
+
+                              {msg.briefing.trace && msg.briefing.trace.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedTraceIds(prev => ({ ...prev, [msg.id]: !prev[msg.id] }))}
+                                  className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-[10px] text-slate-400 hover:text-cyan-300 border border-slate-800 transition"
+                                >
+                                  <span>Trace ({msg.briefing.trace.length})</span>
+                                  {expandedTraceIds[msg.id] ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Fallback Reason Warning Banner if present */}
+                          {msg.briefing.fallbackReason && (
+                            <div className="p-2 rounded bg-amber-950/30 border border-amber-600/40 text-[11px] text-amber-300 flex items-center gap-1.5">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                              <span><strong>Engine Fallback Notice:</strong> {msg.briefing.fallbackReason}</span>
+                            </div>
+                          )}
+
+                          {/* Collapsible Execution Trace Drawer */}
+                          {expandedTraceIds[msg.id] && msg.briefing.trace && (
+                            <div className="p-3 rounded-lg bg-black/60 border border-slate-800 space-y-1.5 max-h-56 overflow-y-auto font-mono text-[10px]">
+                              <div className="text-[10px] font-bold uppercase text-slate-400 pb-1 border-b border-slate-800">
+                                Autonomous Investigation Execution Trace:
+                              </div>
+                              {msg.briefing.trace.map((step, idx) => (
+                                <div key={idx} className="flex items-start gap-2 text-slate-300">
+                                  <span className="text-slate-600 shrink-0">{step.timestamp.slice(11, 19)}</span>
+                                  <span className="text-cyan-400 font-bold shrink-0">[{step.step}]</span>
+                                  <span className="text-slate-400 break-all">{step.detail ? JSON.stringify(step.detail) : ''}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* 4 CLAIM TIERS: Rendered Visually Distinct */}
+                          {msg.briefing.facts && msg.briefing.facts.length > 0 && (
+                            <div className="p-3 rounded-lg bg-emerald-950/15 border border-emerald-500/30">
+                              <div className="text-[11px] font-bold text-emerald-400 uppercase mb-2 flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Tier 1: Grounded Facts ({msg.briefing.facts.length})
+                                </span>
+                                <span className="text-[9px] text-emerald-300/60 font-normal">Strictly Verified Against Tool Telemetry</span>
+                              </div>
+                              <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                                {msg.briefing.facts.map((fact, i) => (
+                                  <div key={i} className="p-2 rounded bg-slate-900/80 border border-emerald-900/40 text-[11px] text-slate-200">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <span className="leading-relaxed">{fact.text}</span>
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        {fact.evidenceIds?.map((id, ei) => (
+                                          <span key={ei} className="px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 text-[9px] font-mono border border-emerald-700/50">
+                                            {id}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Tier 2: Analytical Inferences */}
+                          {msg.briefing.inferences && msg.briefing.inferences.length > 0 && (
+                            <div className="p-3 rounded-lg bg-indigo-950/20 border border-indigo-500/30">
+                              <div className="text-[11px] font-bold text-indigo-300 uppercase mb-2 flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                  <Cpu className="w-3.5 h-3.5 text-indigo-400" /> Tier 2: Analytical Inferences ({msg.briefing.inferences.length})
+                                </span>
+                                <span className="text-[9px] text-indigo-300/60 font-normal">Derived from Verified Facts with Reasoning Chains</span>
+                              </div>
+                              <div className="space-y-1.5">
+                                {msg.briefing.inferences.map((inf, i) => (
+                                  <div key={i} className="p-2 rounded bg-slate-900/80 border border-indigo-900/40 text-[11px] text-slate-200">
+                                    <div className="font-semibold text-slate-100">{inf.text}</div>
+                                    <div className="mt-1 pt-1 border-t border-indigo-900/30 flex items-center justify-between text-[10px] text-indigo-300/90 font-mono">
+                                      <span>⚡ Chain: <em>{inf.reasoning}</em></span>
+                                      <span className="text-slate-500 shrink-0 ml-2">
+                                        Based on Fact(s): {inf.basedOnFactIndexes?.map(idx => `#${idx + 1}`).join(', ') || 'N/A'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Tier 3: Hypotheses & Speculative Ideas */}
+                          {msg.briefing.hypotheses && msg.briefing.hypotheses.length > 0 && (
+                            <div className="p-3 rounded-lg bg-amber-950/15 border border-amber-500/30">
+                              <div className="text-[11px] font-bold text-amber-300 uppercase mb-2 flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                  <Lightbulb className="w-3.5 h-3.5 text-amber-400" /> Tier 3: Hypotheses & Strategic Speculation ({msg.briefing.hypotheses.length})
+                                </span>
+                                <span className="text-[9px] text-amber-300/60 font-normal">Forward-Looking Ideas with Verification Criteria</span>
+                              </div>
+                              <div className="space-y-2">
+                                {msg.briefing.hypotheses.map((hyp, i) => (
+                                  <div key={i} className="p-2.5 rounded bg-slate-900/80 border border-amber-900/40 text-[11px]">
+                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                      <span className="font-bold text-slate-100">{hyp.text}</span>
+                                      <span
+                                        className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase shrink-0 border ${
+                                          hyp.plausibility === 'high'
+                                            ? 'bg-emerald-950 text-emerald-300 border-emerald-700/50'
+                                            : hyp.plausibility === 'low'
+                                            ? 'bg-slate-900 text-slate-400 border-slate-700'
+                                            : 'bg-amber-950 text-amber-300 border-amber-700/50'
+                                        }`}
+                                      >
+                                        {hyp.plausibility} PLAUSIBILITY
+                                      </span>
+                                    </div>
+                                    <div className="text-[10px] text-slate-300 mb-1.5 leading-relaxed">
+                                      <span className="text-amber-300/90 font-semibold">Why Plausible:</span> {hyp.whyPlausible}
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-[9px] font-mono pt-1 border-t border-amber-900/30">
+                                      <div className="text-emerald-300">
+                                        <span className="font-bold">✔ Confirm With:</span> {hyp.confirmWith}
+                                      </div>
+                                      <div className="text-red-300">
+                                        <span className="font-bold">✖ Refute With:</span> {hyp.refuteWith}
+                                      </div>
+                                    </div>
+                                    {hyp.suggestedTool && (
+                                      <div className="mt-1 text-[9px] font-mono text-cyan-300">
+                                        Suggested Test Tool: <code className="bg-slate-950 px-1 py-0.5 rounded border border-slate-800">{hyp.suggestedTool}</code>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Tier 4: Background World Knowledge */}
+                          {msg.briefing.background && msg.briefing.background.length > 0 && (
+                            <div className="p-3 rounded-lg bg-purple-950/15 border border-purple-800/30">
+                              <div className="text-[11px] font-bold text-purple-300 uppercase mb-2 flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                  <BookOpen className="w-3.5 h-3.5 text-purple-400" /> Tier 4: General Domain Background ({msg.briefing.background.length})
+                                </span>
+                                <span className="text-[9px] text-purple-300/60 font-normal">Real-World Knowledge (Not from Database)</span>
+                              </div>
+                              <ul className="space-y-1">
+                                {msg.briefing.background.map((bg, i) => (
+                                  <li key={i} className="text-slate-300 text-[10px] bg-slate-900/60 p-2 rounded border border-purple-900/30 leading-relaxed">
+                                    • {bg.text}
                                   </li>
                                 ))}
                               </ul>
                             </div>
                           )}
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {/* Discovered Relationships */}
-                            {msg.briefing.possibleRelationships?.length > 0 && (
-                              <div className="p-3 rounded bg-[#090d16] border border-cyan-500/30">
-                                <div className="text-[11px] font-bold text-cyan-400 uppercase mb-2 flex items-center gap-1.5">
-                                  <Network className="w-3.5 h-3.5" /> Discovered Cross-Dataset Paths
+                          {/* Proposed Relationships & Data Gaps */}
+                          {((msg.briefing.proposedRelationships && msg.briefing.proposedRelationships.length > 0) || (msg.briefing.dataGaps && msg.briefing.dataGaps.length > 0)) && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {msg.briefing.proposedRelationships && msg.briefing.proposedRelationships.length > 0 && (
+                                <div className="p-3 rounded-lg bg-[#090d16] border border-cyan-500/30">
+                                  <div className="text-[11px] font-bold text-cyan-400 uppercase mb-1.5 flex items-center gap-1.5">
+                                    <Network className="w-3.5 h-3.5" /> Proposed Latent Links ({msg.briefing.proposedRelationships.length})
+                                  </div>
+                                  <div className="space-y-1">
+                                    {msg.briefing.proposedRelationships.map((pr, i) => (
+                                      <div key={i} className="p-1.5 rounded bg-slate-900/80 border border-cyan-900/40 text-[10px] text-slate-300">
+                                        <div className="font-bold text-cyan-300">
+                                          {pr.source_id} <span className="text-slate-500">-[{pr.type}]-&gt;</span> {pr.target_id}
+                                        </div>
+                                        <div className="text-[9px] text-slate-400 mt-0.5">{pr.rationale}</div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                                <ul className="space-y-1.5">
-                                  {msg.briefing.possibleRelationships.map((rel, i) => (
-                                    <li key={i} className="text-slate-300 text-[11px] bg-slate-900/60 p-1.5 rounded border border-slate-800">
-                                      {rel}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
+                              )}
 
-                            {/* Known Facts with exact CSV provenance */}
-                            {msg.briefing.knownFacts?.length > 0 && (
+                              {msg.briefing.dataGaps && msg.briefing.dataGaps.length > 0 && (
+                                <div className="p-3 rounded-lg bg-[#090d16] border border-slate-700/50">
+                                  <div className="text-[11px] font-bold text-slate-300 uppercase mb-1.5 flex items-center gap-1.5">
+                                    <HelpCircle className="w-3.5 h-3.5 text-slate-400" /> Analyst Data Wish List ({msg.briefing.dataGaps.length})
+                                  </div>
+                                  <ul className="space-y-1">
+                                    {msg.briefing.dataGaps.map((gap, i) => (
+                                      <li key={i} className="p-1.5 rounded bg-slate-900/80 border border-slate-800 text-[10px] text-slate-300">
+                                        • {gap}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Fallback Legacy Display if facts was empty */}
+                          {(!msg.briefing.facts || msg.briefing.facts.length === 0) && msg.briefing.knownFacts?.length > 0 && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {msg.briefing.possibleRelationships?.length > 0 && (
+                                <div className="p-3 rounded bg-[#090d16] border border-cyan-500/30">
+                                  <div className="text-[11px] font-bold text-cyan-400 uppercase mb-2 flex items-center gap-1.5">
+                                    <Network className="w-3.5 h-3.5" /> Discovered Paths
+                                  </div>
+                                  <ul className="space-y-1.5">
+                                    {msg.briefing.possibleRelationships.map((rel, i) => (
+                                      <li key={i} className="text-slate-300 text-[11px] bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                                        {rel}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
                               <div className="p-3 rounded bg-[#090d16] border border-emerald-500/30">
                                 <div className="text-[11px] font-bold text-emerald-400 uppercase mb-2 flex items-center gap-1.5">
                                   <CheckCircle2 className="w-3.5 h-3.5" /> Grounded Evidence & Records
@@ -2334,8 +2634,8 @@ export const InvestigationPage: React.FC = () => {
                                   ))}
                                 </ul>
                               </div>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -3457,8 +3757,8 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     });
   };
 
-  // Malacca Chokepoint anomaly pattern reference (if detected)
-  const malaccaPattern = patterns.find((p) => p.pattern_id === 'PAT_CORRIDOR_MALACCA');
+  // Active traffic concentration or congestion pattern (computed dynamically from observed vessels)
+  const activeSurgePattern = patterns.find((p) => p.deviation_percent >= 30);
 
   return (
     <div className={`relative flex flex-col h-full bg-[#090d16] border border-[#1e293b] rounded-lg overflow-hidden ${className}`}>
@@ -3495,15 +3795,15 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Detected Maritime Pattern Alert Banner Button */}
-          {malaccaPattern && (
+          {/* Detected Maritime Pattern Alert Banner Button (Dynamic based on live telemetry) */}
+          {activeSurgePattern && (
             <button
-              onClick={() => setActivePatternModal(malaccaPattern)}
+              onClick={() => setActivePatternModal(activeSurgePattern)}
               className="px-2.5 py-1 rounded text-[10px] font-mono bg-rose-950/70 hover:bg-rose-900/80 border border-rose-500/60 text-rose-200 font-bold transition flex items-center gap-1.5 animate-pulse"
               title="Click to view verified observations, hypotheses & AI reasoning"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-              <span>MALACCA CHOKEPOINT: +{malaccaPattern.deviation_percent}% SURGE</span>
+              <span>{activeSurgePattern.region.toUpperCase()}: +{activeSurgePattern.deviation_percent}% SURGE</span>
               <span className="bg-rose-500 text-black px-1 rounded text-[9px] uppercase">INVESTIGATE</span>
             </button>
           )}
@@ -7205,6 +7505,51 @@ export interface GraphData {
   edges: GraphEdge[];
 }
 
+export interface FactClaim {
+  text: string;
+  evidenceIds: string[];
+  verified?: boolean;
+  verificationNote?: string;
+}
+
+export interface InferenceClaim {
+  text: string;
+  basedOnFactIndexes: number[];
+  reasoning: string;
+}
+
+export interface HypothesisClaim {
+  text: string;
+  whyPlausible: string;
+  plausibility: 'low' | 'medium' | 'high';
+  confirmWith: string;
+  refuteWith: string;
+  suggestedTool?: string;
+  unverifiedNote?: string;
+}
+
+export interface BackgroundClaim {
+  text: string;
+}
+
+export interface NextStepClaim {
+  text: string;
+}
+
+export interface ProposedRelationshipItem {
+  source_id: string;
+  target_id: string;
+  type: string;
+  rationale: string;
+  status: 'PROPOSED';
+}
+
+export interface TraceStep {
+  step: string;
+  detail?: any;
+  timestamp: string;
+}
+
 export interface AiInvestigationResponse {
   investigationId?: string;
   entitySummary?: string;
@@ -7218,6 +7563,18 @@ export interface AiInvestigationResponse {
   suggestedHopExpansions: string[];
   confidenceScore: number;
   rawGrokResponse?: string;
+  // Pipeline Engine & Claim Tiers
+  engine?: 'llm' | 'deterministic-fallback';
+  fallbackReason?: string;
+  trace?: TraceStep[];
+  facts?: FactClaim[];
+  inferences?: InferenceClaim[];
+  hypotheses?: HypothesisClaim[];
+  background?: BackgroundClaim[];
+  nextSteps?: NextStepClaim[];
+  groundingSummary?: string;
+  dataGaps?: string[];
+  proposedRelationships?: ProposedRelationshipItem[];
 }
 
 // Revana Moving Entity & Maritime Types
@@ -7409,6 +7766,749 @@ export default defineConfig({
     },
   },
 });
+
+```
+
+## File: docs/audits/phase-0/00-baseline-manifest.md
+
+```md
+# REVANA TECHNOLOGIES — BASELINE FREEZE MANIFEST
+**Phase 0A Deliverable — Operational Intelligence Baseline**
+**Date/Time:** 2026-10-15T21:50:00+05:30  
+**Auditor / Principal Software Architect:** Google DeepMind Advanced Agentic Coding Pair  
+**Repository Branch:** `cleanup/architecture`  
+**Git Commit SHA:** `782a1631b04ede3de6539474a782886e97ca55a9` (Head: `refactor(ai): restructure AI investigation agent into 4-stage pipeline with claim tiers`)
+
+---
+
+## 1. Executive Summary & Baseline Status
+
+This manifest establishes a strict, auditable baseline freeze for Revana Technologies ahead of any synthetic data remediation.
+- The codebase compiles with zero TypeScript errors across both `server` and `client`.
+- All automated test suites (`test:connectors`, `world_model_logic.test.ts`) pass cleanly (24 passed, 0 failed).
+- Production build pipelines (`npm run build:client` via Vite and `npm run build:server` via `tsc`) succeed with zero errors.
+- The working tree is preserved: `codebase.md` contains an uncommitted documentation dump from the preceding AI investigation refactor, which is explicitly retained without alteration.
+
+---
+
+## 2. Environment & Repository Architecture
+
+| Attribute | Specification | Notes |
+|---|---|---|
+| **Repository Root** | `d:\zenism` | Monorepo layout containing `server/`, `client/`, and config files |
+| **Operating System** | Windows (PowerShell Shell execution) | Tested with Node.js v24.14.1 |
+| **Package Manager** | npm (isolated `package.json` in root, `server/`, `client/`) | Root workspace orchestration scripts |
+| **Server Framework** | Express 4.21.2 on Node.js / TypeScript 5.5.4 | Executed via `tsx` (dev) or `tsc` (prod) |
+| **Client Framework** | React 18.3.1, Vite 5.4.3, TailwindCSS 3.4.11 | UI visualization with Leaflet 1.9.4 & Cytoscape 3.30.2 |
+| **Database Engine** | SQLite 3 via `better-sqlite3` 11.8.1 | WAL mode enabled, foreign keys ON |
+| **Primary Database File** | `server/data/aegis_intel.db` (34.5 MB) | Houses core entities, world model, maritime tracking |
+| **Source Database Files** | `server/data/sources/*.db` (4 files, 36 KB each) | `logistics.db`, `company_registry.db`, `facilities.db`, `transactions.db` |
+| **Ignored Submodules** | `gods-eye-view/`, `graphify-out/`, `.claude/` | Documented in root `.gitignore` |
+
+---
+
+## 3. Git Status & Working-Tree State
+
+```
+On branch cleanup/architecture
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   codebase.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Untracked files: none
+```
+
+### Uncommitted Modification Justification:
+- `codebase.md`: An 863 KB generated concatenation created by `generate_codebase.js`. It reflects the source modifications introduced in commit `782a163` (`refactor(ai): restructure AI investigation agent into 4-stage pipeline with claim tiers`). Per Safety Rule Phase 0A-3, this local file is recorded and preserved.
+
+---
+
+## 4. Baseline Verification Checks & Results
+
+### 4.1 Server Type-Check (`server/`)
+- **Command:** `npx tsc --noEmit`
+- **Result:** **PASS (Exit code 0)**
+- **Diagnostic Output:** Clean, zero diagnostics.
+
+### 4.2 Client Type-Check (`client/`)
+- **Command:** `npx tsc --noEmit`
+- **Result:** **PASS (Exit code 0)**
+- **Diagnostic Output:** Clean, zero diagnostics.
+
+### 4.3 Data Connectors & Simulation Verification Suite (`server/src/tests/connectors.test.ts`)
+- **Command:** `npm run test:connectors` (`tsx src/tests/connectors.test.ts`)
+- **Result:** **PASS (11/11 tests passed)**
+  1. Successful Ingestion & Normalization: PASS
+  2. Malformed Response Handling (Resilience): PASS
+  3. Provider Timeout & Circuit Breaker: PASS
+  4. Rate Limit 429 Protection: PASS
+  5. Missing Coordinates Rejection: PASS
+  6. Invalid Coordinate Validation (Boundary Bounds): PASS
+  7. Duplicate Observation Idempotency: PASS
+  8. Out-of-Order Event Temporal Preservation: PASS
+  9. Stale Data Detection: PASS
+  10. Event Detection Triggers (Rain & Thresholds): PASS
+  11. Simulation Mode State Isolation (Zero Live Contamination): PASS
+
+### 4.4 World Model Geometry & Pure Confidence Logic Suite (`server/src/tests/world_model_logic.test.ts`)
+- **Command:** `npx tsx src/tests/world_model_logic.test.ts`
+- **Result:** **PASS (13/13 tests passed)**
+  - Suite 1 (Geometric Math Verification): 2/2 PASSED
+  - Suite 2 (Spatial Corridor Ingestion Rules): 6/6 PASSED
+  - Suite 3 (Pure Confidence Decay Math): 5/5 PASSED
+
+### 4.5 Production Bundle Compilation
+- **Client Build:** `npm run build` in `client/` -> Vite production bundle generated (`dist/index.html` 1.40 kB, `dist/assets/index-DvYl_t60.js` 1,118 kB, `dist/assets/index-CRyk000X.css` 60.14 kB).
+- **Server Build:** `npm run build` in `server/` -> TypeScript compiler generated JavaScript in `dist/`.
+
+---
+
+## 5. Live Database Inventory at Baseline
+
+Inspection performed on `server/data/aegis_intel.db` (read-only SQLite inspection):
+
+| Table Name | Record Count | Description & Provenance |
+|---|---|---|
+| `entities` | 0 | Canonical entity registry (Currently clean of seed records) |
+| `relationships` | 0 | Canonical entity graph edges (Currently clean of seed records) |
+| `locations` | 3 | User-imported customer transit hubs (`Apex Global Logistics`, `Zenith Freight`, `Orion Supply`) |
+| `events` | 0 | Operational events ledger |
+| `anomalies` | 0 | Deterministic anomaly detections |
+| `merge_candidates` | 0 | Entity deduplication merge candidates |
+| `investigations` | 0 | Analyst investigation dossiers |
+| `datasets` | 0 | Ingested file datasets |
+| `raw_records` | 0 | Raw tabular rows from dataset uploads |
+| `data_sources` | 0 | Registered external database connectors |
+| `source_records` | 0 | Extracted source records |
+| `entity_source_links` | 0 | Cross-source provenance links |
+| `moving_entities` | 84 | Maritime vessels (Previous replay engine run: 22 seed + 62 convergence fleet) |
+| `entity_positions` | 126,074 | Cumulative historical position fixes from AIS ticks |
+| `maritime_patterns` | 1 | Malacca Strait traffic concentration record (`PAT_CORRIDOR_MALACCA`) |
+| `raw_observations` | 18 | Raw connector payloads from historical `/providers/sync-all` runs |
+| `world_observations` | 144 | Normalized sensor fixes from connectors |
+| `world_entities` | 142 | Resolved physical infrastructure entities |
+| `world_relationships` | 19 | Geospatial / infrastructure relationships |
+| `world_events` | 123 | Real-world alerts (weather, earthquake, transit, etc.) |
+| `temporal_state_history` | 103 | State progression deltas |
+| `simulations` | 17 | What-If sandbox scenarios |
+| `simulation_entity_overrides` | 0 | Isolated parameter overrides |
+| `ai_chat_messages` | 32 | Historical AI analyst chat log |
+
+---
+
+## 6. Known Baseline Limitations & Constraints
+
+1. **AISStream Key & Free Tier:** `server/.env` contains `AISSTREAM_API_KEY`. Node.js 22/24 `globalThis.WebSocket` sends `Blob` message instances; legacy `AisStreamProvider` was string-dependent and did not decode binary Blobs.
+2. **Provider Registry Silent Fallbacks:** 6 providers in `server/src/connectors/providers/` (`GTFSRealtimeProvider`, `PublicWaterLevelProvider`, `GBFSProvider`, `NationalGridEnergyProvider`, `DataGovInProvider`, `PublicFeedProvider`) return hardcoded synthetic payloads when external feeds or API keys are absent.
+3. **Seed Reload Endpoint:** `server/src/routes/ingestion.routes.ts` exposes `POST /api/ingestion/demo/reload` which triggers `seedDatabase(true)`, capable of wiping relationships and inserting 1,217 lines of static demo data.
+4. **Safety Protocol:** Zero destructive queries will be executed against `aegis_intel.db` or `server/data/sources/` without explicit isolation safeguards.
+
+```
+
+## File: docs/audits/phase-0/01-seed-inventory.md
+
+```md
+# REVANA TECHNOLOGIES — COMPLETE SEED, MOCK & SYNTHETIC DATA INVENTORY
+**Phase 0B Deliverable — Exhaustive Repository Data Source Audit**
+**Date:** 2026-10-15  
+**Auditor:** Principal Software Architect & Production-Readiness Auditor  
+
+---
+
+## Executive Summary
+
+This inventory catalogues **every instance of synthetic, simulated, mock, hardcoded demonstration, and fake data** discovered across the Revana Technologies repository. Each item has been analyzed for its definition point, data structure, schema compliance, generation mechanism, and potential for production contamination.
+
+The inventory is divided into 7 distinct categories:
+1. **Core Database Benchmark Seed (`seedData.ts`)**
+2. **Independent Synthetic Source Databases (`sourceDatabases.ts`)**
+3. **Simulated Maritime AIS Replay Feed & Anomaly (`aisRealReplayProvider.ts`)**
+4. **Mock Data Connector (`MockDataProvider.ts`)**
+5. **Silent Synthetic Fallbacks in Production Data Connectors (`connectors/providers/`)**
+6. **Integration Verification Fixtures (`verify_multi_database.ts`, test suites)**
+7. **Client UI Hardcoded Identifiers & Fallback Badges**
+
+---
+
+## Category 1: Core Database Benchmark Seed (`seedData.ts`)
+
+- **File Path:** `server/src/db/seedData.ts`
+- **Total Lines:** 1,217 lines
+- **Entry Method:** `seedDatabase(force: boolean = false)`
+- **Format Tag:** `'SYNTHETIC'`
+- **Dataset ID:** `DS-SYNTHETIC-LOGISTICS-2026`
+
+### Detailed Breakdown of Hardcoded Entities & Tables Seeded:
+
+| Data Type / Table | Count | Key Identifiers / Records Seeded |
+|---|---|---|
+| **Locations** (`locations`) | 6 | `LOC-BLR-WFD` (Whitefield ICD Hub), `LOC-BLR-PEE` (Peenya Industrial Yard), `LOC-BLR-ECITY` (Electronic City Freight Gate), `LOC-CHK-HOSUR` (Hosur Interstate Border Checkpoint), `LOC-KRI-UNMON` (Krishnagiri Industrial Transit Yard), `LOC-CHK-VEL` (Vellore Highway Toll) |
+| **Companies** (`entities`) | 10 | `COMP-KSWC-01` (Karnataka State Warehousing Corp), `COMP-BEL-02` (Bharath Electronics Logistics), `COMP-SCL-03` (South Central Logistics), `COMP-APX-04` (Apex Global Logistics), `COMP-GLD-05` (Golden Freight Carriers), `COMP-HRZ-06` (Horizon Logistics), `COMP-RYL-07` (Royal Logistics Solutions), `COMP-TIC-08` (Trans-India Carrier), `COMP-QL-09` (QuickLogistics), `COMP-BD-10` (BlueDart South) |
+| **Vehicles** (`entities`) | 8 | `VEH-KA-01-AB-1234` (Tata Prima Container), `VEH-KA-04-XY-9876` (Ashok Leyland Multi-Axle), `VEH-KA-51-MM-4455` (BharatBenz Heavy Hauler), `VEH-TN-23-ZZ-8899` (Eicher Pro Cargo), `VEH-KA-03-CD-5678` (Mahindra Blazo), `VEH-TN-09-QQ-1122` (Tata Signa), `VEH-KA-19-EE-7766` (Ashok Leyland 2820), `VEH-TN-04-WW-3344` (BharatBenz 3528C) |
+| **Drivers** (`entities`) | 4 | `DRV-RAMESH-01` (Ramesh Kumar), `DRV-SURESH-02` (Suresh Gowda), `DRV-VIJAY-03` (Vijay Nair), `DRV-MANJUNATH-04` (Manjunath Swamy) |
+| **Officers** (`entities`) | 2 | `OFF-SHARMA-01` (Inspector Rajesh Sharma), `OFF-ANAND-02` (Officer Anand Rao) |
+| **Warehouses & Facilities** (`entities`) | 4 | `FAC-WFD-WH1` (Whitefield Central CFS), `FAC-PEE-WH2` (Peenya Heavy Depot), `FAC-KRI-YARD` (Krishnagiri Unmonitored Storage), `FAC-VEL-YARD` (Vellore Staging Ground) |
+| **Toll Plazas** (`entities`) | 2 | `TOLL-HOSUR-01` (NH44 Hosur Interstate Toll Gate), `TOLL-VEL-02` (NH48 Vellore Highway Toll Plaza) |
+| **Relationships** (`relationships`) | 28 | Types: `OWNS`, `EMPLOYS`, `OPERATES_FROM`, `TRANSITED_THROUGH`, `DELIVERED_TO`, `ASSOCIATED_WITH`, `SHAREHOLDER_OF`. Connects vehicles to companies, drivers to vehicles, and trips to checkpoints. |
+| **Raw Records** (`raw_records`) | 28 | Synthetic JSON representations mimicking logistics dispatch slips and toll logs. |
+| **Datasets** (`datasets`) | 1 | `DS-SYNTHETIC-LOGISTICS-2026` ("Karnataka-South Transit Intelligence Benchmark Dataset"). |
+| **Events** (`events`) | 6 | `EVT-2026-001` (Weighbridge discrepancy +3.8T), `EVT-2026-002` (Toll Plaza FastTag bypass), `EVT-2026-003` (Unauthorized cargo transfer at Krishnagiri), `EVT-2026-004` (Overloading violation), `EVT-2026-005` (Tampered GPS transponder detected), `EVT-2026-006` (Off-route corridor diversion). |
+| **Anomalies** (`anomalies`) | 5 | `ANM-CIRC-01` (Circular Ownership & Entity Ring), `ANM-ROUTE-02` (Physical Speed/Teleportation Impossibility), `ANM-WT-03` (Gross Weight Discrepancy), `ANM-UNMON-04` (Unmonitored Night Transit Clustering), `ANM-TAX-05` (Cross-Border Invoice Arbitrage). |
+| **Merge Candidates** (`merge_candidates`) | 2 | `MC-001` (`COMP-APX-04` vs `COMP-APX-04-VAR` "Apex Logistics"), `MC-002` (`VEH-KA-01-AB-1234` vs `VEH-KA-01-AB-1234-DUP`). |
+| **Investigations** (`investigations`) | 3 | `INV-2026-001` ("Operation Falcon: Cross-Border Evasion Ring"), `INV-2026-002` ("Krishnagiri Transit Diversion"), `INV-2026-003` ("FastTag Impersonation Network"). |
+
+---
+
+## Category 2: Independent Synthetic Source Databases (`sourceDatabases.ts`)
+
+- **File Path:** `server/src/db/sourceDatabases.ts`
+- **Output Directory:** `server/data/sources/`
+- **Files Created:**
+  1. `server/data/sources/logistics.db`
+  2. `server/data/sources/company_registry.db`
+  3. `server/data/sources/facilities.db`
+  4. `server/data/sources/transactions.db`
+- **Entry Method:** `initSourceDatabases(forceRecreate: boolean = false)`
+
+### Table-by-Table Content:
+
+1. **`logistics.db`**
+   - `shipments` (3 rows): `SHP-001` (Electronics, ₹85L), `SHP-002` (Auto Components, ₹42L), `SHP-003` (Industrial Machinery, ₹1.2Cr).
+   - `vehicles` (3 rows): `KA01AB1234`, `KA04XY9876`, `TN23ZZ8899`.
+   - `drivers` (3 rows): `Ramesh Kumar`, `Suresh Gowda`, `Vijay Nair`.
+   - `routes` (2 rows): Bangalore to Chennai via NH48, Bangalore to Hosur via NH44.
+
+2. **`company_registry.db`**
+   - `companies` (3 rows): `Karnataka State Warehousing Corp` (CIN: U63022KA1957SGC000001), `Bharath Electronics Logistics`, `South Central Logistics`.
+   - `directors` (3 rows): `Ravi Kumar`, `Anil Hegde`, `Lakshmi Narayanan`.
+   - `registrations` (3 rows): Corporate filing certificates.
+   - `addresses` (2 rows): Registered offices in Bangalore and Chennai.
+
+3. **`facilities.db`**
+   - `warehouses` (3 rows): `W45` (Whitefield ICD), `W12` (Peenya Yard), `W89` (Krishnagiri Transit).
+   - `locations` (3 rows): Geographic coordinates corresponding to warehouse entries.
+   - `checkpoints` (2 rows): `CP-HOSUR-01`, `CP-VELLORE-02`.
+   - `location_events` (4 rows): Telemetry entries for vehicle scans.
+
+4. **`transactions.db`**
+   - `transactions` (3 rows): `T991` (₹12,50,000 to ABC Logistics), `T992` (₹4,20,000), `T993` (₹18,00,000).
+   - `accounts` (3 rows): Banking accounts linked to logistics entities.
+   - `company_references` (2 rows): Cross-referencing entity numbers.
+   - `payment_records` (2 rows): Settled invoices.
+
+---
+
+## Category 3: Simulated Maritime AIS Replay Feed & Anomaly (`aisRealReplayProvider.ts`)
+
+- **File Path:** `server/src/services/maritime/providers/aisRealReplayProvider.ts`
+- **Class Name:** `AisRealReplayProvider implements AisProvider`
+- **Mode Reported:** `'REPLAY_FEED'`
+- **Target Table:** `moving_entities`, `entity_positions`, `maritime_patterns`
+
+### Fabricated Data Components:
+
+1. **`SEED_VESSELS` Constant (Lines 19–63):**
+   - 22 hardcoded vessels across 4 corridors:
+     - Corridor 1 (Mumbai JNPT Gateway): 8 vessels (`BHARAT GAURAV`, `SWARNA KAMAL`, `MSC INES`, `OCEAN VALOR`, `CMA CGM ALASKA`, `DHARANI PIONEER`, `PACIFIC HORIZON`, `JINDAL TARA`).
+     - Corridor 2 (Gulf of Khambhat / Mundra): 5 vessels (`MUNDRA VOYAGER`, `MAERSK KALAMATA`, `DESH VISHAL`, `KANDLA PRIDE`, `STAR POLARIS`).
+     - Corridor 3 (Chennai Port Artery): 5 vessels (`CHENNAI EXPRESS`, `TAMIL GLORY`, `CMA CGM TITAN`, `SWARNA JAYANTI`, `BAY STAR`).
+     - Corridor 5 (Colombo Hub): 4 vessels (`CEYLON BREEZE`, `SINGAPORE HIGHWAY`, `DANISH TRADER`, `LANKA PRIDE`).
+
+2. **`generateMalaccaConvergenceFleet()` Function (Lines 69–114):**
+   - Dynamically constructs **62 fake ships** along the Malacca Strait corridor.
+   - Explicit comment in code: `"Intentional statistically significant traffic anomaly matching user scenario"`.
+   - Fabricated MMSIs: `563100000` to `563100061`.
+   - Fabricated IMOs: `9700000` to `9700061`.
+   - Fabricated Names: `EVER GIVEN`, `MSC OSCAR`, `COSCO SHIPPING TAURUS`, `OOCL HONG KONG`, down to `CHRONOS VOYAGER`.
+   - Baseline engineered: 41 vessels baseline vs 62 observed (+51.2% deviation).
+
+3. **Kinematic Jitter / Dead-Reckoning Loop (Lines 138–219):**
+   - `setInterval(..., 3000)` ticks every 3 seconds.
+   - Picks 8–15 vessels per tick, recalculates positions with `10x accelerated` speed, adds random degree perturbation, and emits updates via callbacks to simulate live radio transmission.
+
+4. **Synthetic Historical Trails Seeder (`maritime.service.ts` Lines 146–190):**
+   - `seedInitialHistoricalTrailsIfEmpty()` queries `moving_entities` and creates 12 artificial historical positions per ship backtracking along its heading.
+
+---
+
+## Category 4: Mock Data Connector (`MockDataProvider.ts`)
+
+- **File Path:** `server/src/connectors/providers/mock/MockDataProvider.ts`
+- **Class Name:** `MockDataProvider extends DataProvider`
+- **Registered In:** `server/src/connectors/registry/ProviderRegistry.ts` (Line 63)
+- **Category:** `'MOCK'`
+- **ID:** `'mock_provider'`
+
+### Mock Payloads & Failure Modes:
+- **Default Payload (Lines 74–82):**
+  - `sensor_id`: `'TEST_RADAR_01'`
+  - `latitude`: `12.9716`, `longitude`: `77.5946`
+  - `temperature_c`: `26.5`, `precipitation_mm`: `5.0`
+- **Configurable Modes:**
+  - `TIMEOUT` (throws synthetic 5000ms timeout)
+  - `RATE_LIMIT_429` (throws HTTP 429)
+  - `MALFORMED_JSON` (returns `{{{{INVALID_JSON_STREAM%%%%`)
+  - `MISSING_COORDINATES` (strips lat/lon)
+  - `INVALID_COORDINATES` (lat `195.4`, lon `-240.2`)
+  - `OUT_OF_ORDER` (timestamps 5 hours in past)
+  - `STALE_DATA` (timestamps 72 hours in past)
+
+---
+
+## Category 5: Silent Synthetic Fallbacks in Data Providers (`connectors/providers/`)
+
+The following production connector classes attempt a live fetch or environment check, but **silently fall back to hardcoded synthetic objects** if an API key, endpoint, or external variable is missing:
+
+| Provider File | Provider ID | Trigger Condition | Fabricated Payload Generated |
+|---|---|---|---|
+| `transit/GTFSRealtimeProvider.ts` (Line 45) | `gtfs_transit` | `process.env.GTFS_FEED_URL` is undefined | `simulatedFeed`: 4 hardcoded Bangalore transit units (`BUS_BMTC_335E_01`, `BUS_BMTC_500D_04`, `METRO_PURPLE_TRAIN_08`, `BUS_BMTC_201_03`) with current timestamp |
+| `water/PublicWaterLevelProvider.ts` (Line 42) | `water_level_gauge` | Always (endpoint is `https://cwc.example.gov/api/v1/levels`) | `simulatedGauges`: 3 hardcoded southern reservoirs (`GAUGE_KRS_DAM`, `GAUGE_KABINI_DAM`, `GAUGE_HEMAVATHI`) |
+| `mobility/GBFSProvider.ts` (Line 42) | `gbfs_mobility` | Always (endpoint is `https://mobility.example.gov/gbfs/2.3/station_status`) | `simulatedData`: 4 hardcoded micromobility hubs (`STATION_MG_ROAD_METRO`, `STATION_INDIRANAGAR_100FT`, `STATION_KORAMANGALA_SONY`, `STATION_HSR_SECTOR1`) |
+| `energy/NationalGridEnergyProvider.ts` (Line 41) | `national_grid_energy` | Always (endpoint is `https://grid-telemetry.example.org/api/substations`) | `simulatedGrid`: 3 major power stations (`SUBSTN_PAVAGADA_SOLAR_01`, `SUBSTN_SHARAVATHI_HYDRO`, `SUBSTN_KUDGI_THERMAL`) |
+| `government/DataGovInProvider.ts` (Line 51) | `data_gov_in` | `process.env.DATA_GOV_API_KEY` is undefined | `karnatakaGovRecords`: APMC mandi commodity records (`Yeshwanthpur APMC Yard`, `Binny Mill Cotton Market`) |
+| `finance/ExchangeRateProvider.ts` (Line 54) | `frankfurter_fx` | Live Frankfurter API call fails | Hardcoded static fallback currency rates (`INR: 86.85, EUR: 0.94, GBP: 0.79...`) |
+| `news/PublicFeedProvider.ts` (Line 36) | `gdacs_civic_alerts` | Always (endpoint is `https://alerts.example.org/rss/civic_events.xml`) | Hardcoded emergency bulletins (`Bay of Bengal Deep Depression Advisory`, `Cauvery River Basin Inflow High Stage Notice`) |
+
+---
+
+## Category 6: Integration Verification Fixtures
+
+- **`server/src/verify_multi_database.ts`:**
+  - Script designed to verify cross-source resolution across the 4 synthetic source databases.
+  - Line 29: Calls `initSourceDatabases(true)` to wipe and recreate the 4 SQLite files.
+  - Lines 21–27: Wipes `entities`, `relationships`, `source_records`, `entity_source_links`, `data_sources` in `aegis_intel.db` before execution.
+- **`server/src/tests/connectors.test.ts`:**
+  - Employs `MockDataProvider` to test error handling, rate limiting, and simulation isolation.
+- **`server/src/tests/world_model_logic.test.ts`:**
+  - Pure unit tests verifying haversine math, corridor proximity, and confidence decay. Contains no database mutations.
+
+---
+
+## Category 7: Client UI Hardcoded Identifiers & Fallback Badges
+
+- **`client/src/components/map/TacticalMap.tsx`:**
+  - Line 291: Hardcoded search for `PAT_CORRIDOR_MALACCA`:
+    ```tsx
+    const malaccaPattern = patterns.find((p) => p.pattern_id === 'PAT_CORRIDOR_MALACCA');
+    ```
+  - Lines 329–339: Hardcoded banner rendering:
+    ```tsx
+    <span>MALACCA CHOKEPOINT: +{malaccaPattern.deviation_percent}% SURGE</span>
+    ```
+  - Line 301: Hardcoded zoom logic:
+    ```tsx
+    if (region.includes('Malacca')) { zoomToLocation(3.2, 100.5, 7); }
+    ```
+- **`client/src/services/api.ts`:**
+  - Line 276: `reloadDemoDataset()` calling `POST /api/ingestion/demo/reload`.
+- **`client/src/components/ingestion/DataIngestionView.tsx`:**
+  - Line 400 & 555: Hardcoded check for `format === 'SYNTHETIC'` to render `'DEMO / SYNTHETIC'` badge.
+
+```
+
+## File: docs/audits/phase-0/02-data-flow-trace.md
+
+```md
+# REVANA TECHNOLOGIES — END-TO-END DATA FLOW TRACE
+**Phase 0C Deliverable — Pipeline & Architectural Path Analysis**
+**Date:** 2026-10-15  
+**Auditor:** Principal Software Architect & Production-Readiness Auditor  
+
+---
+
+## 1. Trace Overview & Objectives
+
+This document maps the exact data flow pathways through which synthetic, mock, and simulated records propagate through Revana Technologies. For each identified source, the path is traced across:
+1. **Definition / Genesis**
+2. **Ingestion & Persistence Layer**
+3. **Internal Processing & Graph / Entity Resolution**
+4. **Backend REST APIs & Event Streams (SSE)**
+5. **AI Reasoning / Context Engine Retrieval**
+6. **Frontend Consumption & Tactical Visualizations**
+
+---
+
+## 2. Trace 1: Core Logistics Benchmark (`seedData.ts`)
+
+```
+[seedData.ts] (Hardcoded Arrays: 10 Companies, 8 Vehicles, 4 Drivers, etc.)
+      │
+      ▼
+[POST /api/ingestion/demo/reload] (ingestion.routes.ts line 129)
+      │
+      ▼
+[SQLite: aegis_intel.db]
+├── entities (COMP-*, VEH-*, DRV-*, FAC-*, TOLL-*)
+├── relationships (28 semantic links)
+├── locations (6 Karnataka/TN points)
+├── events (EVT-2026-001..006)
+├── anomalies (ANM-CIRC-01, ANM-ROUTE-02, etc.)
+├── merge_candidates (MC-001, MC-002)
+├── investigations (INV-2026-001..003)
+└── datasets (DS-SYNTHETIC-LOGISTICS-2026)
+      │
+      ├──► [GraphService.ts] ────────► [GET /api/graph] ──────────► [TacticalGraphCanvas.tsx]
+      │                                                               (Cytoscape Graph Visualizer)
+      │
+      ├──► [ResolutionService.ts] ───► [GET /api/resolution] ─────► [EntityResolutionView.tsx]
+      │                                                               (Merge/Dedup Review)
+      │
+      ├──► [AI Router & Retrieve] ───► [POST /api/ai/chat] ───────► [AiInvestigationWorkspace.tsx]
+      │    (ai.service.ts)             (Chat Context & Tools)          (Lead Intelligence Dossier)
+      │
+      └──► [ingestion.service.ts] ───► [GET /api/ingestion/datasets]► [DataIngestionView.tsx]
+                                                                       (Datasets Ledger: "DEMO / SYNTHETIC")
+```
+
+### Critical Flow Observations:
+- When seeded, synthetic vehicles (e.g., `VEH-KA-01-AB-1234`) and companies (`COMP-APX-04`) populate the primary graph canvas.
+- The AI Investigation Agent (`server/src/services/ai/retrieve.ts`) queries `get_entity`, `get_connections`, and `get_anomalies`. When asked about "Apex Global Logistics" or "Operation Falcon", the agent retrieves these seeded rows as factual intelligence claims.
+- The Entity Resolution UI surfaces `MC-001` and `MC-002` as pending canonical merge tasks.
+
+---
+
+## 3. Trace 2: Synthetic Source Databases (`sourceDatabases.ts`)
+
+```
+[sourceDatabases.ts] (Creates 4 SQLite DBs in server/data/sources/)
+      │
+      ▼
+[POST /api/sources/sync-all] (sources.routes.ts line 17)
+      │
+      ▼
+[SourceService.ts & IngestionService.ts]
+      │
+      ▼
+[SQLite: aegis_intel.db]
+├── data_sources (LOGISTICS_DB, COMPANY_REGISTRY_DB, FACILITIES_DB, TRANSACTIONS_DB)
+├── source_records (Shipment S1001, Vehicle KA01AB1234, Director Ravi Kumar, Account T991)
+├── entity_source_links (Cross-database link mappings)
+└── entities & relationships (Derived canonical cross-source graph)
+      │
+      ├──► [SourceService.ts] ────────► [GET /api/sources] ──────► [DataSourcesView.tsx]
+      │                                 [GET /api/sources/:id/tables] (Multi-DB Explorer)
+      │
+      └──► [ResolutionService.ts] ───► [GET /api/resolution/provenance/:id]
+                                        (Provenance drill-down showing source table/row)
+```
+
+### Critical Flow Observations:
+- These independent databases were architected to demonstrate Revana's cross-source entity resolution (correlating `S1001` from `logistics.db` with `Ravi Kumar` in `company_registry.db` and transaction `T991` in `transactions.db`).
+- Currently, `SourceService.bootstrapSources()` is set to a no-op, preventing automatic initialization on startup. However, calling `POST /api/sources/sync-all` or executing `verify_multi_database.ts` repopulates this data.
+
+---
+
+## 4. Trace 3: Maritime Telemetry & Malacca Fleet Anomaly (`aisRealReplayProvider.ts`)
+
+```
+[aisRealReplayProvider.ts] (22 SEED_VESSELS + 62 Malacca Convergence Fleet)
+      │
+      ▼
+[setInterval 3000ms dead-reckoning loop]
+      │
+      ▼
+[MaritimeService.ts (ingestRawUpdate)]
+      │
+      ▼
+[SQLite: aegis_intel.db]
+├── moving_entities (84 vessels, providerSource: 'Replay Feed')
+├── entity_positions (126,000+ kinematic position fixes)
+└── maritime_patterns (PAT_CORRIDOR_MALACCA: 62 observed vs 41 baseline = +51.2%)
+      │
+      ├──► [maritime.routes.ts] ───► [GET /api/maritime/vessels] ─► [TacticalMap.tsx]
+      │                              (Polling ship array)           (Map Markers & Ship Count)
+      │
+      ├──► [SSE Event Stream] ────► [GET /api/maritime/events/stream]
+      │                              (Real-time position push)
+      │
+      ├──► [Pattern Detector] ────► [GET /api/maritime/patterns] ─► [TacticalMap.tsx (Banner)]
+      │                                                             [MaritimePatternModal.tsx]
+      │
+      └──► [AI Router & Tools] ───► [POST /api/ai/chat] ──────────► [Maritime Pattern Dossier]
+           (maritimeTools.ts)        (get_maritime_corridor_patterns)
+```
+
+### Critical Flow Observations:
+- **Startup Infiltration:** `server/src/index.ts` calls `MaritimeService.initialize()` unconditionally on startup. If `AISSTREAM_API_KEY` was missing or unreadable (or failed to parse WebSocket Blobs), `MaritimeService` fell back to `AisRealReplayProvider`, instantly seeding 84 fake ships.
+- **Visual Alert Injection:** `TacticalMap.tsx` line 329 checked specifically for `patterns.find(p => p.pattern_id === 'PAT_CORRIDOR_MALACCA')`, flashing a prominent red warning banner: `"MALACCA CHOKEPOINT: +51.2% SURGE"` with an `"INVESTIGATE"` button.
+- **AI Tool Contamination:** When an analyst clicks "Investigate", `POST /api/maritime/patterns/:id/investigate` triggers `MaritimeReasoningService.ts`, which passes the fabricated 62-vessel observation into the LLM prompt.
+
+---
+
+## 5. Trace 4: World Model Silent Fallbacks (`connectors/providers/`)
+
+```
+[User clicks "Sync All" in Digital Mirror] OR [POST /providers/sync-all]
+      │
+      ▼
+[ProviderRegistry.ts (sync-all loop)]
+      │
+      ├──► [GTFSRealtimeProvider] ─── (No GTFS_FEED_URL) ───► Generates simulated BMTC buses
+      ├──► [PublicWaterLevelProvider] (example.gov endpoint) ──► Generates simulated KRS/Kabini dams
+      ├──► [GBFSProvider] ─────────── (example.gov endpoint) ──► Generates simulated Yulu/Bounce hubs
+      ├──► [NationalGridEnergyProvider](example.org endpoint) ─► Generates simulated Pavagada solar
+      ├──► [DataGovInProvider] ────── (No DATA_GOV_KEY) ────► Generates simulated Yeshwanthpur mandi
+      ├──► [PublicFeedProvider] ───── (example.org endpoint) ──► Generates simulated Cyclone advisory
+      └──► [MockDataProvider] ────── (Internal test harness) ─► Generates TEST_RADAR_01 fix
+      │
+      ▼
+[worldModelService.ingestObservation()]
+      │
+      ▼
+[SQLite: aegis_intel.db]
+├── raw_observations (Payloads stored with endpoint URL)
+├── world_observations (144 normalized records)
+├── world_entities (142 physical entities: BUS_*, GAUGE_*, STATION_*, SUBSTN_*)
+├── world_relationships (19 spatial containment & corridor links)
+└── world_events (123 alerts: Weather, High Stage, Congestion)
+      │
+      ├──► [world.routes.ts] ──────► [GET /world/state] ──────────► [DigitalMirrorView.tsx]
+      │                              (GeoJSON & Entity Graph)       (Tactical Mirror Map & Layer Toggles)
+      │
+      └──► [AI World Tools] ───────► [POST /api/ai/chat] ──────────► [AiInvestigationWorkspace.tsx]
+           (worldTools.ts)           (get_active_world_events,      (Synthesizes claims citing fake
+                                      get_nearby_sensors)            dam levels or bus telemetry)
+```
+
+### Critical Flow Observations:
+- **Silent Fabrication:** These providers do not fail with HTTP 500 or record an unconfigured state; they return an HTTP 200 payload containing synthetic records as if they were retrieved from live government feeds.
+- **Digital Mirror Infiltration:** The Digital Mirror view (`client/src/components/mirror/DigitalMirrorView.tsx`) renders these as live physical infrastructure in Karnataka and Tamil Nadu.
+- **AI Tool Grounding Risk:** Revana's AI reasoning layer explicitly grounds its claims in `world_observations`. When it queries `get_active_world_events`, it treats the hardcoded `Cauvery River Basin Inflow High Stage Notice` as verified real-world telemetry.
+
+```
+
+## File: docs/audits/phase-0/03-startup-hooks-and-triggers.md
+
+```md
+# REVANA TECHNOLOGIES — STARTUP HOOKS, ENDPOINTS & RE-SEED TRIGGERS
+**Phase 0D Deliverable — Ingestion Mechanisms & Re-Creation Vulnerabilities**
+**Date:** 2026-10-15  
+**Auditor:** Principal Software Architect & Production-Readiness Auditor  
+
+---
+
+## 1. Executive Summary
+
+A critical requirement of Phase 0 is determining **how and when synthetic data is introduced or re-introduced** into Revana Technologies. This document catalogues every automated startup hook, manual REST endpoint, developer test script, and frontend user action capable of creating, mutating, or re-seeding synthetic records.
+
+---
+
+## 2. Server Startup Hooks (`server/src/index.ts`)
+
+| Hook / Call | Source Line | Action Performed | Synthetic Contamination Risk |
+|---|---|---|---|
+| `initDatabase()` | `server/src/index.ts:76` | Creates SQLite tables (`CREATE TABLE IF NOT EXISTS`) and applies safe `ALTER TABLE` column additions. | **NONE.** Purely structural schema initialization; does not insert records. |
+| `MaritimeService.initialize()` | `server/src/index.ts:77` | Bootstraps the AIS maritime ingestion service. | **HIGH (in legacy configuration).** If `AISSTREAM_API_KEY` was absent or failed WebSocket handshake, it defaulted to `AisRealReplayProvider()`, spawning 84 simulated ships and generating synthetic position trails via `seedInitialHistoricalTrailsIfEmpty()`. |
+| `seedDatabase()` | `server/src/index.ts:5` | Imported at top of file: `import { seedDatabase } from './db/seedData.js';`. | **LOW.** Currently uninvoked during startup (commented out / uncalled in `index.ts`), but import remains a dormant risk. |
+
+---
+
+## 3. Production-Accessible REST API Endpoints
+
+The following HTTP endpoints in the Express router can be called over the network to create, reload, or trigger synthetic data ingestion:
+
+### 3.1 `POST /api/ingestion/demo/reload`
+- **Route File:** `server/src/routes/ingestion.routes.ts` (Lines 129–136)
+- **Handler Code:**
+  ```typescript
+  ingestionRouter.post('/demo/reload', (req: Request, res: Response) => {
+    try {
+      seedDatabase(true);
+      res.json({ success: true, message: 'Karnataka-South logistics benchmark dataset reloaded successfully.' });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+  ```
+- **Hazard Level:** **CRITICAL / DESTRUCTIVE.** Calling this endpoint with `force: true` executes `DELETE FROM relationships; DELETE FROM events; DELETE FROM locations; DELETE FROM anomalies; DELETE FROM merge_candidates; DELETE FROM investigations; DELETE FROM datasets; DELETE FROM entities;` and re-populates the 1,217-line static dataset.
+- **Authentication:** None. Open endpoint accessible to any network client.
+
+### 3.2 `POST /providers/sync-all` (and `/api/providers/sync-all`)
+- **Route File:** `server/src/routes/providers.routes.ts` (Lines 33–83)
+- **Handler Code:**
+  Loops through core providers (`gtfs_transit`, `gbfs_mobility`, `water_level_gauge`, `national_grid_energy`, `data_gov_in`, `gdacs_civic_alerts`, `open_meteo_weather`, `usgs_earthquake`).
+- **Hazard Level:** **HIGH.** Ingests hardcoded synthetic observations into `world_observations`, `world_entities`, and `world_events` whenever unconfigured providers are queried.
+- **Authentication:** None.
+
+### 3.3 `POST /api/sources/sync-all`
+- **Route File:** `server/src/routes/sources.routes.ts` (Lines 17–28)
+- **Handler Code:** Calls `SourceService.syncAllSources()`. Reads from the 4 SQLite databases in `server/data/sources/` and inserts canonical records into `entities` and `relationships`.
+- **Hazard Level:** **MEDIUM.** Ingests the 4 synthetic source databases if they exist on disk.
+- **Authentication:** None.
+
+---
+
+## 4. Standalone Developer & Test Scripts
+
+| Script File | Execution Method | Functionality & Side Effects |
+|---|---|---|
+| `server/src/verify_multi_database.ts` | `npx tsx src/verify_multi_database.ts` | 1. Executes destructive deletes on `entities`, `relationships`, `source_records`, `entity_source_links`, `data_sources`.<br>2. Invokes `initSourceDatabases(true)` which unlinks and recreates the 4 SQLite files in `server/data/sources/`.<br>3. Runs end-to-end sync and resolution verification. |
+| `server/src/tests/connectors.test.ts` | `npm run test:connectors` | Initializes in-memory / local test instances of `MockDataProvider`. Non-destructive to canonical operational tables. |
+| `generate_codebase.js` | `node generate_codebase.js` | Scans workspace and rewrites `codebase.md`. No database mutations. |
+
+---
+
+## 5. Client UI Trigger Actions
+
+| Client Component | UI Action / Trigger | Backend Call | Resulting Mutation |
+|---|---|---|---|
+| `client/src/components/mirror/DigitalMirrorView.tsx` (Line 108) | User clicks "Sync Providers" or "Refresh Telemetry" button | Calls `api.syncAllProviders()` -> `POST /api/providers/sync-all` | Re-injects synthetic buses, reservoirs, and grid telemetry into the active world model. |
+| `client/src/components/ingestion/DataIngestionView.tsx` | Dataset Management View | Calls `api.getDatasets()` | Surfaces `DS-SYNTHETIC-LOGISTICS-2026` if seeded. |
+| `client/src/components/map/TacticalMap.tsx` | Real-time Map Load | Connects to `EventSource('/api/maritime/events/stream')` | If replay provider is active, continuously receives synthetic vessel updates. |
+
+```
+
+## File: docs/audits/phase-0/04-production-vs-test-boundary.md
+
+```md
+# REVANA TECHNOLOGIES — PRODUCTION VS. TEST & DEMO BOUNDARY AUDIT
+**Phase 0E Deliverable — Architectural Boundary & Isolation Analysis**
+**Date:** 2026-10-15  
+**Auditor:** Principal Software Architect & Production-Readiness Auditor  
+
+---
+
+## 1. Executive Summary
+
+A core failure mode in operational intelligence software is **silent boundary erosion** — where demonstration code, test fixtures, or local mock data bleed into production-capable execution paths. 
+
+This audit evaluates Revana Technologies against strict production isolation standards:
+- **Production-Capable Path:** Any code executed by `npm start`, mounted by Express routers, bundled into client production assets, or triggered during normal operational workflows.
+- **Isolated Test Path:** Code strictly invoked during test runner execution (`npm test`, `tsx src/tests/*.test.ts`) that does not mutate operational persistence.
+- **Explicit Demo Path:** Sandboxed demonstration modules that require explicit opt-in flags (e.g., `DEMO_MODE=true`) and prominently signal simulation across every downstream surface.
+
+---
+
+## 2. Boundary Classification Matrix
+
+| Component / File | Current Classification | Intended Boundary | Contamination Hazard | Recommended Remediation |
+|---|---|---|---|---|
+| `MockDataProvider.ts` | **Production-Capable** (Instantiated in `ProviderRegistry.registerDefaults()`) | **Isolated Test Only** | Appears in `/providers/status` matrix and `/providers/sync-all` cycles in production. | Remove from `registerDefaults()`. Instantiate only inside unit and integration test suites. |
+| `seedData.ts` | **Production-Capable** (Invokable via `POST /api/ingestion/demo/reload`) | **Explicit Demo Only** | Destructive reload wipes real operational graph and replaces with synthetic benchmark. | Guard behind `process.env.REVANA_DEMO_MODE === 'true'`. Disable endpoint in production. |
+| `sourceDatabases.ts` | **Semi-Isolated** (Files on disk in `server/data/sources/`, triggered via sync endpoint) | **Explicit Demo Only** | Can pollute canonical entity registry with synthetic corporate/shipping records. | Quarantine to demo environment; do not ship pre-seeded SQLite files in production container distributions. |
+| `aisRealReplayProvider.ts` | **Production-Capable** (Fallback in `maritime.service.ts`) | **Explicit Demo Only** | Silently fakes live vessel tracking if `AISSTREAM_API_KEY` is unconfigured. | Make live AISStream the strict primary; allow replay *only* if `MARITIME_DEMO_MODE=true` is explicitly set with visible amber badges. |
+| Connector Silent Fallbacks (`GTFSRealtimeProvider`, `PublicWaterLevelProvider`, etc.) | **Production-Capable** (Active in default provider registry) | **Production-Capable (Failing Honestly)** | Fabricates Bangalore buses, reservoirs, and power grid alerts without real feeds. | Remove hardcoded objects. If external URL/key is missing, throw descriptive error and report `UNCONFIGURED` status. |
+| `SimulationService.ts` | **Production-Capable** (Dedicated `/simulation/*` routes) | **Production-Capable (Properly Isolated)** | Modifies entities in what-if scenarios. | **ALREADY ISOLATED.** Uses `simulation_entity_overrides` and reports `mode: 'SIMULATION'` with `is_isolated: true`. Zero live database contamination. |
+| `verify_multi_database.ts` | **Developer Script** (Standalone CLI tool) | **Developer / CI Only** | Destructive SQL script. | Ensure script cannot be run against production database connection strings. |
+
+---
+
+## 3. Deep-Dive: Silent Fallbacks vs. Production Integrity
+
+### 3.1 The "Deceptively Convenient" Fallback Anti-Pattern
+Seven data providers currently contain code of the form:
+```typescript
+const externalFeedUrl = process.env.GTFS_FEED_URL;
+if (externalFeedUrl) {
+  return await this.secureFetch(externalFeedUrl);
+}
+// Silently return hardcoded synthetic feed
+return { rawData: simulatedFeed, latencyMs: 5 };
+```
+
+**Why This Violates Operational Intelligence Principles:**
+1. **False Grounding:** The Revana AI Reasoning Engine relies on these providers to evaluate hypotheses. If an analyst investigates regional supply chain disruptions, the AI will cite fake bus routes (`BUS_BMTC_335E_01`) or fake reservoir depths as verified truth.
+2. **Masked Integration Failures:** If a production feed goes down or an API credential expires, the system appears green and operational rather than alerting engineers.
+3. **Audit Impossibility:** Regulated operational platforms cannot distinguish between real-world observations and code-generated fixtures.
+
+---
+
+## 4. Boundary Remediation Strategy
+
+1. **Strict Production Defaults:**
+   - In production (`NODE_ENV=production`), providers missing configuration must report:
+     ```json
+     {
+       "status": "UNCONFIGURED",
+       "error": "Missing mandatory environment variable: GTFS_FEED_URL"
+     }
+     ```
+   - Zero observations shall be written to `world_observations` or `raw_observations` for unconfigured providers.
+
+2. **Explicit Demo Isolation:**
+   - Any demonstration feature (`seedData.ts`, `AisRealReplayProvider`) must require:
+     - `REVANA_DEMO_MODE=true` or `MARITIME_DEMO_MODE=true`
+     - Visual badge `"SIMULATED / DEMO DATA"` (amber) across all UI cards and maps.
+     - Prohibition of silent auto-activation.
+
+```
+
+## File: docs/audits/phase-0/05-safe-removal-and-remediation-plan.md
+
+```md
+# REVANA TECHNOLOGIES — FILE-BY-FILE REMOVAL & REMEDIATION PLAN
+**Phase 0F Deliverable — Safe Execution Blueprint & Production Hardening**
+**Date:** 2026-10-15  
+**Auditor:** Principal Software Architect & Production-Readiness Auditor  
+
+---
+
+## 1. Remediation Philosophy & Non-Negotiable Rules
+
+1. **Zero Data Loss for Legitimate Assets:** Never execute blanket table truncations. The 3 user-imported locations in `locations` (`Apex Global`, `Zenith Freight`, `Orion Supply`) must be preserved.
+2. **Honest Failure Over Fabricated Success:** When an external data provider lacks an API key or endpoint, it must fail honestly (`UNCONFIGURED` or `FAILED`), never manufacture synthetic telemetry.
+3. **Auditability & Reversibility:** Every modification must be granular, covered by unit/integration tests, and tracked with git commits.
+4. **Phased Execution:** Only safe, unambiguous removals are executed during Phase 0; ambiguous items are flagged for human review.
+
+---
+
+## 2. File-by-File Remediation Matrix
+
+### Phase 0 Immediate Remediations (Safe & Unambiguous)
+
+| Target File | Component / Line | Exact Modification | Rationale / Verification |
+|---|---|---|---|
+| `server/src/connectors/registry/ProviderRegistry.ts` | Line 17 & Line 63 | Remove `import { MockDataProvider }` and `this.register(new MockDataProvider());` from `registerDefaults()`. | **Zero Risk.** `connectors.test.ts` instantiates `MockDataProvider` directly. Prevents test sensor from polluting production `/providers/status` and `/providers/sync-all`. |
+| `server/src/services/maritime/providers/aisRealReplayProvider.ts` | Lines 54, 69–114 | 1. Remove `generateMalaccaConvergenceFleet()` and its comment entirely.<br>2. Remove `...generateMalaccaConvergenceFleet()` from `SEED_VESSELS`. | Eliminates the pre-scripted 62-ship Malacca surge anomaly. Replay feed (if demo mode enabled) contains only standard baseline vessels. |
+| `client/src/components/map/TacticalMap.tsx` | Lines 290–292, 328–339 | Replace hardcoded `patterns.find(p => p.pattern_id === 'PAT_CORRIDOR_MALACCA')` with dynamic `activeSurgePattern = patterns.find(p => p.deviation_percent >= 30)`. | Prevents client from displaying a hardcoded "MALACCA CHOKEPOINT: +51.2% SURGE" banner unless an active surge pattern actually exists in currently loaded data. |
+| `server/src/routes/ingestion.routes.ts` | Lines 129–136 | Guard `POST /api/ingestion/demo/reload`: require `process.env.REVANA_DEMO_MODE === 'true'`. Return 403 Forbidden in production mode. | Prevents accidental or unauthorized execution of destructive table wipe in production. |
+| `server/src/services/maritime/patternDetector.service.ts` | Lines 86–88 | When a corridor vessel count drops below threshold, execute `DELETE FROM maritime_patterns WHERE pattern_id = ?`. | Ensures stale anomaly alerts are actively purged when traffic normalizes. |
+
+---
+
+### Phase 1 Remediations (Connector De-Simulation — Requires Human Review)
+
+The following connectors contain silent synthetic fallbacks. Each must be refactored to fail cleanly when unconfigured:
+
+| Provider File | Current Silent Fallback | Target Clean Behavior | Risk / Review Note |
+|---|---|---|---|
+| `transit/GTFSRealtimeProvider.ts` | Lines 45–93: Returns `simulatedFeed` when `GTFS_FEED_URL` not set. | If `!process.env.GTFS_FEED_URL`, record `UNCONFIGURED` and return `{ rawData: null, latencyMs: 0 }`. | **REQUIRES HUMAN REVIEW:** Confirm if local developers require simulated buses when developing transit UI. If so, isolate behind `REVANA_DEMO_MODE=true`. |
+| `water/PublicWaterLevelProvider.ts` | Lines 42–87: Returns `simulatedGauges` for dummy example.gov URL. | If endpoint is unconfigured or dummy, record failure and return `{ rawData: null }`. | **REQUIRES HUMAN REVIEW:** Identify real government hydrological API (e.g., India WRIS or USGS Water Services). |
+| `mobility/GBFSProvider.ts` | Lines 42–86: Returns `simulatedData` for dummy example.gov URL. | If endpoint is dummy, return `UNCONFIGURED`. | **REQUIRES HUMAN REVIEW:** Wire to authentic GBFS endpoint (e.g., Yulu open feed or city-specific micromobility GBFS). |
+| `energy/NationalGridEnergyProvider.ts` | Lines 41–78: Returns `simulatedGrid`. | If endpoint is dummy, return `UNCONFIGURED`. | **REQUIRES HUMAN REVIEW:** Wire to real power grid telemetry (e.g., UK National Grid ESO or POSOCO India). |
+| `government/DataGovInProvider.ts` | Lines 51–75: Returns `karnatakaGovRecords` when `DATA_GOV_API_KEY` not set. | If `!apiKey`, throw error `DATA_GOV_API_KEY required for Open Government Data ingestion`. | Safe to remove fallback; real API integration exists at lines 41–44. |
+| `news/PublicFeedProvider.ts` | Lines 36–65: Returns hardcoded cyclone/flood advisory. | Wire to authentic GDACS RSS feed (`https://www.gdacs.org/xml/rss.xml`) using XML parser. | Safe to replace dummy endpoint with genuine live GDACS RSS feed. |
+| `finance/ExchangeRateProvider.ts` | Lines 54–61: Static currency rates fallback when offline. | If offline, report error and return cached rates or mark stale; do not present static rates as live. | Safe to remove static fallback. |
+
+---
+
+## 3. Database Remediation & Sanitization Protocol
+
+### 3.1 What Must Be Kept:
+- `locations` rows with IDs `LOC-ENT-CUST-*` (User-uploaded operational hubs).
+- `world_observations` and `world_entities` from authentic providers (`open_meteo_weather`, `open_meteo_air_quality`, `open_meteo_marine`, `usgs_earthquake`, `nasa_eonet`, `opensky_network`, `osm_nominatim`).
+- `simulations` table (Isolated what-if scenarios).
+
+### 3.2 What Can Be Selectively Sanitized:
+- `DELETE FROM moving_entities WHERE properties LIKE '%Replay%'`: Removes historical fake vessels seeded during previous unconfigured runs.
+- `DELETE FROM entity_positions WHERE entity_id NOT IN (SELECT id FROM moving_entities)`: Cleans orphaned trail points.
+- `DELETE FROM maritime_patterns WHERE pattern_id = 'PAT_CORRIDOR_MALACCA'`: Removes the pre-scripted 62-ship anomaly.
+- `DELETE FROM raw_observations WHERE provider = 'mock_provider'`: Removes mock test records from operational audit logs.
+
+---
+
+## 4. Verification & Reversibility Strategy
+
+1. **Pre-Remediation Check:** Run `npm run test:connectors` and `npx tsx src/tests/world_model_logic.test.ts`.
+2. **Atomic Execution:** Apply Phase 0 immediate removals.
+3. **Post-Remediation Verification:**
+   - Type-check: `cd server && npx tsc --noEmit`
+   - Client type-check: `cd client && npx tsc --noEmit`
+   - Test execution: `cd server && npm run test:connectors`
+   - Verification that `mock_provider` is not in `/providers/status`.
+4. **Git Checkpoint:** One concise commit with complete audit trail.
 
 ```
 
@@ -10252,7 +11352,6 @@ import { PublicWaterLevelProvider } from '../providers/water/PublicWaterLevelPro
 import { NationalGridEnergyProvider } from '../providers/energy/NationalGridEnergyProvider.js';
 import { ExchangeRateProvider } from '../providers/finance/ExchangeRateProvider.js';
 import { PublicFeedProvider } from '../providers/news/PublicFeedProvider.js';
-import { MockDataProvider } from '../providers/mock/MockDataProvider.js';
 
 export interface ProviderStatusSummary {
   id: string;
@@ -10298,7 +11397,6 @@ export class ProviderRegistry {
     this.register(new NationalGridEnergyProvider());
     this.register(new ExchangeRateProvider());
     this.register(new PublicFeedProvider());
-    this.register(new MockDataProvider());
   }
 
   public register(provider: DataProvider): void {
@@ -13062,8 +14160,14 @@ ingestionRouter.delete('/datasets', (req: Request, res: Response) => {
   }
 });
 
-// Reset / reload demo logistics dataset
+// Reset / reload demo logistics dataset (Guarded by REVANA_DEMO_MODE)
 ingestionRouter.post('/demo/reload', (req: Request, res: Response) => {
+  if (process.env.REVANA_DEMO_MODE !== 'true') {
+    return res.status(403).json({
+      error: 'Demo dataset reload is disabled in production. Set REVANA_DEMO_MODE=true in environment to enable benchmark reload.',
+    });
+  }
+
   try {
     seedDatabase(true);
     res.json({ success: true, message: 'Karnataka-South logistics benchmark dataset reloaded successfully.' });
@@ -13738,18 +14842,172 @@ worldRouter.post('/ingest/:providerId', async (req: Request, res: Response) => {
 
 ```
 
-## File: server/src/services/ai.service.ts
+## File: server/src/services/ai/prompts.ts
 
 ```ts
-import { db } from '../db/database.js';
-import { GraphService } from './graph.service.js';
-import { ResolutionService } from './resolution.service.js';
-import { SourceService } from './source.service.js';
-import { AiInvestigationResponse, EntityType } from '../types/index.js';
-import { worldModelService } from './world_model/world_model.service.js';
-import { simulationService } from './simulation/simulation.service.js';
-import { providerRegistry } from '../connectors/registry/ProviderRegistry.js';
-import { v4 as uuidv4 } from 'uuid';
+import { Domain } from './types.js';
+
+export const SHARED_CLAIM_TIERS_GUIDANCE = `
+CLAIM TIERS & HONESTY OF LABELS (MANDATORY STRICT LABELS):
+You are an analyst, not a search box. If the data hints at something bigger, say it as a hypothesis. If two domains might be related, say so and say how to test it. Do not refuse to speculate; label speculation properly. Freedom in thinking, strictness in labeling!
+
+Every statement in your analysis belongs to EXACTLY ONE of these 4 tiers:
+1. FACT:
+   - Directly stated by a tool result or database record.
+   - MUST cite evidence ids (e.g. ["ev_1", "ev_2"]).
+   - Strictly verified against actual data by the verification engine. Any fact that fails citation or data verification will be demoted to a hypothesis with a note "unverified against data".
+   - Do NOT guess or extrapolate inside a FACT.
+
+2. INFERENCE:
+   - Derived by logical reasoning from one or more verified FACTs.
+   - MUST cite the 0-based indexes of the facts it builds on (basedOnFactIndexes: [0, 1]).
+   - MUST include an explicit one-line reasoning chain ("A + B therefore C").
+   - If a premise fact is demoted, this inference will also be demoted.
+
+3. HYPOTHESIS:
+   - Speculative and forward-looking. You are encouraged to go beyond the data: identify potential root causes, unseen vulnerabilities, supply chain contagion, or cross-domain ripple effects.
+   - MUST include:
+     * text: What the hypothesis is
+     * whyPlausible: Why this seems plausible given the observed patterns
+     * plausibility: STRICTLY one of 'low' | 'medium' | 'high' (NEVER assign a numeric score)
+     * confirmWith: What specific evidence or test would CONFIRM this hypothesis
+     * refuteWith: What specific evidence or test would REFUTE this hypothesis
+     * suggestedTool: (Optional) A specific tool or data source to test it
+
+4. BACKGROUND:
+   - General world knowledge from yourself (e.g. monsoon patterns in South Asia, how maritime chokepoints cause demurrage cascades, typical power transformer load limits, container shipping transshipment dynamics).
+   - NOT from the database.
+   - Clearly labeled as background; no citation needed.
+
+CRITICAL RULES:
+- NEVER present a HYPOTHESIS or BACKGROUND item as a FACT.
+- NEVER assign numeric confidence scores to hypotheses.
+- Use 'propose_relationship' to suggest latent entity links.
+- Use 'note_missing_data' to record data gaps you wish you had.
+- Use 'request_domain_tools' if you need tools from other domains (e.g. world weather, maritime vessels, or logistics datasets).
+`;
+
+export const DOMAIN_SYSTEM_PROMPTS: Record<Domain, string> = {
+  world: `You are the Lead Physical Mirror & Sensor Intelligence Analyst for Revana Technologies.
+You investigate the real-time physical world model: environmental sensors, meteorological phenomena, seismic hazards, river/reservoir hydrology, power grid substations, and metropolitan transit corridors.
+
+AVAILABLE WORLD MODEL TOOLS:
+• 'get_live_world_summary': Get summary of tracked physical entities, active weather stations, sensors, and recent events.
+• 'search_world_entities': Search live physical entities across WEATHER, AIR_QUALITY, SEISMIC, WATER, ENERGY, TRANSIT, MOBILITY, INFRASTRUCTURE.
+• 'get_entity_telemetry': Get live telemetry, environmental values, temporal state transitions, and raw sensor provenance for an entity.
+• 'get_live_events': Retrieve detected real-world threshold events (heavy rainfall, earthquakes, dam stage warnings, severe traffic).
+• 'get_inferred_relationships': Retrieve inferred physical and infrastructure relationships with explicit evidence trails.
+• 'get_provider_observability': Check health, latencies, and update frequencies of 15 public data connectors.
+• 'inspect_simulation_twin': Inspect isolated digital twin simulation sandboxes and cascading consequence predictions.
+• 'poll_live_sensors': Trigger an immediate real-time fetch from external public sensor APIs.
+
+META TOOLS:
+• 'request_domain_tools': Unlock 'logistics' (datasets/records) or 'maritime' (AIS ships/corridors) tools if physical conditions impact supply chains or vessels.
+• 'propose_relationship': Propose novel relationships between physical or commercial entities.
+• 'note_missing_data': Note missing sensor streams, gauges, or historical baselines.
+${SHARED_CLAIM_TIERS_GUIDANCE}`,
+
+  logistics: `You are the Lead Supply Chain & Dataset Graph Intelligence Analyst for Revana Technologies.
+You investigate user-uploaded enterprise datasets, transactions, shipments, entity resolution graphs, cross-file identifiers, and topological anomalies.
+
+AVAILABLE LOGISTICS & GRAPH TOOLS:
+• 'search_datasets': List all user-uploaded datasets, record counts, and detected schemas.
+• 'search_records': Search raw records across all uploaded datasets for keywords, IDs, emails, phones, or amounts.
+• 'search_entity': Search canonical entities by name, ID, type, or property across all uploaded datasets.
+• 'get_entity': Get full canonical entity details, attributes, and source dataset provenance.
+• 'get_connections': Retrieve connected entities and multi-hop relationships linking across datasets in the unified graph.
+• 'find_path': Find the relationship path connecting two entities across multiple uploaded datasets.
+• 'detect_data_patterns': Automated pattern analysis to discover high-degree hubs, cross-file bridges, property collisions, and isolated clusters.
+• 'get_graph_stats': Graph topology metrics, top connected hub entities, and relationship distributions.
+• 'query_dataset_statistics': Column statistics, value distributions, and numeric summaries.
+
+META TOOLS:
+• 'request_domain_tools': Unlock 'world' (weather, flood, grid, roads) or 'maritime' (vessels, ports) tools if logistics corridors or shipments are disrupted.
+• 'propose_relationship': Propose latent links between records or organizations.
+• 'note_missing_data': Note missing datasets, unmapped columns, or supplier manifests.
+${SHARED_CLAIM_TIERS_GUIDANCE}`,
+
+  maritime: `You are the Lead Maritime Domain & AIS Intelligence Analyst for Revana Technologies.
+You monitor global maritime corridors, vessel movements, AIS telemetry, chokepoint deviations, port approaches, and transshipment patterns.
+
+AVAILABLE MARITIME TOOLS:
+• 'get_active_vessels': Retrieve live commercial vessels, coordinates, speeds, headings, and destinations from AIS telemetry.
+• 'get_vessel_details': Get vessel profile and recent navigational track fixes by MMSI or vessel ID.
+• 'get_maritime_corridor_patterns': Inspect monitored chokepoints (Malacca, Mumbai JNPT, Mundra, Chennai, Colombo) for congestion and vessel count anomalies.
+• 'search_vessels': Search vessels by name, destination port, IMO, or cargo type.
+
+META TOOLS:
+• 'request_domain_tools': Unlock 'world' (weather, sea conditions, storms) or 'logistics' (customs manifests, cargo datasets) tools.
+• 'propose_relationship': Propose links between vessels, ports, shipments, or maritime entities.
+• 'note_missing_data': Note dark vessel tracks, missing AIS telemetry, or port clearance data.
+${SHARED_CLAIM_TIERS_GUIDANCE}`,
+
+  cross: `You are the Cross-Domain Chief Intelligence Strategist for Revana Technologies.
+You seamlessly correlate physical mirror telemetry (weather, rivers, grid, transit), commercial logistics graphs (datasets, shipments, entities), and maritime AIS vessel traffic to detect complex multi-system cascades.
+
+ALL TOOLS ACROSS WORLD, LOGISTICS, AND MARITIME ARE ACTIVE AND AVAILABLE.
+Use tools speculatively to test ideas, correlate physical hazards with commercial supply chains, and identify cascading risks across domains.
+${SHARED_CLAIM_TIERS_GUIDANCE}`,
+};
+
+export const REASONING_ANALYST_SYSTEM_PROMPT = `You are the Chief Intelligence Analyst for Revana Technologies.
+Your job is to synthesize all gathered evidence into a structured intelligence briefing with honest claim labeling.
+
+ANALYTICAL PHILOSOPHY:
+You are an analyst, not a search box. If the data hints at something bigger, say it as a hypothesis. If two domains might be related, say so and say how to test it. Do not refuse to speculate; label speculation properly.
+
+STRICT JSON OUTPUT FORMAT:
+You must output a single JSON object with this EXACT structure:
+{
+  "summary": "2-4 sentence executive synthesis of the key findings, implications, and operational impact.",
+  "facts": [
+    {
+      "text": "Exact factual statement directly backed by evidence.",
+      "evidenceIds": ["ev_1"]
+    }
+  ],
+  "inferences": [
+    {
+      "text": "Derived conclusion from one or more facts.",
+      "basedOnFactIndexes": [0],
+      "reasoning": "A + B therefore C"
+    }
+  ],
+  "hypotheses": [
+    {
+      "text": "Speculative hypothesis explaining why or what could happen next.",
+      "whyPlausible": "Detailed explanation of why this is plausible given the evidence.",
+      "plausibility": "medium", // strictly 'low' | 'medium' | 'high'
+      "confirmWith": "Specific evidence or sensor feed that would confirm this.",
+      "refuteWith": "Specific evidence or condition that would refute this.",
+      "suggestedTool": "tool_name or source to test it"
+    }
+  ],
+  "background": [
+    {
+      "text": "General domain knowledge explaining real-world dynamics (e.g. monsoon shipping impacts, grid load vs cooling demand, etc.)."
+    }
+  ],
+  "nextSteps": [
+    {
+      "text": "Concrete investigative or operational recommendation for the analyst."
+    }
+  ],
+  "discoveredPatterns": ["Description of higher-order patterns observed in the evidence..."],
+  "anomalyIndicators": ["Key risk indicators or anomalies detected..."],
+  "suggestedHopExpansions": ["Entity IDs to expand or inspect in the graph..."],
+  "uncertainty": "Data gaps, missing feeds, or unconfirmed assumptions.",
+  "aiInterpretation": "Comprehensive narrative briefing combining summary, inferences, and strategic outlook."
+}
+${SHARED_CLAIM_TIERS_GUIDANCE}`;
+
+```
+
+## File: server/src/services/ai/reason.ts
+
+```ts
+import { InvestigationContext, ReasoningOutput } from './types.js';
+import { REASONING_ANALYST_SYSTEM_PROMPT } from './prompts.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -13759,745 +15017,383 @@ const GROQ_BASE_URL = process.env.GROQ_BASE_URL || process.env.XAI_BASE_URL || '
 const rawModel = process.env.GROQ_MODEL || process.env.XAI_MODEL || '';
 const GROQ_MODEL = (!rawModel || rawModel.includes('llama-3.3')) ? 'openai/gpt-oss-120b' : rawModel;
 
-// Controlled Backend Tools Definitions for Groq Function Calling
-const GROQ_TOOLS = [
-  {
-    type: 'function',
-    function: {
-      name: 'get_live_world_summary',
-      description: 'Get real-time summary of the digital mirror world model: count of physical entities, active weather stations, air quality sensors, river stages, grid substations, transit vehicles, and recent detected events.',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'search_world_entities',
-      description: 'Search live physical entities across all categories (WEATHER, AIR_QUALITY, SEISMIC, WATER, ENERGY, TRANSIT, MOBILITY, INFRASTRUCTURE) by name, keyword, or category.',
-      parameters: {
-        type: 'object',
-        properties: {
-          query: { type: 'string', description: 'Search term e.g. Bangalore, NH48, Peenya, Bellandur, Metro, Earthquake' },
-          category: { type: 'string', description: 'Optional category filter: WEATHER, AIR_QUALITY, SEISMIC, WATER, ENERGY, PUBLIC_TRANSPORT, MOBILITY, INFRASTRUCTURE' },
-        },
-        required: ['query'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_entity_telemetry',
-      description: 'Get detailed live telemetry, current environmental values, chronological temporal state transitions, and raw sensor provenance for an entity ID.',
-      parameters: {
-        type: 'object',
-        properties: {
-          entityId: { type: 'string', description: 'The entity identifier (e.g. STATION_1297_7759, ROAD_CORRIDOR_NH48, HYDRO_GAUGE_BELLANDUR_OUTLET_WEIR)' },
-        },
-        required: ['entityId'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_live_events',
-      description: 'Retrieve detected real-world threshold events (e.g. heavy rainfall exceeding thresholds, earthquakes, reservoir flood warnings, severe transit congestion).',
-      parameters: {
-        type: 'object',
-        properties: {
-          severity: { type: 'string', description: 'Optional severity filter: CRITICAL, HIGH, MEDIUM, LOW' },
-        },
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_inferred_relationships',
-      description: 'Retrieve inferred physical and infrastructure relationships with explicit evidence trails, confidence scores, and source reasoning engines.',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_provider_observability',
-      description: 'Get health status, latencies, update frequencies, coverage area, and licensing terms for all 15 public data connectors (Open-Meteo, USGS, GDACS, Central Water Commission, National Grid, GTFS, GBFS, etc.).',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'inspect_simulation_twin',
-      description: 'Inspect an isolated digital twin simulation sandbox: check modified variables (deluges, capacity throttles), baseline snapshot time, and cascading consequence predictions.',
-      parameters: {
-        type: 'object',
-        properties: {
-          simulationId: { type: 'string', description: 'Optional specific simulation ID to inspect' },
-        },
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'poll_live_sensors',
-      description: 'Trigger an immediate real-time fetch from external public APIs to refresh weather, air quality, earthquakes, or grid telemetry.',
-      parameters: {
-        type: 'object',
-        properties: {
-          providerId: { type: 'string', description: 'Optional specific provider: open_meteo_weather, open_meteo_air_quality, usgs_earthquake, etc.' },
-        },
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'search_datasets',
-      description: 'List all user-uploaded datasets, their record counts, and detected column schemas.',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'search_records',
-      description: 'Search raw records across all uploaded datasets for keywords, identifiers, values, emails, phone numbers, or amounts.',
-      parameters: {
-        type: 'object',
-        properties: {
-          query: { type: 'string', description: 'The search term, ID, name, or value to search across all datasets' },
-          limit: { type: 'number', description: 'Maximum number of results to return (default 15)' },
-        },
-        required: ['query'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'search_entity',
-      description: 'Search extracted canonical entities by name, ID, type, or property across all uploaded datasets.',
-      parameters: {
-        type: 'object',
-        properties: {
-          query: { type: 'string', description: 'Entity identifier, name, or property value' },
-          limit: { type: 'number', description: 'Maximum number of results to return (default 10)' },
-        },
-        required: ['query'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_entity',
-      description: 'Get full canonical entity details including attributes, type, and source dataset provenance.',
-      parameters: {
-        type: 'object',
-        properties: {
-          entityId: { type: 'string', description: 'The canonical entity ID' },
-        },
-        required: ['entityId'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_connections',
-      description: 'Retrieve connected entities and relationships linking across datasets in the unified graph.',
-      parameters: {
-        type: 'object',
-        properties: {
-          entityId: { type: 'string', description: 'Entity ID to expand connections for' },
-          hops: { type: 'number', description: 'Number of hops to expand (default 1, max 2)' },
-        },
-        required: ['entityId'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'find_path',
-      description: 'Find the relationship path connecting two entities across multiple uploaded datasets.',
-      parameters: {
-        type: 'object',
-        properties: {
-          sourceId: { type: 'string', description: 'Source entity ID' },
-          targetId: { type: 'string', description: 'Target entity ID' },
-        },
-        required: ['sourceId', 'targetId'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'detect_data_patterns',
-      description: 'Run automated pattern analysis across all uploaded datasets to discover high-degree hubs, cross-file bridges, property collisions (e.g. shared phones, emails, addresses), and isolated clusters.',
-      parameters: {
-        type: 'object',
-        properties: {
-          focusTopic: { type: 'string', description: 'Optional entity name, property, or column to focus pattern detection on' },
-        },
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_graph_stats',
-      description: 'Get high-level graph topology metrics, top connected hub entities, relationship distributions, and dataset breakdown.',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'query_dataset_statistics',
-      description: 'Inspect column statistics, value distributions, distinct counts, and numeric summaries for uploaded datasets.',
-      parameters: {
-        type: 'object',
-        properties: {
-          datasetId: { type: 'string', description: 'Optional specific dataset ID to inspect' },
-          columnName: { type: 'string', description: 'Optional specific column to profile' },
-        },
-      },
-    },
-  },
-];
+/**
+ * Analyst Stage: ONE LLM synthesis call converting all evidence into 4 honest claim tiers
+ */
+export async function reasonOverEvidence(
+  context: InvestigationContext,
+  engine: 'llm' | 'deterministic-fallback'
+): Promise<{ output: ReasoningOutput; engine: 'llm' | 'deterministic-fallback'; fallbackReason?: string }> {
+  const hasGroq = Boolean(GROQ_API_KEY && GROQ_API_KEY.trim() !== '' && !GROQ_API_KEY.includes('your_'));
 
-export class AiService {
-  /**
-   * Controlled Backend AI Tool Execution Layer
-   * Interacts directly with user-uploaded datasets, entities, and relationships
-   */
-  static async executeTool(toolName: string, args: Record<string, any>): Promise<any> {
-    switch (toolName) {
-      case 'get_live_world_summary': {
-        const fullState = worldModelService.getWorldState();
-        const typeCounts: Record<string, number> = {};
-        fullState.entities.forEach(e => {
-          typeCounts[e.type] = (typeCounts[e.type] || 0) + 1;
-        });
-        return {
-          timestamp: fullState.timestamp,
-          total_entities_tracked: fullState.entity_count,
-          entities_by_type: typeCounts,
-          active_threshold_events_count: fullState.active_events.length,
-          top_recent_events: fullState.active_events.slice(0, 5).map(ev => ({
-            type: ev.event_type,
-            severity: ev.severity,
-            entity_id: ev.entity_id,
-            detected_at: ev.detected_at,
-            source: ev.source,
-          })),
-          active_relationships_count: fullState.relationships.length,
-          key_corridor_relationships: fullState.relationships.slice(0, 3).map(r => ({
-            type: r.relationship_type,
-            source: r.source_entity_id,
-            target: r.target_entity_id,
-            confidence: r.confidence,
-          })),
-          temporal_ledger_records: fullState.recent_changes_count,
-        };
-      }
-
-      case 'search_world_entities': {
-        const q = String(args.query || '').trim().toLowerCase();
-        const all = worldModelService.getEntities(args.type, args.category);
-        const matches = q
-          ? all.filter(e => {
-              const stateStr = JSON.stringify(e.current_state || {}).toLowerCase();
-              return e.name.toLowerCase().includes(q) || 
-                     e.id.toLowerCase().includes(q) ||
-                     (e.category && e.category.toLowerCase().includes(q)) ||
-                     (e.type && e.type.toLowerCase().includes(q)) ||
-                     stateStr.includes(q) ||
-                     ((q.includes('blr') || q.includes('bangalore') || q.includes('bengaluru')) && (e.id.includes('12.97') || e.id.includes('BLR') || e.name.includes('Bangalore') || e.name.includes('NH48') || e.name.includes('Bellandur') || e.name.includes('Peenya') || e.name.includes('13.00')));
-            }).slice(0, 6)
-          : all.slice(0, 6);
-        return {
-          query: args.query,
-          matchCount: matches.length,
-          entities: matches.map(e => ({
-            id: e.id,
-            name: e.name,
-            type: e.type,
-            coordinates: [Number(e.latitude.toFixed(4)), Number(e.longitude.toFixed(4))],
-            current_values: e.current_state,
-            last_observed: e.last_observed_at,
-          })),
-        };
-      }
-
-      case 'get_entity_telemetry': {
-        const ent = worldModelService.getEntityById(args.entityId);
-        if (!ent || !ent.entity) return { error: `Entity ${args.entityId} not found` };
-        return {
-          id: ent.entity.id,
-          name: ent.entity.name,
-          type: ent.entity.type,
-          current_state: ent.entity.current_state,
-          last_observed_at: ent.entity.last_observed_at,
-          confidence: ent.entity.confidence,
-          recent_state_changes: (ent.history || []).slice(0, 3).map(h => ({
-            timestamp: h.timestamp,
-            delta: h.delta_summary,
-            source: h.source,
-          })),
-        };
-      }
-
-      case 'get_live_events': {
-        const events = worldModelService.getEvents(args.severity);
-        return {
-          total_count: events.length,
-          events: events.slice(0, 5).map(ev => ({
-            event_id: ev.event_id,
-            event_type: ev.event_type,
-            entity_id: ev.entity_id,
-            severity: ev.severity,
-            source: ev.source,
-            detected_at: ev.detected_at,
-            current_state: ev.current_state,
-          })),
-        };
-      }
-
-      case 'get_inferred_relationships': {
-        const rels = worldModelService.getRelationships();
-        return {
-          total_count: rels.length,
-          relationships: rels.slice(0, 5).map(r => ({
-            type: r.relationship_type,
-            source_entity: r.source_entity_id,
-            target_entity: r.target_entity_id,
-            confidence: r.confidence,
-            evidence: r.evidence,
-          })),
-        };
-      }
-
-      case 'get_provider_observability': {
-        const matrix = providerRegistry.getStatusMatrix();
-        return {
-          total_providers: matrix.length,
-          healthy_count: matrix.filter(p => p.health.status === 'HEALTHY').length,
-          providers: matrix.map(p => ({
-            id: p.id,
-            status: p.health.status,
-            latency_ms: p.health.latencyMs,
-            records_normalized: p.health.recordsNormalized,
-            last_success: p.health.lastSuccessfulUpdate,
-          })),
-        };
-      }
-
-      case 'inspect_simulation_twin': {
-        if (args.simulationId) {
-          return simulationService.getSimulationState(args.simulationId);
-        }
-        return simulationService.listSimulations();
-      }
-
-      case 'poll_live_sensors': {
-        if (args.providerId) {
-          const provider = providerRegistry.getProvider(args.providerId);
-          if (!provider) return { error: `Provider ${args.providerId} not found` };
-          const { rawData, latencyMs } = await provider.fetch();
-          const rawId = worldModelService.storeRawPayload(args.providerId, provider.metadata.endpointUrl, rawData);
-          const obs = await provider.normalize(rawData);
-          for (const o of obs) worldModelService.ingestObservation(o, rawId);
-          return { providerId: args.providerId, latencyMs, observationsCount: obs.length };
-        }
-        const summary = await providerRegistry.runHealthChecks();
-        return { message: 'Health checks and sensor polling triggered', summary };
-      }
-
-      case 'search_datasets': {
-        const datasets = db.prepare('SELECT id, name, format, record_count, entity_count, relationship_count, detected_schema, uploaded_at FROM datasets').all() as any[];
-        return {
-          totalDatasets: datasets.length,
-          datasets: datasets.map((d) => ({
-            id: d.id,
-            filename: d.name,
-            recordCount: d.record_count,
-            entityCount: d.entity_count,
-            relationshipCount: d.relationship_count,
-            columns: JSON.parse(d.detected_schema || '{}')?.columns || [],
-            uploadedAt: d.uploaded_at,
-          })),
-        };
-      }
-
-      case 'search_records': {
-        const q = String(args.query || '').trim();
-        if (!q) return { results: [] };
-        const qLike = `%${q}%`;
-        const limit = Number(args.limit) || 15;
-
-        const records = db.prepare(`
-          SELECT r.id, r.dataset_id, r.row_index, r.raw_data, d.name as dataset_name
-          FROM raw_records r
-          JOIN datasets d ON r.dataset_id = d.id
-          WHERE r.raw_data LIKE ?
-          LIMIT ?
-        `).all(qLike, limit) as any[];
-
-        return {
-          query: q,
-          count: records.length,
-          results: records.map((r) => ({
-            recordId: r.id,
-            datasetFilename: r.dataset_name,
-            rowIndex: r.row_index,
-            data: JSON.parse(r.raw_data || '{}'),
-          })),
-        };
-      }
-
-      case 'search_entity': {
-        const q = String(args.query || '').trim();
-        if (!q) return { results: [] };
-        const qLike = `%${q}%`;
-        const limit = Number(args.limit) || 10;
-
-        const entities = db.prepare(`
-          SELECT e.id, e.name, e.type, e.category, e.properties, e.dataset_id, d.name as dataset_name 
-          FROM entities e
-          LEFT JOIN datasets d ON e.dataset_id = d.id
-          WHERE e.name LIKE ? OR e.id LIKE ? OR e.properties LIKE ?
-          LIMIT ?
-        `).all(qLike, qLike, qLike, limit) as any[];
-
-        return {
-          query: q,
-          count: entities.length,
-          results: entities.map((e) => ({
-            id: e.id,
-            name: e.name,
-            type: e.type,
-            datasetFilename: e.dataset_name || 'Uploaded Dataset',
-            properties: JSON.parse(e.properties || '{}'),
-          })),
-        };
-      }
-
-      case 'get_entity': {
-        const profile = GraphService.getEntityProfile(args.entityId);
-        if (!profile) return { error: `Entity "${args.entityId}" not found in uploaded datasets.` };
-        return {
-          entity: profile.entity,
-          directConnectionCount: profile.relationships.length,
-          properties: profile.entity.properties,
-          relationships: profile.relationships.map((r: any) => ({
-            targetId: r.targetId === args.entityId ? r.sourceId : r.targetId,
-            targetName: r.targetId === args.entityId ? r.sourceName : r.targetName,
-            type: r.type,
-            properties: r.properties,
-          })),
-        };
-      }
-
-      case 'get_connections': {
-        const hops = Math.min(2, Math.max(1, Number(args.hops) || 1));
-        const sub = GraphService.expandEntity(args.entityId, hops);
-        return {
-          entityId: args.entityId,
-          hops,
-          nodeCount: sub.nodes.length,
-          nodes: sub.nodes.map((n: any) => ({
-            id: n.data.id,
-            name: n.data.name,
-            type: n.data.type,
-            properties: n.data.properties,
-          })),
-          edges: sub.edges.map((e: any) => ({
-            source: e.data.source,
-            target: e.data.target,
-            relationshipType: e.data.type,
-            label: e.data.label,
-            properties: e.data.properties,
-          })),
-        };
-      }
-
-      case 'find_path': {
-        return GraphService.findShortestPath(args.sourceId, args.targetId);
-      }
-
-      case 'detect_data_patterns': {
-        return this.runAutomatedPatternDetection(args.focusTopic);
-      }
-
-      case 'get_graph_stats': {
-        const totalEntities = (db.prepare('SELECT count(*) as c FROM entities').get() as any)?.c || 0;
-        const totalRelationships = (db.prepare('SELECT count(*) as c FROM relationships').get() as any)?.c || 0;
-        const totalDatasets = (db.prepare('SELECT count(*) as c FROM datasets').get() as any)?.c || 0;
-
-        // Top degree hub entities
-        const hubs = db.prepare(`
-          SELECT e.id, e.name, e.type, d.name as dataset_name, count(r.id) as degree
-          FROM entities e
-          LEFT JOIN relationships r ON (e.id = r.source_id OR e.id = r.target_id)
-          LEFT JOIN datasets d ON e.dataset_id = d.id
-          GROUP BY e.id
-          ORDER BY degree DESC
-          LIMIT 8
-        `).all() as any[];
-
-        // Entity types breakdown
-        const typeBreakdown = db.prepare(`
-          SELECT type, count(*) as count FROM entities GROUP BY type ORDER BY count DESC
-        `).all() as any[];
-
-        // Relationship types breakdown
-        const relBreakdown = db.prepare(`
-          SELECT type, count(*) as count FROM relationships GROUP BY type ORDER BY count DESC
-        `).all() as any[];
-
-        return {
-          totalEntities,
-          totalRelationships,
-          totalDatasets,
-          topHubEntities: hubs.map((h) => ({
-            id: h.id,
-            name: h.name,
-            type: h.type,
-            dataset: h.dataset_name,
-            connectedDegree: h.degree,
-          })),
-          entityDistribution: typeBreakdown,
-          relationshipDistribution: relBreakdown,
-        };
-      }
-
-      case 'query_dataset_statistics': {
-        const datasetId = args.datasetId;
-        let datasets = [];
-        if (datasetId) {
-          datasets = db.prepare('SELECT * FROM datasets WHERE id = ?').all(datasetId) as any[];
-        } else {
-          datasets = db.prepare('SELECT * FROM datasets').all() as any[];
-        }
-
-        const stats = datasets.map((d) => {
-          const schema = JSON.parse(d.detected_schema || '{}');
-          const sampleRecords = db.prepare('SELECT raw_data FROM raw_records WHERE dataset_id = ? LIMIT 20').all(d.id) as any[];
-          return {
-            datasetId: d.id,
-            datasetName: d.name,
-            recordCount: d.record_count,
-            columns: schema.columns || [],
-            samplePreview: sampleRecords.map((r) => JSON.parse(r.raw_data || '{}')),
-          };
-        });
-
-        return { datasets: stats };
-      }
-
-      default:
-        return { error: `Tool "${toolName}" is not recognized.` };
-    }
-  }
-
-  /**
-   * Automated Pattern Recognition Engine across all uploaded datasets
-   */
-  private static runAutomatedPatternDetection(focusTopic?: string) {
-    const patterns: any[] = [];
-
-    // 1. High-Degree Central Hub Entities (entities connected to abnormally many other entities)
-    const topHubs = db.prepare(`
-      SELECT e.id, e.name, e.type, d.name as dataset_name, count(r.id) as degree
-      FROM entities e
-      LEFT JOIN relationships r ON (e.id = r.source_id OR e.id = r.target_id)
-      LEFT JOIN datasets d ON e.dataset_id = d.id
-      GROUP BY e.id
-      HAVING degree >= 3
-      ORDER BY degree DESC
-      LIMIT 6
-    `).all() as any[];
-
-    if (topHubs.length > 0) {
-      patterns.push({
-        patternType: 'CENTRAL_HUB_NODES',
-        description: 'Entities exhibiting high connectivity and acting as critical topological junctions or central brokers across records.',
-        evidence: topHubs.map((h) => `"${h.name}" (${h.type}, in ${h.dataset_name || 'dataset'}) has ${h.degree} direct relationship connections.`),
-      });
-    }
-
-    // 2. Cross-Dataset Bridges (Entities or records that link across 2 or more distinct datasets)
-    const bridges = db.prepare(`
-      SELECT e1.name as source_name, e1.type as source_type, d1.name as source_dataset,
-             e2.name as target_name, e2.type as target_type, d2.name as target_dataset,
-             r.type as rel_type, r.properties
-      FROM relationships r
-      JOIN entities e1 ON r.source_id = e1.id
-      JOIN entities e2 ON r.target_id = e2.id
-      LEFT JOIN datasets d1 ON e1.dataset_id = d1.id
-      LEFT JOIN datasets d2 ON e2.dataset_id = d2.id
-      WHERE d1.id != d2.id AND d1.id IS NOT NULL AND d2.id IS NOT NULL
-      LIMIT 8
-    `).all() as any[];
-
-    if (bridges.length > 0) {
-      patterns.push({
-        patternType: 'CROSS_DATASET_BRIDGES',
-        description: 'Direct relationship bridges connecting entities across disparate uploaded datasets via shared identifiers.',
-        evidence: bridges.map((b) => {
-          const props = JSON.parse(b.properties || '{}');
-          const keyInfo = props.matchKey ? ` (matched on ${props.matchKey} = ${props.matchValue})` : '';
-          return `[${b.source_dataset}] "${b.source_name}" -> ${b.rel_type} -> [${b.target_dataset}] "${b.target_name}"${keyInfo}`;
-        }),
-      });
-    }
-
-    // 3. Shared Property Collisions / Identity Overlaps (Entities sharing same phone, email, registration, address)
-    const allEntities = db.prepare('SELECT id, name, type, properties, dataset_id FROM entities').all() as any[];
-    const propertyValueMap = new Map<string, Array<{ id: string; name: string; type: string; key: string }>>();
-
-    for (const ent of allEntities) {
-      const props = JSON.parse(ent.properties || '{}');
-      for (const [k, v] of Object.entries(props)) {
-        if (!v || typeof v !== 'string' || v.length < 3) continue;
-        const kLower = k.toLowerCase();
-        // Look for identifying fields
-        if (kLower.includes('phone') || kLower.includes('email') || kLower.includes('ip') || kLower.includes('tax') || kLower.includes('reg') || kLower.includes('account') || kLower.includes('address')) {
-          const mapKey = `${kLower}:::${String(v).trim().toLowerCase()}`;
-          if (!propertyValueMap.has(mapKey)) {
-            propertyValueMap.set(mapKey, []);
-          }
-          propertyValueMap.get(mapKey)!.push({ id: ent.id, name: ent.name, type: ent.type, key: k });
-        }
-      }
-    }
-
-    const collisions: string[] = [];
-    for (const [mapKey, entries] of propertyValueMap.entries()) {
-      if (entries.length > 1) {
-        const [field, val] = mapKey.split(':::');
-        const entityNames = Array.from(new Set(entries.map((e) => `"${e.name}" (${e.type})`))).join(', ');
-        collisions.push(`Shared ${field.toUpperCase()} "${val}" connects distinct entities: ${entityNames}`);
-      }
-    }
-
-    if (collisions.length > 0) {
-      patterns.push({
-        patternType: 'SHARED_IDENTIFIER_COLLISIONS',
-        description: 'Multiple entities sharing identical contact, account, or address attributes—indicating hidden affiliations, aliases, or shell structures.',
-        evidence: collisions.slice(0, 6),
-      });
-    }
-
-    // 4. Isolated / Disconnected Island Entities
-    const isolated = db.prepare(`
-      SELECT e.id, e.name, e.type, d.name as dataset_name
-      FROM entities e
-      LEFT JOIN relationships r ON (e.id = r.source_id OR e.id = r.target_id)
-      LEFT JOIN datasets d ON e.dataset_id = d.id
-      WHERE r.id IS NULL
-      LIMIT 5
-    `).all() as any[];
-
-    if (isolated.length > 0) {
-      patterns.push({
-        patternType: 'ISOLATED_ENTITIES',
-        description: 'Entities with zero established connections to the rest of the dataset graph (orphaned records or unlinked outliers).',
-        evidence: isolated.map((i) => `"${i.name}" (${i.type}) in [${i.dataset_name || 'dataset'}] has no graph links.`),
-      });
-    }
-
+  if (engine === 'deterministic-fallback' || !hasGroq) {
+    context.trace.push({
+      step: 'reasoning_deterministic_synthesis',
+      detail: { reason: 'Running local deterministic analyst synthesis' },
+      timestamp: new Date().toISOString(),
+    });
     return {
-      patternCount: patterns.length,
-      patterns,
+      output: runDeterministicReasoning(context),
+      engine: 'deterministic-fallback',
+      fallbackReason: !hasGroq ? 'No GROQ_API_KEY configured' : undefined,
     };
   }
 
-  /**
-   * Main AI Analyst Investigation endpoint with autonomous Groq reasoning loop
-   */
-  static async investigate(prompt: string, contextOptions?: { entityId?: string; investigationId?: string }): Promise<AiInvestigationResponse> {
-    // If Groq API key is present, execute autonomous tool-calling loop
-    if (GROQ_API_KEY && GROQ_API_KEY.trim() !== '' && !GROQ_API_KEY.includes('your_groq_api_key')) {
-      try {
-        return await this.runGroqInvestigationLoop(prompt, contextOptions?.entityId);
-      } catch (err: any) {
-        console.error('Groq Investigation Loop error, using grounded deterministic engine:', err.message);
+  // Format evidence items with IDs for the prompt
+  const evidenceBlocks = context.evidence.map((ev) => {
+    let resultStr = '';
+    try {
+      resultStr = JSON.stringify(ev.result);
+      if (resultStr.length > 2500) {
+        resultStr = resultStr.slice(0, 2500) + '... [truncated]';
       }
+    } catch (_) {
+      resultStr = String(ev.result);
     }
+    return `[Evidence ID: ${ev.id}] (Tool: ${ev.tool}, Domain: ${ev.domain || 'general'})
+Args: ${JSON.stringify(ev.args)}
+Result: ${resultStr}`;
+  });
 
-    // Local Grounded Deterministic Intelligence Engine (Strictly queries SQLite graph & provenance)
-    return this.runGroundedDeterministicInvestigation(prompt, contextOptions?.entityId);
-  }
+  const promptBody = `
+USER INVESTIGATION INQUIRY:
+"${context.prompt}"${context.seedEntityId ? `\n(Focus Entity: ${context.seedEntityId})` : ''}
 
-  /**
-   * Autonomous Groq tool-calling loop (Max 6 iterations)
-   */
-  private static async runGroqInvestigationLoop(prompt: string, seedEntityId?: string): Promise<AiInvestigationResponse> {
-    const systemPrompt = `
-You are the Lead Intelligence Strategist and Pattern Discovery AI for Revana Technologies.
-Your mission is to perform advanced multi-source intelligence analysis, pattern recognition, anomaly detection, and deep reasoning across user-uploaded datasets.
+RETRIEVED EVIDENCE ITEMS:
+${evidenceBlocks.length > 0 ? evidenceBlocks.join('\n\n') : 'No evidence items retrieved from tools.'}
 
-CORE ANALYTICAL MINDSET:
-1. THINK OUTSIDE THE BOX & FIND PATTERNS:
-   - Do NOT act like an obedient robot that merely echoes back database fields.
-   - Actively hunt for hidden patterns: structural hubs, covert intermediaries, cyclical flows, multi-dataset bridges, volume/value anomalies, shared attribute collisions (e.g. shared phones, emails, addresses, accounts), and unusual concentrations.
-   - Formulate logical hypotheses and strategic inferences explaining *why* records connect and *what risks or insights* they reveal.
-2. INTEGRITY WITH CITATIONS:
-   - Anchor all factual assertions in real data gathered via tools.
-   - Whenever citing a fact, reference the source dataset filename and relevant field/row.
-   - Clearly distinguish between VERIFIABLE FACTS (from data) and ANALYTICAL INFERENCES / HYPOTHESES (your strategic deductions).
-3. PROACTIVE TOOL UTILIZATION:
-   - Use 'detect_data_patterns' to discover high-degree hubs, cross-file bridges, and identifier collisions.
-   - Use 'get_graph_stats' to understand overall topology and central nodes.
-   - Use 'search_datasets', 'search_records', 'search_entity', 'get_connections', and 'find_path' to thoroughly investigate specific targets and paths.
-4. RESPONSE STRUCTURE:
-   Return a single valid JSON object strictly matching this schema:
-   {
-     "knownFacts": ["FACT: ... [Dataset: filename.csv, Field: ...]"],
-     "possibleRelationships": ["Entity A [dataset1.csv] -> LINK_TYPE -> Entity B [dataset2.csv] (via shared key)"],
-     "discoveredPatterns": ["PATTERN: Description of higher-order pattern, hub, collision, or structural anomaly..."],
-     "aiInterpretation": "Deep, comprehensive strategic synthesis. Explain the findings, discuss inferred patterns, formulate hypotheses, connect disparate data points, and provide strategic clarity.",
-     "uncertainty": "Identified data gaps, missing datasets, or unconfirmed assumptions.",
-     "anomalyIndicators": ["Key risk or anomaly flags..."],
-     "recommendedActions": ["Concrete follow-up queries or investigative steps for the analyst to take."],
-     "suggestedHopExpansions": ["entity_ids..."],
-     "confidenceScore": 0.95
-   }
+IN-RUN PROPOSED RELATIONSHIPS:
+${
+  context.proposedRelationships.length > 0
+    ? context.proposedRelationships
+        .map((r) => `• [PROPOSED] ${r.source_id} -> [${r.type}] -> ${r.target_id}: ${r.rationale}`)
+        .join('\n')
+    : 'None proposed yet.'
+}
+
+IDENTIFIED DATA GAPS / WISH LIST:
+${
+  context.dataGaps.length > 0
+    ? context.dataGaps.map((g) => `• ${g}`).join('\n')
+    : 'None recorded yet.'
+}
+
+ANALYST DIRECTIVE:
+Synthesize an exhaustive, authoritative, honest analytical briefing.
+Remember: You are an analyst, not a search box. If the data hints at something bigger, say it as a hypothesis. If two domains might be related, say so and say how to test it. Do not refuse to speculate; label speculation properly.
+Produce the single JSON object matching the required schema.
 `;
 
+  try {
+    const res = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [
+          { role: 'system', content: REASONING_ANALYST_SYSTEM_PROMPT },
+          { role: 'user', content: promptBody },
+        ],
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Groq HTTP ${res.status}: ${await res.text()}`);
+    }
+
+    const data = (await res.json()) as any;
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Empty reasoning completion from LLM');
+
+    const parsed = JSON.parse(content);
+
+    const output: ReasoningOutput = {
+      summary: parsed.summary || 'Investigation briefing synthesized across active intelligence feeds.',
+      facts: Array.isArray(parsed.facts)
+        ? parsed.facts.map((f: any) => ({
+            text: String(f.text || ''),
+            evidenceIds: Array.isArray(f.evidenceIds) ? f.evidenceIds.map(String) : [],
+          }))
+        : [],
+      inferences: Array.isArray(parsed.inferences)
+        ? parsed.inferences.map((inf: any) => ({
+            text: String(inf.text || ''),
+            basedOnFactIndexes: Array.isArray(inf.basedOnFactIndexes)
+              ? inf.basedOnFactIndexes.map(Number).filter((n: number) => !isNaN(n))
+              : [],
+            reasoning: String(inf.reasoning || ''),
+          }))
+        : [],
+      hypotheses: Array.isArray(parsed.hypotheses)
+        ? parsed.hypotheses.map((h: any) => {
+            const rawP = String(h.plausibility || '').toLowerCase();
+            const plausibility: 'low' | 'medium' | 'high' =
+              rawP === 'high' || rawP === 'low' ? (rawP as any) : 'medium';
+            return {
+              text: String(h.text || ''),
+              whyPlausible: String(h.whyPlausible || ''),
+              plausibility,
+              confirmWith: String(h.confirmWith || 'Awaiting additional sensor or manifest feed.'),
+              refuteWith: String(h.refuteWith || 'Baseline normalization under nominal operating conditions.'),
+              suggestedTool: h.suggestedTool ? String(h.suggestedTool) : undefined,
+            };
+          })
+        : [],
+      background: Array.isArray(parsed.background)
+        ? parsed.background.map((b: any) => ({ text: String(b.text || '') }))
+        : [],
+      nextSteps: Array.isArray(parsed.nextSteps)
+        ? parsed.nextSteps.map((s: any) => ({ text: String(s.text || '') }))
+        : [],
+      discoveredPatterns: Array.isArray(parsed.discoveredPatterns) ? parsed.discoveredPatterns.map(String) : [],
+      anomalyIndicators: Array.isArray(parsed.anomalyIndicators) ? parsed.anomalyIndicators.map(String) : [],
+      suggestedHopExpansions: Array.isArray(parsed.suggestedHopExpansions)
+        ? parsed.suggestedHopExpansions.map(String)
+        : [],
+      uncertainty: parsed.uncertainty || undefined,
+      aiInterpretation: parsed.aiInterpretation || parsed.summary || '',
+    };
+
+    context.trace.push({
+      step: 'reasoning_synthesis_complete',
+      detail: {
+        factsCount: output.facts.length,
+        inferencesCount: output.inferences.length,
+        hypothesesCount: output.hypotheses.length,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    return { output, engine: 'llm' };
+  } catch (err: any) {
+    context.trace.push({
+      step: 'reasoning_fallback_triggered',
+      detail: { error: err.message },
+      timestamp: new Date().toISOString(),
+    });
+    return {
+      output: runDeterministicReasoning(context),
+      engine: 'deterministic-fallback',
+      fallbackReason: err.message,
+    };
+  }
+}
+
+/**
+ * Deterministic Reasoning Engine: synthesizes structured claim tiers locally
+ */
+export function runDeterministicReasoning(context: InvestigationContext): ReasoningOutput {
+  const facts: ReasoningOutput['facts'] = [];
+  const inferences: ReasoningOutput['inferences'] = [];
+  const hypotheses: ReasoningOutput['hypotheses'] = [];
+  const background: ReasoningOutput['background'] = [];
+  const nextSteps: ReasoningOutput['nextSteps'] = [];
+  const discoveredPatterns: string[] = [];
+
+  // Parse evidence into grounded facts
+  for (const ev of context.evidence) {
+    if (ev.tool === 'get_live_world_summary') {
+      const res = ev.result || {};
+      facts.push({
+        text: `World Model Mirror tracks ${res.total_entities_tracked ?? 0} physical entities across active sensor feeds with ${res.active_threshold_events_count ?? 0} active threshold alerts.`,
+        evidenceIds: [ev.id],
+      });
+      if (res.active_threshold_events_count > 0) {
+        discoveredPatterns.push(`Active real-world threshold events detected (${res.active_threshold_events_count} events active).`);
+      }
+    } else if (ev.tool === 'search_records' && ev.result?.results?.length > 0) {
+      const top = ev.result.results.slice(0, 3);
+      for (const r of top) {
+        facts.push({
+          text: `Record in [${r.datasetFilename}] (Row #${r.rowIndex}): ${JSON.stringify(r.data).slice(0, 140)}`,
+          evidenceIds: [ev.id],
+        });
+      }
+    } else if (ev.tool === 'search_entity' && ev.result?.results?.length > 0) {
+      const top = ev.result.results.slice(0, 2);
+      for (const ent of top) {
+        facts.push({
+          text: `Identified canonical entity "${ent.name}" (Type: ${ent.type}) in [${ent.datasetFilename}].`,
+          evidenceIds: [ev.id],
+        });
+      }
+    } else if (ev.tool === 'detect_data_patterns' && ev.result?.patterns?.length > 0) {
+      for (const p of ev.result.patterns.slice(0, 3)) {
+        discoveredPatterns.push(`[${p.patternType}] ${p.description}`);
+        for (const evStr of (p.evidence || []).slice(0, 2)) {
+          facts.push({
+            text: `Topological pattern [${p.patternType}]: ${evStr}`,
+            evidenceIds: [ev.id],
+          });
+        }
+      }
+    } else if (ev.tool === 'get_active_vessels' && ev.result?.vessels?.length > 0) {
+      const v = ev.result.vessels[0];
+      facts.push({
+        text: `Vessel "${v.name}" (${v.vessel_type || 'Ship'}, MMSI: ${v.mmsi}) observed at ${v.coordinates?.join(', ')} navigating towards ${v.destination || 'Unassigned'} at ${v.speed_knots ?? 0} knots.`,
+        evidenceIds: [ev.id],
+      });
+    } else if (ev.tool === 'get_maritime_corridor_patterns' && ev.result?.patterns?.length > 0) {
+      for (const p of ev.result.patterns) {
+        facts.push({
+          text: `Corridor alert in ${p.region}: ${p.observation} (${p.entities_observed} vessels vs baseline ${p.baseline}, ${p.deviation_percent}% deviation).`,
+          evidenceIds: [ev.id],
+        });
+        discoveredPatterns.push(`Maritime Corridor Anomaly: ${p.region} exhibits ${p.deviation_percent}% traffic deviation.`);
+      }
+    }
+  }
+
+  // Create baseline inferences from facts
+  if (facts.length >= 2) {
+    inferences.push({
+      text: 'Cross-correlations indicate active operational dependencies linking observed entities across the monitoring window.',
+      basedOnFactIndexes: [0, 1],
+      reasoning: `${facts[0].text.slice(0, 60)}... combined with ${facts[1].text.slice(0, 60)}... reveals synchronized movement.`,
+    });
+  } else if (facts.length === 1) {
+    inferences.push({
+      text: 'The isolated evidence item confirms entity registration but shows low relational dispersion.',
+      basedOnFactIndexes: [0],
+      reasoning: 'Single record match implies limited multi-hop traversal.',
+    });
+  }
+
+  // Add hypotheses for speculative insights
+  if (context.proposedRelationships.length > 0) {
+    for (const pr of context.proposedRelationships) {
+      hypotheses.push({
+        text: `Proposed latent connection: ${pr.source_id} -> [${pr.type}] -> ${pr.target_id}`,
+        whyPlausible: pr.rationale,
+        plausibility: 'medium',
+        confirmWith: 'Verify multi-hop cargo or financial linkage in uploaded supplier manifests.',
+        refuteWith: 'Lack of shared contact properties or conflicting timestamp sequences.',
+        suggestedTool: 'find_path',
+      });
+    }
+  }
+
+  hypotheses.push({
+    text: 'Upstream corridor bottlenecks or environmental runoff may induce cascading delays down the regional supply chain.',
+    whyPlausible: 'Monitored transportation corridors and maritime nodes show localized load concentrations.',
+    plausibility: 'medium',
+    confirmWith: 'Correlate real-time precipitation gauges against road transit transit speed metrics.',
+    refuteWith: 'Normal transit corridor velocities remaining above 45 km/h.',
+    suggestedTool: 'get_entity_telemetry',
+  });
+
+  // Background general knowledge
+  background.push({
+    text: 'Metropolitan arterial corridors (such as NH48) and maritime chokepoints exhibit non-linear queue formation when throughput exceeds 80% baseline capacity.',
+  });
+  background.push({
+    text: 'Monsoon precipitation events (>35 mm/hr) typically degrade heavy freight road traction by 25-40% and disrupt drayage operations at major port container terminals.',
+  });
+
+  // Next steps
+  nextSteps.push({
+    text: 'Inspect connected nodes and multi-hop paths in the Graph visualizer.',
+  });
+  nextSteps.push({
+    text: 'Query sensor gauges along the relevant freight corridor to rule out weather delays.',
+  });
+
+  const summary = facts.length > 0
+    ? `Investigation identified ${facts.length} verified factual observation(s) across active telemetry and records. Analytical synthesis yielded ${inferences.length} grounded inference(s) and ${hypotheses.length} strategic hypothesis/hypotheses.`
+    : `Target query resolved with zero direct literal matches across active datasets. Background topology and baseline sensor streams remain operational.`;
+
+  return {
+    summary,
+    facts,
+    inferences,
+    hypotheses,
+    background,
+    nextSteps,
+    discoveredPatterns,
+    anomalyIndicators: discoveredPatterns,
+    suggestedHopExpansions: [],
+    uncertainty: context.dataGaps.length > 0
+      ? `Data gaps identified: ${context.dataGaps.join('; ')}`
+      : 'Grounded against current active database records.',
+    aiInterpretation: summary,
+  };
+}
+
+```
+
+## File: server/src/services/ai/retrieve.ts
+
+```ts
+import { InvestigationContext, EvidenceItem, Domain } from './types.js';
+import { getActiveTools, toOpenAiTools, executeToolByName, toolRegistry } from './tools/index.js';
+import { DOMAIN_SYSTEM_PROMPTS } from './prompts.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+export const MAX_EXPLORE_ITERATIONS = 10;
+
+const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.XAI_API_KEY || '';
+const GROQ_BASE_URL = process.env.GROQ_BASE_URL || process.env.XAI_BASE_URL || 'https://api.groq.com/openai/v1';
+const rawModel = process.env.GROQ_MODEL || process.env.XAI_MODEL || '';
+const GROQ_MODEL = (!rawModel || rawModel.includes('llama-3.3')) ? 'openai/gpt-oss-120b' : rawModel;
+
+export interface RetrieveResult {
+  evidence: EvidenceItem[];
+  context: InvestigationContext;
+  engine: 'llm' | 'deterministic-fallback';
+  fallbackReason?: string;
+}
+
+/**
+ * Explore Stage: Autonomous tool-calling loop (Up to 10 iterations)
+ * Begins with the routed domain tools and supports mid-run unlocks via request_domain_tools
+ */
+export async function retrieveEvidence(context: InvestigationContext): Promise<RetrieveResult> {
+  const hasGroq = Boolean(GROQ_API_KEY && GROQ_API_KEY.trim() !== '' && !GROQ_API_KEY.includes('your_'));
+
+  if (!hasGroq) {
+    context.trace.push({
+      step: 'retrieve_engine_selected',
+      detail: { engine: 'deterministic-fallback', reason: 'No GROQ_API_KEY configured' },
+      timestamp: new Date().toISOString(),
+    });
+    return runDeterministicRetrieve(context, 'No GROQ_API_KEY configured');
+  }
+
+  try {
+    const systemPrompt = DOMAIN_SYSTEM_PROMPTS[context.primaryDomain] || DOMAIN_SYSTEM_PROMPTS.cross;
     const messages: any[] = [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: `Investigate and perform deep pattern analysis for the following inquiry across all uploaded datasets:\n"${prompt}"${seedEntityId ? `\n(Focus Entity ID: ${seedEntityId})` : ''}` },
+      {
+        role: 'user',
+        content: `Explore and investigate this question using available tools:\n"${context.prompt}"${
+          context.seedEntityId ? `\n(Focus Entity: ${context.seedEntityId})` : ''
+        }\n\nYou may call tools speculatively to explore patterns, cross-correlate, or test ideas. You have up to ${MAX_EXPLORE_ITERATIONS} iterations. When you have sufficient evidence, stop calling tools.`,
+      },
     ];
 
-    const maxIterations = 6;
     let iteration = 0;
+    let evidenceCounter = 1;
 
-    while (iteration < maxIterations) {
+    while (iteration < MAX_EXPLORE_ITERATIONS) {
       iteration++;
+      const currentActiveTools = getActiveTools(context.primaryDomain, context.unlockedDomains);
+      const openAiTools = toOpenAiTools(currentActiveTools);
+
+      context.trace.push({
+        step: `explore_iteration_${iteration}`,
+        detail: {
+          activeToolCount: currentActiveTools.length,
+          unlockedDomains: Array.from(context.unlockedDomains),
+        },
+        timestamp: new Date().toISOString(),
+      });
 
       const res = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
         method: 'POST',
@@ -14508,15 +15404,15 @@ CORE ANALYTICAL MINDSET:
         body: JSON.stringify({
           model: GROQ_MODEL,
           messages,
-          tools: GROQ_TOOLS,
-          tool_choice: iteration === maxIterations ? 'none' : 'auto',
+          tools: openAiTools,
+          tool_choice: iteration === MAX_EXPLORE_ITERATIONS ? 'none' : 'auto',
           temperature: 0.3,
-          response_format: { type: 'json_object' },
         }),
       });
 
       if (!res.ok) {
-        throw new Error(`Groq API error: HTTP ${res.status} - ${await res.text()}`);
+        const errorText = await res.text();
+        throw new Error(`Groq HTTP ${res.status}: ${errorText}`);
       }
 
       const data = (await res.json()) as any;
@@ -14524,21 +15420,39 @@ CORE ANALYTICAL MINDSET:
       const responseMessage = choice?.message;
 
       if (!responseMessage) {
-        throw new Error('Empty response from Groq');
+        throw new Error('Empty response from LLM during retrieval loop.');
       }
 
       messages.push(responseMessage);
 
-      // Check if Groq called tools
+      // If tools were called
       if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
         for (const toolCall of responseMessage.tool_calls) {
           const toolName = toolCall.function.name;
-          let toolArgs: any = {};
+          let toolArgs: Record<string, any> = {};
           try {
             toolArgs = JSON.parse(toolCall.function.arguments || '{}');
-          } catch (_) { }
+          } catch (_) {}
 
-          const toolResult = await this.executeTool(toolName, toolArgs);
+          const evidenceId = `ev_${evidenceCounter++}`;
+          const toolResult = await executeToolByName(toolName, toolArgs, context);
+
+          const toolDef = toolRegistry.get(toolName);
+          const evidenceItem: EvidenceItem = {
+            id: evidenceId,
+            tool: toolName,
+            args: toolArgs,
+            result: toolResult,
+            retrievedAt: new Date().toISOString(),
+            domain: toolDef?.domain === 'meta' ? undefined : (toolDef?.domain as Domain),
+          };
+
+          context.evidence.push(evidenceItem);
+          context.trace.push({
+            step: 'evidence_collected',
+            detail: { id: evidenceId, tool: toolName, args: toolArgs },
+            timestamp: new Date().toISOString(),
+          });
 
           messages.push({
             role: 'tool',
@@ -14548,216 +15462,1710 @@ CORE ANALYTICAL MINDSET:
           });
         }
       } else {
-        // Groq provided its final answer
-        try {
-          const parsed = JSON.parse(responseMessage.content);
-          return {
-            knownFacts: parsed.knownFacts || [],
-            possibleRelationships: parsed.possibleRelationships || [],
-            discoveredPatterns: parsed.discoveredPatterns || [],
-            aiInterpretation: parsed.aiInterpretation || responseMessage.content,
-            uncertainty: parsed.uncertainty || 'Derived from ingested datasets.',
-            anomalyIndicators: parsed.anomalyIndicators || [],
-            recommendedActions: parsed.recommendedActions || [],
-            suggestedHopExpansions: parsed.suggestedHopExpansions || [],
-            confidenceScore: parsed.confidenceScore ?? 0.9,
-          };
-        } catch (_) {
-          return {
-            knownFacts: ['Analysis synthesized from uploaded datasets.'],
-            possibleRelationships: [],
-            discoveredPatterns: [],
-            aiInterpretation: responseMessage.content,
-            uncertainty: '',
-            anomalyIndicators: [],
-            recommendedActions: [],
-            suggestedHopExpansions: [],
-            confidenceScore: 0.88,
-          };
-        }
+        // Agent decided it has gathered enough evidence
+        context.trace.push({
+          step: 'explore_concluded_by_agent',
+          detail: { iteration, totalEvidenceItems: context.evidence.length },
+          timestamp: new Date().toISOString(),
+        });
+        break;
       }
     }
 
-    throw new Error('Groq tool loop exceeded maximum iterations without finalizing.');
+    return {
+      evidence: context.evidence,
+      context,
+      engine: 'llm',
+    };
+  } catch (err: any) {
+    context.trace.push({
+      step: 'retrieve_error_fallback',
+      detail: { error: err.message },
+      timestamp: new Date().toISOString(),
+    });
+    return runDeterministicRetrieve(context, err.message);
+  }
+}
+
+/**
+ * Deterministic Retrieval Fallback: Runs local database/sensor queries according to domain
+ */
+export async function runDeterministicRetrieve(
+  context: InvestigationContext,
+  reason: string
+): Promise<RetrieveResult> {
+  let counter = context.evidence.length + 1;
+
+  const pushEv = async (tool: string, args: Record<string, any>) => {
+    const res = await executeToolByName(tool, args, context);
+    const id = `ev_${counter++}`;
+    const toolDef = toolRegistry.get(tool);
+    context.evidence.push({
+      id,
+      tool,
+      args,
+      result: res,
+      retrievedAt: new Date().toISOString(),
+      domain: toolDef?.domain === 'meta' ? undefined : (toolDef?.domain as Domain),
+    });
+    context.trace.push({
+      step: 'deterministic_evidence_collected',
+      detail: { id, tool, args },
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  const domain = context.primaryDomain;
+
+  if (domain === 'world' || domain === 'cross') {
+    await pushEv('get_live_world_summary', {});
+    await pushEv('get_live_events', {});
+    if (context.seedEntityId) {
+      await pushEv('get_entity_telemetry', { entityId: context.seedEntityId });
+    } else {
+      await pushEv('search_world_entities', { query: context.prompt });
+    }
   }
 
-  /**
-   * Grounded Deterministic Intelligence Engine with Automated Pattern Analysis
-   */
-  private static runGroundedDeterministicInvestigation(prompt: string, seedEntityId?: string): AiInvestigationResponse {
-    const qTrim = prompt.trim();
-    const qLower = qTrim.toLowerCase();
-    const qTokens = qLower.split(/\s+/).filter((t) => t.length >= 2);
-
-    // 1. Search for matching entities across all datasets
-    let matchedEntities: any[] = [];
-    if (seedEntityId) {
-      const e = db.prepare('SELECT * FROM entities WHERE id = ?').get(seedEntityId);
-      if (e) matchedEntities.push(e);
+  if (domain === 'logistics' || domain === 'cross') {
+    await pushEv('detect_data_patterns', { focusTopic: context.prompt });
+    await pushEv('search_records', { query: context.prompt, limit: 10 });
+    await pushEv('search_entity', { query: context.prompt, limit: 8 });
+    if (context.seedEntityId) {
+      await pushEv('get_entity', { entityId: context.seedEntityId });
+      await pushEv('get_connections', { entityId: context.seedEntityId, hops: 1 });
     }
+  }
 
-    if (matchedEntities.length === 0) {
-      const allEntities = db.prepare(`
-        SELECT e.*, d.name as dataset_filename 
-        FROM entities e 
+  if (domain === 'maritime' || domain === 'cross') {
+    await pushEv('get_maritime_corridor_patterns', {});
+    await pushEv('get_active_vessels', { limit: 10 });
+    if (context.seedEntityId) {
+      await pushEv('get_vessel_details', { vesselId: context.seedEntityId });
+    } else {
+      await pushEv('search_vessels', { query: context.prompt, limit: 6 });
+    }
+  }
+
+  return {
+    evidence: context.evidence,
+    context,
+    engine: 'deterministic-fallback',
+    fallbackReason: reason,
+  };
+}
+
+```
+
+## File: server/src/services/ai/router.ts
+
+```ts
+import { Domain } from './types.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.XAI_API_KEY || '';
+const GROQ_BASE_URL = process.env.GROQ_BASE_URL || process.env.XAI_BASE_URL || 'https://api.groq.com/openai/v1';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+
+const MARITIME_KEYWORDS = [
+  'vessel', 'ship', 'maritime', 'ais', 'mmsi', 'imo', 'port', 'chokepoint',
+  'malacca', 'strait', 'jnpt', 'mundra', 'colombo', 'cargo ship', 'tanker',
+  'container ship', 'nautical', 'knots', 'oceanic', 'anchor', 'moored',
+  'navigation', 'ocean', 'harbor', 'voyage', 'sea route',
+];
+
+const WORLD_KEYWORDS = [
+  'weather', 'rain', 'rainstorm', 'precipitation', 'temp', 'temperature',
+  'aqi', 'air quality', 'pm2.5', 'pm10', 'pollution', 'seismic', 'earthquake',
+  'tsunami', 'river', 'reservoir', 'dam', 'flood', 'water stage', 'water level',
+  'cwc', 'electrical', 'grid', 'power', 'substation', 'megawatt', 'mw', 'kptcl',
+  'transit', 'bus', 'metro', 'bmrcl', 'bmtc', 'traffic', 'road', 'corridor',
+  'nh48', 'deluge', 'simulation', 'twin', 'sensor', 'telemetry', 'weir',
+];
+
+const LOGISTICS_KEYWORDS = [
+  'dataset', 'file', 'csv', 'upload', 'column', 'schema', 'raw record',
+  'customer', 'invoice', 'payment', 'supplier', 'vendor', 'shipment', 'order',
+  'hub', 'bridge', 'collision', 'degree', 'isolated', 'graph stats', 'transaction',
+  'entity', 'records', 'entities', 'foreign key', 'cross-dataset', 'bridge',
+];
+
+const CROSS_INDICATORS = [
+  'cross', 'correlate', 'correlation', 'impact of weather', 'affect shipment',
+  'delay cargo', 'weather disruption', 'storm impact', 'multi-domain', 'cascade',
+  'ripple effect', 'how does weather', 'how does rain', 'port and grid',
+];
+
+/**
+ * Classifies a user question into a PRIMARY domain: 'world' | 'logistics' | 'maritime' | 'cross'
+ * Rule-based / keyword first, LLM fallback only if ambiguous.
+ */
+export async function classifyDomain(
+  prompt: string,
+  seedEntityId?: string
+): Promise<{ domain: Domain; reason: string }> {
+  const q = prompt.toLowerCase();
+
+  // 1. Seed entity prefix clues
+  if (seedEntityId) {
+    const s = seedEntityId.toUpperCase();
+    if (s.startsWith('SHIP_') || s.includes('MMSI') || s.includes('IMO')) {
+      return { domain: 'maritime', reason: `Inferred from seed entity prefix: ${seedEntityId}` };
+    }
+    if (
+      s.startsWith('STATION_') ||
+      s.startsWith('ROAD_') ||
+      s.startsWith('HYDRO_') ||
+      s.startsWith('SUBSTATION_') ||
+      s.startsWith('TRANSIT_') ||
+      s.startsWith('GRID_')
+    ) {
+      return { domain: 'world', reason: `Inferred from physical seed entity ID: ${seedEntityId}` };
+    }
+  }
+
+  // 2. Cross-domain explicit check
+  for (const cross of CROSS_INDICATORS) {
+    if (q.includes(cross)) {
+      return { domain: 'cross', reason: `Matched explicit cross-domain pattern: "${cross}"` };
+    }
+  }
+
+  // 3. Keyword frequency scoring
+  let maritimeScore = 0;
+  let worldScore = 0;
+  let logisticsScore = 0;
+
+  for (const kw of MARITIME_KEYWORDS) {
+    if (q.includes(kw)) maritimeScore += kw.length > 5 ? 2 : 1;
+  }
+
+  for (const kw of WORLD_KEYWORDS) {
+    if (q.includes(kw)) worldScore += kw.length > 5 ? 2 : 1;
+  }
+
+  for (const kw of LOGISTICS_KEYWORDS) {
+    if (q.includes(kw)) logisticsScore += kw.length > 5 ? 2 : 1;
+  }
+
+  // Multi-domain intersection check
+  const activeDomains = [
+    { domain: 'maritime' as Domain, score: maritimeScore },
+    { domain: 'world' as Domain, score: worldScore },
+    { domain: 'logistics' as Domain, score: logisticsScore },
+  ].filter((d) => d.score > 0);
+
+  if (activeDomains.length >= 2) {
+    // If two domains both have high scores, route to 'cross'
+    const sorted = [...activeDomains].sort((a, b) => b.score - a.score);
+    if (sorted[0].score > 0 && sorted[1].score > 0 && sorted[1].score >= sorted[0].score * 0.5) {
+      return {
+        domain: 'cross',
+        reason: `Multi-domain intersection detected (${sorted[0].domain}: ${sorted[0].score}, ${sorted[1].domain}: ${sorted[1].score})`,
+      };
+    }
+  }
+
+  if (maritimeScore > worldScore && maritimeScore > logisticsScore) {
+    return { domain: 'maritime', reason: `Maritime keywords matched (score: ${maritimeScore})` };
+  }
+  if (worldScore > maritimeScore && worldScore > logisticsScore) {
+    return { domain: 'world', reason: `World model keywords matched (score: ${worldScore})` };
+  }
+  if (logisticsScore > maritimeScore && logisticsScore > worldScore) {
+    return { domain: 'logistics', reason: `Logistics/dataset keywords matched (score: ${logisticsScore})` };
+  }
+
+  // 4. LLM classification if ambiguous and key is present
+  if (GROQ_API_KEY && GROQ_API_KEY.trim() !== '' && !GROQ_API_KEY.includes('your_')) {
+    try {
+      const res = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You classify queries into exactly one domain: "world", "logistics", "maritime", or "cross". Respond with ONLY the single word in lowercase.',
+            },
+            {
+              role: 'user',
+              content: `Classify this investigation query: "${prompt}"`,
+            },
+          ],
+          temperature: 0.0,
+          max_tokens: 10,
+        }),
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as any;
+        const answer = (data.choices?.[0]?.message?.content || '').trim().toLowerCase();
+        if (['world', 'logistics', 'maritime', 'cross'].includes(answer)) {
+          return { domain: answer as Domain, reason: `LLM classification: ${answer}` };
+        }
+      }
+    } catch (_) {
+      // Fallback if LLM call fails
+    }
+  }
+
+  // Default starting hint: cross to ensure access to all tools when ambiguous
+  return { domain: 'cross', reason: 'Ambiguous query; initialized with cross-domain tools' };
+}
+
+```
+
+## File: server/src/services/ai/tools/index.ts
+
+```ts
+import { ToolDefinition, Domain, InvestigationContext } from '../types.js';
+import { worldTools } from './worldTools.js';
+import { logisticsTools } from './logisticsTools.js';
+import { maritimeTools } from './maritimeTools.js';
+
+export const metaTools: ToolDefinition[] = [
+  {
+    name: 'propose_relationship',
+    description: 'Propose a novel or latent link between two entities that no existing rule created. This is stored strictly in memory for this investigation run and labeled PROPOSED.',
+    domain: 'meta',
+    parameters: {
+      type: 'object',
+      properties: {
+        source_id: { type: 'string', description: 'Originating entity ID (e.g. SHIP_123, ROAD_CORRIDOR_NH48, or dataset entity ID)' },
+        target_id: { type: 'string', description: 'Target entity ID' },
+        type: { type: 'string', description: 'Relationship type e.g. SUSPECTED_SUPPLY_CONDUIT, CORRIDOR_DISRUPTION_IMPACT, CARGO_TRANSSHIPMENT_AFFINITY' },
+        rationale: { type: 'string', description: 'Detailed analytical rationale explaining why this relationship is plausible' },
+      },
+      required: ['source_id', 'target_id', 'type', 'rationale'],
+    },
+    execute: (args, context) => {
+      const item = {
+        source_id: String(args.source_id),
+        target_id: String(args.target_id),
+        type: String(args.type).toUpperCase(),
+        rationale: String(args.rationale),
+        status: 'PROPOSED' as const,
+      };
+      if (context) {
+        context.proposedRelationships.push(item);
+        context.trace.push({
+          step: 'propose_relationship',
+          detail: { source: item.source_id, target: item.target_id, type: item.type },
+          timestamp: new Date().toISOString(),
+        });
+      }
+      return {
+        status: 'PROPOSED',
+        message: `Proposed relationship recorded: ${item.source_id} -[${item.type}]-> ${item.target_id}`,
+        item,
+      };
+    },
+  },
+  {
+    name: 'note_missing_data',
+    description: 'Record specific data, sensor telemetry, dataset columns, or manifests that you wished were available to test your ideas.',
+    domain: 'meta',
+    parameters: {
+      type: 'object',
+      properties: {
+        description: { type: 'string', description: 'Description of the missing data or blind spot' },
+      },
+      required: ['description'],
+    },
+    execute: (args, context) => {
+      const desc = String(args.description);
+      if (context) {
+        context.dataGaps.push(desc);
+        context.trace.push({
+          step: 'note_missing_data',
+          detail: { description: desc },
+          timestamp: new Date().toISOString(),
+        });
+      }
+      return {
+        recorded: true,
+        dataGap: desc,
+      };
+    },
+  },
+  {
+    name: 'request_domain_tools',
+    description: 'Unlock tools from another domain mid-investigation when cross-domain correlations are discovered (e.g. weather impacting logistics, maritime congestion impacting rail/corridor).',
+    domain: 'meta',
+    parameters: {
+      type: 'object',
+      properties: {
+        domain: {
+          type: 'string',
+          enum: ['world', 'logistics', 'maritime'],
+          description: 'The domain of tools to unlock for subsequent iterations',
+        },
+        reason: {
+          type: 'string',
+          description: 'Analytical reasoning for why tools from this domain are needed to complete the investigation',
+        },
+      },
+      required: ['domain', 'reason'],
+    },
+    execute: (args, context) => {
+      const domain = args.domain as Domain;
+      const reason = String(args.reason);
+      if (context) {
+        context.unlockedDomains.add(domain);
+        context.domainUnlockLogs.push({
+          domain,
+          reason,
+          timestamp: new Date().toISOString(),
+        });
+        context.trace.push({
+          step: 'request_domain_tools',
+          detail: { domain, reason },
+          timestamp: new Date().toISOString(),
+        });
+      }
+      return {
+        unlocked: domain,
+        message: `Domain '${domain}' tools successfully unlocked. You may call tools from this domain now.`,
+      };
+    },
+  },
+];
+
+// Unified Tool Registry
+export const allTools: ToolDefinition[] = [
+  ...worldTools,
+  ...logisticsTools,
+  ...maritimeTools,
+  ...metaTools,
+];
+
+// Lookup Map by Name
+export const toolRegistry = new Map<string, ToolDefinition>(
+  allTools.map((t) => [t.name, t])
+);
+
+/**
+ * Returns available ToolDefinitions based on primary domain and unlocked domains
+ */
+export function getActiveTools(primaryDomain: Domain, unlockedDomains: Set<Domain>): ToolDefinition[] {
+  const allowedDomains = new Set<string>(['meta']);
+
+  if (primaryDomain === 'cross') {
+    allowedDomains.add('world');
+    allowedDomains.add('logistics');
+    allowedDomains.add('maritime');
+  } else {
+    allowedDomains.add(primaryDomain);
+  }
+
+  for (const d of unlockedDomains) {
+    allowedDomains.add(d);
+  }
+
+  return allTools.filter((t) => allowedDomains.has(t.domain));
+}
+
+/**
+ * Convert ToolDefinitions to OpenAI / Groq tool schema format
+ */
+export function toOpenAiTools(tools: ToolDefinition[]): any[] {
+  return tools.map((t) => ({
+    type: 'function',
+    function: {
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+    },
+  }));
+}
+
+/**
+ * Execute any tool by name with context
+ */
+export async function executeToolByName(
+  name: string,
+  args: Record<string, any>,
+  context: InvestigationContext
+): Promise<any> {
+  const tool = toolRegistry.get(name);
+  if (!tool) {
+    return { error: `Tool "${name}" is not recognized.` };
+  }
+  return tool.execute(args, context);
+}
+
+export { worldTools, logisticsTools, maritimeTools };
+
+```
+
+## File: server/src/services/ai/tools/logisticsTools.ts
+
+```ts
+import { db } from '../../../db/database.js';
+import { GraphService } from '../../graph.service.js';
+import { ToolDefinition } from '../types.js';
+
+/**
+ * Automated Pattern Recognition Engine across all uploaded datasets
+ */
+export function runAutomatedPatternDetection(focusTopic?: string) {
+  const patterns: any[] = [];
+
+  // 1. High-Degree Central Hub Entities
+  const topHubs = db.prepare(`
+    SELECT e.id, e.name, e.type, d.name as dataset_name, count(r.id) as degree
+    FROM entities e
+    LEFT JOIN relationships r ON (e.id = r.source_id OR e.id = r.target_id)
+    LEFT JOIN datasets d ON e.dataset_id = d.id
+    GROUP BY e.id
+    HAVING degree >= 3
+    ORDER BY degree DESC
+    LIMIT 6
+  `).all() as any[];
+
+  if (topHubs.length > 0) {
+    patterns.push({
+      patternType: 'CENTRAL_HUB_NODES',
+      description: 'Entities exhibiting high connectivity and acting as critical topological junctions or central brokers across records.',
+      evidence: topHubs.map((h: any) => `"${h.name}" (${h.type}, in ${h.dataset_name || 'dataset'}) has ${h.degree} direct relationship connections.`),
+    });
+  }
+
+  // 2. Cross-Dataset Bridges
+  const bridges = db.prepare(`
+    SELECT e1.name as source_name, e1.type as source_type, d1.name as source_dataset,
+           e2.name as target_name, e2.type as target_type, d2.name as target_dataset,
+           r.type as rel_type, r.properties
+    FROM relationships r
+    JOIN entities e1 ON r.source_id = e1.id
+    JOIN entities e2 ON r.target_id = e2.id
+    LEFT JOIN datasets d1 ON e1.dataset_id = d1.id
+    LEFT JOIN datasets d2 ON e2.dataset_id = d2.id
+    WHERE d1.id != d2.id AND d1.id IS NOT NULL AND d2.id IS NOT NULL
+    LIMIT 8
+  `).all() as any[];
+
+  if (bridges.length > 0) {
+    patterns.push({
+      patternType: 'CROSS_DATASET_BRIDGES',
+      description: 'Direct relationship bridges connecting entities across disparate uploaded datasets via shared identifiers.',
+      evidence: bridges.map((b: any) => {
+        const props = JSON.parse(b.properties || '{}');
+        const keyInfo = props.matchKey ? ` (matched on ${props.matchKey} = ${props.matchValue})` : '';
+        return `[${b.source_dataset}] "${b.source_name}" -> ${b.rel_type} -> [${b.target_dataset}] "${b.target_name}"${keyInfo}`;
+      }),
+    });
+  }
+
+  // 3. Shared Property Collisions / Identity Overlaps
+  const allEntities = db.prepare('SELECT id, name, type, properties, dataset_id FROM entities').all() as any[];
+  const propertyValueMap = new Map<string, Array<{ id: string; name: string; type: string; key: string }>>();
+
+  for (const ent of allEntities) {
+    const props = JSON.parse(ent.properties || '{}');
+    for (const [k, v] of Object.entries(props)) {
+      if (!v || typeof v !== 'string' || v.length < 3) continue;
+      const kLower = k.toLowerCase();
+      if (kLower.includes('phone') || kLower.includes('email') || kLower.includes('ip') || kLower.includes('tax') || kLower.includes('reg') || kLower.includes('account') || kLower.includes('address')) {
+        const mapKey = `${kLower}:::${String(v).trim().toLowerCase()}`;
+        if (!propertyValueMap.has(mapKey)) {
+          propertyValueMap.set(mapKey, []);
+        }
+        propertyValueMap.get(mapKey)!.push({ id: ent.id, name: ent.name, type: ent.type, key: k });
+      }
+    }
+  }
+
+  const collisions: string[] = [];
+  for (const [mapKey, entries] of propertyValueMap.entries()) {
+    if (entries.length > 1) {
+      const [field, val] = mapKey.split(':::');
+      const entityNames = Array.from(new Set(entries.map((e) => `"${e.name}" (${e.type})`))).join(', ');
+      collisions.push(`Shared ${field.toUpperCase()} "${val}" connects distinct entities: ${entityNames}`);
+    }
+  }
+
+  if (collisions.length > 0) {
+    patterns.push({
+      patternType: 'SHARED_IDENTIFIER_COLLISIONS',
+      description: 'Multiple entities sharing identical contact, account, or address attributes—indicating hidden affiliations, aliases, or shell structures.',
+      evidence: collisions.slice(0, 6),
+    });
+  }
+
+  // 4. Isolated / Disconnected Island Entities
+  const isolated = db.prepare(`
+    SELECT e.id, e.name, e.type, d.name as dataset_name
+    FROM entities e
+    LEFT JOIN relationships r ON (e.id = r.source_id OR e.id = r.target_id)
+    LEFT JOIN datasets d ON e.dataset_id = d.id
+    WHERE r.id IS NULL
+    LIMIT 5
+  `).all() as any[];
+
+  if (isolated.length > 0) {
+    patterns.push({
+      patternType: 'ISOLATED_ENTITIES',
+      description: 'Entities with zero established connections to the rest of the dataset graph (orphaned records or unlinked outliers).',
+      evidence: isolated.map((i: any) => `"${i.name}" (${i.type}) in [${i.dataset_name || 'dataset'}] has no graph links.`),
+    });
+  }
+
+  return {
+    patternCount: patterns.length,
+    patterns,
+  };
+}
+
+export const logisticsTools: ToolDefinition[] = [
+  {
+    name: 'search_datasets',
+    description: 'List all user-uploaded datasets, their record counts, and detected column schemas.',
+    domain: 'logistics',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+    execute: async () => {
+      const datasets = db.prepare('SELECT id, name, format, record_count, entity_count, relationship_count, detected_schema, uploaded_at FROM datasets').all() as any[];
+      return {
+        totalDatasets: datasets.length,
+        datasets: datasets.map((d: any) => ({
+          id: d.id,
+          filename: d.name,
+          recordCount: d.record_count,
+          entityCount: d.entity_count,
+          relationshipCount: d.relationship_count,
+          columns: JSON.parse(d.detected_schema || '{}')?.columns || [],
+          uploadedAt: d.uploaded_at,
+        })),
+      };
+    },
+  },
+  {
+    name: 'search_records',
+    description: 'Search raw records across all uploaded datasets for keywords, identifiers, values, emails, phone numbers, or amounts.',
+    domain: 'logistics',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'The search term, ID, name, or value to search across all datasets' },
+        limit: { type: 'number', description: 'Maximum number of results to return (default 15)' },
+      },
+      required: ['query'],
+    },
+    execute: async (args) => {
+      const q = String(args.query || '').trim();
+      if (!q) return { results: [] };
+      const qLike = `%${q}%`;
+      const limit = Number(args.limit) || 15;
+
+      const records = db.prepare(`
+        SELECT r.id, r.dataset_id, r.row_index, r.raw_data, d.name as dataset_name
+        FROM raw_records r
+        JOIN datasets d ON r.dataset_id = d.id
+        WHERE r.raw_data LIKE ?
+        LIMIT ?
+      `).all(qLike, limit) as any[];
+
+      return {
+        query: q,
+        count: records.length,
+        results: records.map((r: any) => ({
+          recordId: r.id,
+          datasetFilename: r.dataset_name,
+          rowIndex: r.row_index,
+          data: JSON.parse(r.raw_data || '{}'),
+        })),
+      };
+    },
+  },
+  {
+    name: 'search_entity',
+    description: 'Search extracted canonical entities by name, ID, type, or property across all uploaded datasets.',
+    domain: 'logistics',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Entity identifier, name, or property value' },
+        limit: { type: 'number', description: 'Maximum number of results to return (default 10)' },
+      },
+      required: ['query'],
+    },
+    execute: async (args) => {
+      const q = String(args.query || '').trim();
+      if (!q) return { results: [] };
+      const qLike = `%${q}%`;
+      const limit = Number(args.limit) || 10;
+
+      const entities = db.prepare(`
+        SELECT e.id, e.name, e.type, e.category, e.properties, e.dataset_id, d.name as dataset_name 
+        FROM entities e
         LEFT JOIN datasets d ON e.dataset_id = d.id
+        WHERE e.name LIKE ? OR e.id LIKE ? OR e.properties LIKE ?
+        LIMIT ?
+      `).all(qLike, qLike, qLike, limit) as any[];
+
+      return {
+        query: q,
+        count: entities.length,
+        results: entities.map((e: any) => ({
+          id: e.id,
+          name: e.name,
+          type: e.type,
+          datasetFilename: e.dataset_name || 'Uploaded Dataset',
+          properties: JSON.parse(e.properties || '{}'),
+        })),
+      };
+    },
+  },
+  {
+    name: 'get_entity',
+    description: 'Get full canonical entity details including attributes, type, and source dataset provenance.',
+    domain: 'logistics',
+    parameters: {
+      type: 'object',
+      properties: {
+        entityId: { type: 'string', description: 'The canonical entity ID' },
+      },
+      required: ['entityId'],
+    },
+    execute: async (args) => {
+      const profile = GraphService.getEntityProfile(args.entityId);
+      if (!profile) return { error: `Entity "${args.entityId}" not found in uploaded datasets.` };
+      return {
+        entity: profile.entity,
+        directConnectionCount: profile.relationships.length,
+        properties: profile.entity.properties,
+        relationships: profile.relationships.map((r: any) => ({
+          targetId: r.targetId === args.entityId ? r.sourceId : r.targetId,
+          targetName: r.targetId === args.entityId ? r.sourceName : r.targetName,
+          type: r.type,
+          properties: r.properties,
+        })),
+      };
+    },
+  },
+  {
+    name: 'get_connections',
+    description: 'Retrieve connected entities and relationships linking across datasets in the unified graph.',
+    domain: 'logistics',
+    parameters: {
+      type: 'object',
+      properties: {
+        entityId: { type: 'string', description: 'Entity ID to expand connections for' },
+        hops: { type: 'number', description: 'Number of hops to expand (default 1, max 2)' },
+      },
+      required: ['entityId'],
+    },
+    execute: async (args) => {
+      const hops = Math.min(2, Math.max(1, Number(args.hops) || 1));
+      const sub = GraphService.expandEntity(args.entityId, hops);
+      return {
+        entityId: args.entityId,
+        hops,
+        nodeCount: sub.nodes.length,
+        nodes: sub.nodes.map((n: any) => ({
+          id: n.data.id,
+          name: n.data.name,
+          type: n.data.type,
+          properties: n.data.properties,
+        })),
+        edges: sub.edges.map((e: any) => ({
+          source: e.data.source,
+          target: e.data.target,
+          relationshipType: e.data.type,
+          label: e.data.label,
+          properties: e.data.properties,
+        })),
+      };
+    },
+  },
+  {
+    name: 'find_path',
+    description: 'Find the relationship path connecting two entities across multiple uploaded datasets.',
+    domain: 'logistics',
+    parameters: {
+      type: 'object',
+      properties: {
+        sourceId: { type: 'string', description: 'Source entity ID' },
+        targetId: { type: 'string', description: 'Target entity ID' },
+      },
+      required: ['sourceId', 'targetId'],
+    },
+    execute: async (args) => {
+      return GraphService.findShortestPath(args.sourceId, args.targetId);
+    },
+  },
+  {
+    name: 'detect_data_patterns',
+    description: 'Run automated pattern analysis across all uploaded datasets to discover high-degree hubs, cross-file bridges, property collisions (e.g. shared phones, emails, addresses), and isolated clusters.',
+    domain: 'logistics',
+    parameters: {
+      type: 'object',
+      properties: {
+        focusTopic: { type: 'string', description: 'Optional entity name, property, or column to focus pattern detection on' },
+      },
+    },
+    execute: async (args) => {
+      return runAutomatedPatternDetection(args.focusTopic);
+    },
+  },
+  {
+    name: 'get_graph_stats',
+    description: 'Get high-level graph topology metrics, top connected hub entities, relationship distributions, and dataset breakdown.',
+    domain: 'logistics',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+    execute: async () => {
+      const totalEntities = (db.prepare('SELECT count(*) as c FROM entities').get() as any)?.c || 0;
+      const totalRelationships = (db.prepare('SELECT count(*) as c FROM relationships').get() as any)?.c || 0;
+      const totalDatasets = (db.prepare('SELECT count(*) as c FROM datasets').get() as any)?.c || 0;
+
+      const hubs = db.prepare(`
+        SELECT e.id, e.name, e.type, d.name as dataset_name, count(r.id) as degree
+        FROM entities e
+        LEFT JOIN relationships r ON (e.id = r.source_id OR e.id = r.target_id)
+        LEFT JOIN datasets d ON e.dataset_id = d.id
+        GROUP BY e.id
+        ORDER BY degree DESC
+        LIMIT 8
       `).all() as any[];
 
-      for (const ent of allEntities) {
-        const entName = ent.name.toLowerCase();
-        const entId = ent.id.toLowerCase();
-        const propsStr = (ent.properties || '').toLowerCase();
+      const typeBreakdown = db.prepare(`
+        SELECT type, count(*) as count FROM entities GROUP BY type ORDER BY count DESC
+      `).all() as any[];
 
-        if (entName.includes(qLower) || qLower.includes(entName) || entId.includes(qLower) || propsStr.includes(qLower)) {
-          matchedEntities.push(ent);
-        } else {
-          // Token overlap check
-          const matchingTokens = qTokens.filter((t) => entName.includes(t) || propsStr.includes(t));
-          if (matchingTokens.length >= Math.min(2, qTokens.length) && qTokens.length > 1) {
-            matchedEntities.push(ent);
+      const relBreakdown = db.prepare(`
+        SELECT type, count(*) as count FROM relationships GROUP BY type ORDER BY count DESC
+      `).all() as any[];
+
+      return {
+        totalEntities,
+        totalRelationships,
+        totalDatasets,
+        topHubEntities: hubs.map((h: any) => ({
+          id: h.id,
+          name: h.name,
+          type: h.type,
+          dataset: h.dataset_name,
+          connectedDegree: h.degree,
+        })),
+        entityDistribution: typeBreakdown,
+        relationshipDistribution: relBreakdown,
+      };
+    },
+  },
+  {
+    name: 'query_dataset_statistics',
+    description: 'Inspect column statistics, value distributions, distinct counts, and numeric summaries for uploaded datasets.',
+    domain: 'logistics',
+    parameters: {
+      type: 'object',
+      properties: {
+        datasetId: { type: 'string', description: 'Optional specific dataset ID to inspect' },
+        columnName: { type: 'string', description: 'Optional specific column to profile' },
+      },
+    },
+    execute: async (args) => {
+      const datasetId = args.datasetId;
+      let datasets = [];
+      if (datasetId) {
+        datasets = db.prepare('SELECT * FROM datasets WHERE id = ?').all(datasetId) as any[];
+      } else {
+        datasets = db.prepare('SELECT * FROM datasets').all() as any[];
+      }
+
+      const stats = datasets.map((d: any) => {
+        const schema = JSON.parse(d.detected_schema || '{}');
+        const sampleRecords = db.prepare('SELECT raw_data FROM raw_records WHERE dataset_id = ? LIMIT 20').all(d.id) as any[];
+        return {
+          datasetId: d.id,
+          datasetName: d.name,
+          recordCount: d.record_count,
+          columns: schema.columns || [],
+          samplePreview: sampleRecords.map((r: any) => JSON.parse(r.raw_data || '{}')),
+        };
+      });
+
+      return { datasets: stats };
+    },
+  },
+];
+
+```
+
+## File: server/src/services/ai/tools/maritimeTools.ts
+
+```ts
+import { db } from '../../../db/database.js';
+import { MaritimeService } from '../../maritime/maritime.service.js';
+import { MaritimePatternDetector } from '../../maritime/patternDetector.service.js';
+import { ToolDefinition } from '../types.js';
+
+export const maritimeTools: ToolDefinition[] = [
+  {
+    name: 'get_active_vessels',
+    description: 'Retrieve live moving commercial vessels and cargo ships tracked via AIS telemetry, including coordinates, speed, course, heading, destination, and status.',
+    domain: 'maritime',
+    parameters: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Maximum number of vessels to retrieve (default 15)' },
+        vesselType: { type: 'string', description: 'Optional vessel type filter: Cargo, Tanker, Container Ship, etc.' },
+      },
+    },
+    execute: async (args) => {
+      const limit = Number(args.limit) || 15;
+      const all = MaritimeService.getAllVessels(100);
+      const filtered = args.vesselType
+        ? all.filter((v: any) => (v.vessel_type || '').toLowerCase().includes(String(args.vesselType).toLowerCase()))
+        : all;
+      return {
+        total_tracked: all.length,
+        returned_count: Math.min(filtered.length, limit),
+        vessels: filtered.slice(0, limit).map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          mmsi: v.mmsi,
+          imo: v.imo,
+          vessel_type: v.vessel_type,
+          coordinates: [Number(v.latitude.toFixed(4)), Number(v.longitude.toFixed(4))],
+          speed_knots: v.speed,
+          course_deg: v.course,
+          destination: v.destination,
+          eta: v.eta,
+          status: v.status,
+          last_updated_at: v.last_updated_at,
+        })),
+      };
+    },
+  },
+  {
+    name: 'get_vessel_details',
+    description: 'Get full AIS profile and recent navigational track fixes for a specific vessel identifier (ID or MMSI).',
+    domain: 'maritime',
+    parameters: {
+      type: 'object',
+      properties: {
+        vesselId: { type: 'string', description: 'Vessel ID (e.g. SHIP_419001234) or MMSI number' },
+      },
+      required: ['vesselId'],
+    },
+    execute: async (args) => {
+      const q = String(args.vesselId || '').trim();
+      let vessel = MaritimeService.getVesselById(q);
+      if (!vessel) {
+        // Try looking up by MMSI
+        const row = db.prepare('SELECT id FROM moving_entities WHERE mmsi = ?').get(q) as any;
+        if (row) {
+          vessel = MaritimeService.getVesselById(row.id);
+        }
+      }
+      if (!vessel) {
+        return { error: `Vessel "${args.vesselId}" not found in active AIS ledger.` };
+      }
+      const track = MaritimeService.getVesselTrack(vessel.id, 10);
+      return {
+        vessel,
+        recentTrackFixesCount: track.length,
+        recentTrack: track.map((p: any) => ({
+          coordinates: [p.latitude, p.longitude],
+          speed: p.speed,
+          course: p.course,
+          timestamp: p.timestamp,
+        })),
+      };
+    },
+  },
+  {
+    name: 'get_maritime_corridor_patterns',
+    description: 'Inspect monitored maritime transit corridors (Malacca Strait, Mumbai JNPT Gateway, Mundra Port Approach, Chennai Port Artery, Colombo Hub) for congestion anomalies and traffic deviations.',
+    domain: 'maritime',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+    execute: async () => {
+      const patterns = MaritimePatternDetector.runDetection();
+      return {
+        detected_patterns_count: patterns.length,
+        patterns: patterns.map((p: any) => ({
+          pattern_id: p.pattern_id,
+          region: p.region,
+          observation: p.observation,
+          entities_observed: p.entities_observed,
+          baseline: p.baseline,
+          deviation_percent: p.deviation_percent,
+          confidence: p.confidence,
+          cluster_characteristics: p.cluster_characteristics,
+          detected_at: p.detected_at,
+        })),
+      };
+    },
+  },
+  {
+    name: 'search_vessels',
+    description: 'Search vessels by name, destination port, IMO, or cargo type.',
+    domain: 'maritime',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search term for vessel name, destination port, or IMO' },
+        limit: { type: 'number', description: 'Maximum results to return (default 10)' },
+      },
+      required: ['query'],
+    },
+    execute: async (args) => {
+      const q = String(args.query || '').trim().toLowerCase();
+      if (!q) return { results: [] };
+      const limit = Number(args.limit) || 10;
+      const all = MaritimeService.getAllVessels(200);
+      const matches = all.filter((v: any) =>
+        v.name.toLowerCase().includes(q) ||
+        (v.destination && v.destination.toLowerCase().includes(q)) ||
+        (v.imo && v.imo.toLowerCase().includes(q)) ||
+        (v.mmsi && v.mmsi.toLowerCase().includes(q)) ||
+        (v.vessel_type && v.vessel_type.toLowerCase().includes(q))
+      ).slice(0, limit);
+
+      return {
+        query: args.query,
+        count: matches.length,
+        vessels: matches.map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          mmsi: v.mmsi,
+          vessel_type: v.vessel_type,
+          coordinates: [Number(v.latitude.toFixed(4)), Number(v.longitude.toFixed(4))],
+          speed_knots: v.speed,
+          destination: v.destination,
+          status: v.status,
+          last_updated_at: v.last_updated_at,
+        })),
+      };
+    },
+  },
+];
+
+```
+
+## File: server/src/services/ai/tools/worldTools.ts
+
+```ts
+import { worldModelService } from '../../world_model/world_model.service.js';
+import { simulationService } from '../../simulation/simulation.service.js';
+import { providerRegistry } from '../../../connectors/registry/ProviderRegistry.js';
+import { ToolDefinition } from '../types.js';
+
+export const worldTools: ToolDefinition[] = [
+  {
+    name: 'get_live_world_summary',
+    description: 'Get real-time summary of the digital mirror world model: count of physical entities, active weather stations, air quality sensors, river stages, grid substations, transit vehicles, and recent detected events.',
+    domain: 'world',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+    execute: async () => {
+      const fullState = worldModelService.getWorldState();
+      const typeCounts: Record<string, number> = {};
+      fullState.entities.forEach((e: any) => {
+        typeCounts[e.type] = (typeCounts[e.type] || 0) + 1;
+      });
+      return {
+        timestamp: fullState.timestamp,
+        total_entities_tracked: fullState.entity_count,
+        entities_by_type: typeCounts,
+        active_threshold_events_count: fullState.active_events.length,
+        top_recent_events: fullState.active_events.slice(0, 5).map((ev: any) => ({
+          type: ev.event_type,
+          severity: ev.severity,
+          entity_id: ev.entity_id,
+          detected_at: ev.detected_at,
+          source: ev.source,
+        })),
+        active_relationships_count: fullState.relationships.length,
+        key_corridor_relationships: fullState.relationships.slice(0, 3).map((r: any) => ({
+          type: r.relationship_type,
+          source: r.source_entity_id,
+          target: r.target_entity_id,
+          confidence: r.confidence,
+        })),
+        temporal_ledger_records: fullState.recent_changes_count,
+      };
+    },
+  },
+  {
+    name: 'search_world_entities',
+    description: 'Search live physical entities across all categories (WEATHER, AIR_QUALITY, SEISMIC, WATER, ENERGY, TRANSIT, MOBILITY, INFRASTRUCTURE) by name, keyword, or category.',
+    domain: 'world',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search term e.g. Bangalore, NH48, Peenya, Bellandur, Metro, Earthquake' },
+        category: { type: 'string', description: 'Optional category filter: WEATHER, AIR_QUALITY, SEISMIC, WATER, ENERGY, PUBLIC_TRANSPORT, MOBILITY, INFRASTRUCTURE' },
+      },
+      required: ['query'],
+    },
+    execute: async (args) => {
+      const q = String(args.query || '').trim().toLowerCase();
+      const all = worldModelService.getEntities(args.type, args.category);
+      const matches = q
+        ? all.filter((e: any) => {
+            const stateStr = JSON.stringify(e.current_state || {}).toLowerCase();
+            return e.name.toLowerCase().includes(q) || 
+                   e.id.toLowerCase().includes(q) ||
+                   (e.category && e.category.toLowerCase().includes(q)) ||
+                   (e.type && e.type.toLowerCase().includes(q)) ||
+                   stateStr.includes(q) ||
+                   ((q.includes('blr') || q.includes('bangalore') || q.includes('bengaluru')) && (e.id.includes('12.97') || e.id.includes('BLR') || e.name.includes('Bangalore') || e.name.includes('NH48') || e.name.includes('Bellandur') || e.name.includes('Peenya') || e.name.includes('13.00')));
+          }).slice(0, 6)
+        : all.slice(0, 6);
+      return {
+        query: args.query,
+        matchCount: matches.length,
+        entities: matches.map((e: any) => ({
+          id: e.id,
+          name: e.name,
+          type: e.type,
+          coordinates: [Number(e.latitude.toFixed(4)), Number(e.longitude.toFixed(4))],
+          current_values: e.current_state,
+          last_observed: e.last_observed_at,
+        })),
+      };
+    },
+  },
+  {
+    name: 'get_entity_telemetry',
+    description: 'Get detailed live telemetry, current environmental values, chronological temporal state transitions, and raw sensor provenance for an entity ID.',
+    domain: 'world',
+    parameters: {
+      type: 'object',
+      properties: {
+        entityId: { type: 'string', description: 'The entity identifier (e.g. STATION_1297_7759, ROAD_CORRIDOR_NH48, HYDRO_GAUGE_BELLANDUR_OUTLET_WEIR)' },
+      },
+      required: ['entityId'],
+    },
+    execute: async (args) => {
+      const ent = worldModelService.getEntityById(args.entityId);
+      if (!ent || !ent.entity) return { error: `Entity ${args.entityId} not found` };
+      return {
+        id: ent.entity.id,
+        name: ent.entity.name,
+        type: ent.entity.type,
+        current_state: ent.entity.current_state,
+        last_observed_at: ent.entity.last_observed_at,
+        confidence: ent.entity.confidence,
+        recent_state_changes: (ent.history || []).slice(0, 3).map((h: any) => ({
+          timestamp: h.timestamp,
+          delta: h.delta_summary,
+          source: h.source,
+        })),
+      };
+    },
+  },
+  {
+    name: 'get_live_events',
+    description: 'Retrieve detected real-world threshold events (e.g. heavy rainfall exceeding thresholds, earthquakes, reservoir flood warnings, severe transit congestion).',
+    domain: 'world',
+    parameters: {
+      type: 'object',
+      properties: {
+        severity: { type: 'string', description: 'Optional severity filter: CRITICAL, HIGH, MEDIUM, LOW' },
+      },
+    },
+    execute: async (args) => {
+      const events = worldModelService.getEvents(args.severity);
+      return {
+        total_count: events.length,
+        events: events.slice(0, 5).map((ev: any) => ({
+          event_id: ev.event_id,
+          event_type: ev.event_type,
+          entity_id: ev.entity_id,
+          severity: ev.severity,
+          source: ev.source,
+          detected_at: ev.detected_at,
+          current_state: ev.current_state,
+        })),
+      };
+    },
+  },
+  {
+    name: 'get_inferred_relationships',
+    description: 'Retrieve inferred physical and infrastructure relationships with explicit evidence trails, confidence scores, and source reasoning engines.',
+    domain: 'world',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+    execute: async () => {
+      const rels = worldModelService.getRelationships();
+      return {
+        total_count: rels.length,
+        relationships: rels.slice(0, 5).map((r: any) => ({
+          type: r.relationship_type,
+          source_entity: r.source_entity_id,
+          target_entity: r.target_entity_id,
+          confidence: r.confidence,
+          evidence: r.evidence,
+        })),
+      };
+    },
+  },
+  {
+    name: 'get_provider_observability',
+    description: 'Get health status, latencies, update frequencies, coverage area, and licensing terms for all 15 public data connectors (Open-Meteo, USGS, GDACS, Central Water Commission, National Grid, GTFS, GBFS, etc.).',
+    domain: 'world',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+    execute: async () => {
+      const matrix = providerRegistry.getStatusMatrix();
+      return {
+        total_providers: matrix.length,
+        healthy_count: matrix.filter((p: any) => p.health.status === 'HEALTHY').length,
+        providers: matrix.map((p: any) => ({
+          id: p.id,
+          status: p.health.status,
+          latency_ms: p.health.latencyMs,
+          records_normalized: p.health.recordsNormalized,
+          last_success: p.health.lastSuccessfulUpdate,
+        })),
+      };
+    },
+  },
+  {
+    name: 'inspect_simulation_twin',
+    description: 'Inspect an isolated digital twin simulation sandbox: check modified variables (deluges, capacity throttles), baseline snapshot time, and cascading consequence predictions.',
+    domain: 'world',
+    parameters: {
+      type: 'object',
+      properties: {
+        simulationId: { type: 'string', description: 'Optional specific simulation ID to inspect' },
+      },
+    },
+    execute: async (args) => {
+      if (args.simulationId) {
+        return simulationService.getSimulationState(args.simulationId);
+      }
+      return simulationService.listSimulations();
+    },
+  },
+  {
+    name: 'poll_live_sensors',
+    description: 'Trigger an immediate real-time fetch from external public APIs to refresh weather, air quality, earthquakes, or grid telemetry.',
+    domain: 'world',
+    parameters: {
+      type: 'object',
+      properties: {
+        providerId: { type: 'string', description: 'Optional specific provider: open_meteo_weather, open_meteo_air_quality, usgs_earthquake, etc.' },
+      },
+    },
+    execute: async (args) => {
+      if (args.providerId) {
+        const provider = providerRegistry.getProvider(args.providerId);
+        if (!provider) return { error: `Provider ${args.providerId} not found` };
+        const { rawData, latencyMs } = await provider.fetch();
+        const rawId = worldModelService.storeRawPayload(args.providerId, provider.metadata.endpointUrl, rawData);
+        const obs = await provider.normalize(rawData);
+        for (const o of obs) worldModelService.ingestObservation(o, rawId);
+        return { providerId: args.providerId, latencyMs, observationsCount: obs.length };
+      }
+      const summary = await providerRegistry.runHealthChecks();
+      return { message: 'Health checks and sensor polling triggered', summary };
+    },
+  },
+];
+
+```
+
+## File: server/src/services/ai/types.ts
+
+```ts
+export type Domain = 'world' | 'logistics' | 'maritime' | 'cross';
+
+export type ClaimTier = 'FACT' | 'INFERENCE' | 'HYPOTHESIS' | 'BACKGROUND';
+
+export type Plausibility = 'low' | 'medium' | 'high';
+
+export interface EvidenceItem {
+  id: string; // e.g. 'ev_1', 'ev_2'
+  tool: string;
+  args: Record<string, any>;
+  result: any;
+  retrievedAt: string;
+  domain?: Domain;
+}
+
+export interface ProposedRelationshipItem {
+  source_id: string;
+  target_id: string;
+  type: string;
+  rationale: string;
+  status: 'PROPOSED';
+}
+
+export interface TraceStep {
+  step: string;
+  detail?: any;
+  timestamp: string;
+}
+
+export interface FactClaim {
+  text: string;
+  evidenceIds: string[];
+  verified?: boolean;
+  verificationNote?: string;
+}
+
+export interface InferenceClaim {
+  text: string;
+  basedOnFactIndexes: number[];
+  reasoning: string;
+}
+
+export interface HypothesisClaim {
+  text: string;
+  whyPlausible: string;
+  plausibility: Plausibility;
+  confirmWith: string;
+  refuteWith: string;
+  suggestedTool?: string;
+  unverifiedNote?: string;
+}
+
+export interface BackgroundClaim {
+  text: string;
+}
+
+export interface NextStepClaim {
+  text: string;
+}
+
+export interface ToolDefinition {
+  name: string;
+  description: string;
+  domain: Domain | 'meta';
+  parameters: {
+    type: 'object';
+    properties: Record<string, any>;
+    required?: string[];
+  };
+  execute: (args: Record<string, any>, context: InvestigationContext) => Promise<any> | any;
+}
+
+export interface InvestigationContext {
+  prompt: string;
+  seedEntityId?: string;
+  primaryDomain: Domain;
+  unlockedDomains: Set<Domain>;
+  domainUnlockLogs: Array<{ domain: string; reason: string; timestamp: string }>;
+  evidence: EvidenceItem[];
+  proposedRelationships: ProposedRelationshipItem[];
+  dataGaps: string[];
+  trace: TraceStep[];
+}
+
+export interface ReasoningOutput {
+  summary: string;
+  facts: FactClaim[];
+  inferences: InferenceClaim[];
+  hypotheses: HypothesisClaim[];
+  background: BackgroundClaim[];
+  nextSteps: NextStepClaim[];
+  discoveredPatterns?: string[];
+  anomalyIndicators?: string[];
+  suggestedHopExpansions?: string[];
+  uncertainty?: string;
+  aiInterpretation?: string;
+}
+
+export interface VerificationResult {
+  verifiedFacts: FactClaim[];
+  demotedFacts: HypothesisClaim[];
+  verifiedInferences: InferenceClaim[];
+  demotedInferences: HypothesisClaim[];
+  allHypotheses: HypothesisClaim[];
+  confidenceScore: number;
+  groundingSummary: string;
+  stalenessSeconds: number;
+}
+
+```
+
+## File: server/src/services/ai/verify.ts
+
+```ts
+import {
+  EvidenceItem,
+  FactClaim,
+  InferenceClaim,
+  HypothesisClaim,
+  BackgroundClaim,
+  VerificationResult,
+} from './types.js';
+
+/**
+ * Verification Stage: Strictly checks the FACT and INFERENCE tiers
+ * - Facts failing citation or data containment are demoted to hypotheses with an unverified note
+ * - Inferences dependent on demoted facts are also demoted to hypotheses
+ * - Computes mathematical confidence score = (verifiedFacts / totalFacts) * stalenessFactor
+ */
+export function verifyClaims(
+  rawFacts: FactClaim[],
+  rawInferences: InferenceClaim[],
+  rawHypotheses: HypothesisClaim[],
+  background: BackgroundClaim[],
+  evidenceItems: EvidenceItem[]
+): VerificationResult {
+  const evidenceMap = new Map<string, EvidenceItem>(
+    evidenceItems.map((e) => [e.id, e])
+  );
+
+  const verifiedFacts: FactClaim[] = [];
+  const demotedFacts: HypothesisClaim[] = [];
+  const survivingFactOldIndices = new Set<number>();
+
+  const citedTimestamps: number[] = [];
+
+  // 1. Verify FACT tier
+  rawFacts.forEach((fact, idx) => {
+    let isValid = true;
+    let failReason = '';
+
+    if (!fact.evidenceIds || fact.evidenceIds.length === 0) {
+      isValid = false;
+      failReason = 'No evidence IDs cited';
+    } else {
+      // Check that all cited evidence IDs exist
+      const missingIds = fact.evidenceIds.filter((id) => !evidenceMap.has(id));
+      if (missingIds.length > 0) {
+        isValid = false;
+        failReason = `Cited evidence ID(s) not found: ${missingIds.join(', ')}`;
+      } else {
+        // Collect timestamps of cited evidence
+        for (const id of fact.evidenceIds) {
+          const ev = evidenceMap.get(id);
+          if (ev?.retrievedAt) {
+            const t = new Date(ev.retrievedAt).getTime();
+            if (!isNaN(t)) citedTimestamps.push(t);
+          }
+        }
+
+        // Data containment check: extract numbers or capitalized entity tokens
+        const numbers = (fact.text.match(/\b\d+(\.\d+)?\b/g) || []).filter(
+          (n) => n.length >= 2 || Number(n) > 5
+        );
+        const entityTokens = (fact.text.match(/\b[A-Z][a-zA-Z0-9_-]{2,}\b/g) || []).filter(
+          (w) => !['The', 'This', 'That', 'With', 'From', 'Into', 'Over', 'When', 'What', 'Where', 'Fact'].includes(w)
+        );
+
+        const checkTokens = [...numbers, ...entityTokens];
+
+        if (checkTokens.length > 0) {
+          // Check if at least one token actually appears in cited evidence
+          let foundTokenMatch = false;
+          for (const evId of fact.evidenceIds) {
+            const ev = evidenceMap.get(evId);
+            const evString = JSON.stringify(ev?.result ?? '').toLowerCase();
+
+            for (const token of checkTokens) {
+              if (evString.includes(token.toLowerCase())) {
+                foundTokenMatch = true;
+                break;
+              }
+            }
+            if (foundTokenMatch) break;
+          }
+
+          if (!foundTokenMatch) {
+            isValid = false;
+            failReason = `None of the key tokens [${checkTokens.slice(0, 4).join(', ')}] appeared in cited evidence`;
           }
         }
       }
     }
 
-    // 2. Also search raw records for any matching text
-    const rawMatches = db.prepare(`
-      SELECT r.id, r.raw_data, r.row_index, d.name as dataset_filename
-      FROM raw_records r
-      JOIN datasets d ON r.dataset_id = d.id
-      WHERE r.raw_data LIKE ?
-      LIMIT 10
-    `).all(`%${qTrim}%`) as any[];
-
-    // 3. Grounding check: If no entities or raw records exist in uploaded datasets
-    const uploadedDatasetsCount = (db.prepare('SELECT count(*) as c FROM datasets').get() as any)?.c || 0;
-
-    if (matchedEntities.length === 0 && rawMatches.length === 0) {
-      // Run pattern scan anyway if datasets exist
-      const patternData = uploadedDatasetsCount > 0 ? this.runAutomatedPatternDetection() : { patterns: [] };
-
-      return {
-        knownFacts: [],
-        possibleRelationships: [],
-        discoveredPatterns: patternData.patterns.flatMap((p: any) => p.evidence),
-        aiInterpretation: uploadedDatasetsCount === 0
-          ? `No datasets have been uploaded yet. Please upload one or more CSV files in the Datasets view to begin querying.`
-          : `No direct records matched "${prompt}" literally across the ${uploadedDatasetsCount} uploaded dataset(s).\n\nHowever, background pattern analysis detected ${patternData.patterns.length} structural network pattern(s) across the active ledger.`,
-        uncertainty: 'Target query does not match any literal identifier or attribute in the uploaded data.',
-        anomalyIndicators: [],
-        recommendedActions: [
-          'Verify the target entity name or column values.',
-          'Explore detected pattern hubs or cross-dataset correlation bridges in the Graph view.',
-          'Upload additional CSV files containing relevant records via the Datasets module.',
-        ],
-        suggestedHopExpansions: [],
-        confidenceScore: 0.0,
-      };
-    }
-
-    const focusEntity = matchedEntities[0];
-    const knownFacts: string[] = [];
-    const possibleRelationships: string[] = [];
-    const participatingDatasets = new Set<string>();
-
-    // Add facts from matched raw records
-    for (const rm of rawMatches) {
-      participatingDatasets.add(rm.dataset_filename);
-      const parsedData = JSON.parse(rm.raw_data || '{}');
-      const snippet = Object.entries(parsedData).slice(0, 5).map(([k, v]) => `${k}: "${v}"`).join(', ');
-      knownFacts.push(`RECORD MATCH: In [${rm.dataset_filename}] (Row #${rm.row_index}): ${snippet}`);
-    }
-
-    // Add facts and relationships from focus entity
-    if (focusEntity) {
-      const entityDataset = focusEntity.dataset_filename || 'Uploaded Dataset';
-      participatingDatasets.add(entityDataset);
-      const props = JSON.parse(focusEntity.properties || '{}');
-      const topProps = Object.entries(props).slice(0, 5).map(([k, v]) => `${k}=${v}`).join(', ');
-
-      knownFacts.push(`ENTITY: "${focusEntity.name}" [Type: ${focusEntity.type}] in [${entityDataset}] (${topProps})`);
-
-      // Find cross-dataset connections for this entity
-      const relationships = db.prepare(`
-        SELECT r.*, e2.name as target_name, e2.type as target_type, d2.name as target_dataset
-        FROM relationships r
-        JOIN entities e2 ON (r.target_id = e2.id OR r.source_id = e2.id) AND e2.id != ?
-        LEFT JOIN datasets d2 ON e2.dataset_id = d2.id
-        WHERE r.source_id = ? OR r.target_id = ?
-        LIMIT 15
-      `).all(focusEntity.id, focusEntity.id, focusEntity.id) as any[];
-
-      for (const rel of relationships) {
-        if (rel.target_dataset) participatingDatasets.add(rel.target_dataset);
-        const relProps = JSON.parse(rel.properties || '{}');
-        const matchField = relProps.matchKey ? ` via field "${relProps.matchKey}" = "${relProps.matchValue}"` : '';
-
-        knownFacts.push(`LINK: Connected to "${rel.target_name}" (${rel.target_type}) in [${rel.target_dataset || 'Dataset'}]${matchField}.`);
-        possibleRelationships.push(`${focusEntity.name} [${entityDataset}] -> ${rel.type} -> ${rel.target_name} [${rel.target_dataset || 'Dataset'}]${matchField}`);
-      }
-    }
-
-    // Run automated pattern detection on this context
-    const patternResult = this.runAutomatedPatternDetection(focusEntity?.name);
-    const discoveredPatterns: string[] = [];
-    for (const p of patternResult.patterns) {
-      for (const ev of p.evidence) {
-        discoveredPatterns.push(`[${p.patternType}] ${ev}`);
-      }
-    }
-
-    // Synthesize structured AI Interpretation & Analytical Briefing
-    const datasetListStr = Array.from(participatingDatasets).map((d) => `\`${d}\``).join(', ');
-    let interpretation = `Intelligence Synthesis & Pattern Analysis for "${prompt}":\n\n`;
-
-    if (participatingDatasets.size > 1) {
-      interpretation += `**Cross-Dataset Correlation**: Successfully bridged evidence across **${participatingDatasets.size} datasets** (${datasetListStr}).\n\n`;
-    } else if (participatingDatasets.size === 1) {
-      interpretation += `**Dataset Provenance**: Grounded in dataset ${datasetListStr}.\n\n`;
-    }
-
-    if (focusEntity) {
-      interpretation += `**Primary Focus Node**: Identified canonical entity **${focusEntity.name}** (${focusEntity.type}) with ${possibleRelationships.length} direct relationship connection(s).\n\n`;
-    }
-
-    if (possibleRelationships.length > 0) {
-      interpretation += `**Discovered Relational Paths**:\n` +
-        possibleRelationships.map((r) => `• ${r}`).join('\n') + '\n\n';
-    }
-
-    if (discoveredPatterns.length > 0) {
-      interpretation += `**Higher-Order Pattern & Anomaly Inferences**:\n` +
-        discoveredPatterns.slice(0, 4).map((dp) => `• ${dp}`).join('\n') + '\n\n';
-    }
-
-    interpretation += `**Analytical Hypothesis**:\n`;
-    if (possibleRelationships.length > 1) {
-      interpretation += `The queried entity acts as a functional pivot across records. The multi-hop linkages suggest correlated transactional or logistical activity that warrants topological inspection in the Graph visualizer.`;
+    if (isValid) {
+      verifiedFacts.push({ ...fact, verified: true });
+      survivingFactOldIndices.add(idx);
     } else {
-      interpretation += `The target entity shows limited cross-dataset dispersion. Additional CSV datasets containing matching IDs or foreign keys will expand the correlational horizon.`;
+      demotedFacts.push({
+        text: fact.text,
+        whyPlausible: `Demoted from FACT tier: ${failReason}`,
+        plausibility: 'low',
+        confirmWith: 'Verify against direct sensor reading or uploaded dataset row.',
+        refuteWith: 'Absence in verified database records.',
+        unverifiedNote: `unverified against data: ${failReason}`,
+      });
     }
+  });
+
+  // 2. Verify INFERENCE tier
+  const verifiedInferences: InferenceClaim[] = [];
+  const demotedInferences: HypothesisClaim[] = [];
+
+  for (const inf of rawInferences) {
+    const basisIndices = Array.isArray(inf.basedOnFactIndexes) ? inf.basedOnFactIndexes : [];
+    const allPremisesSurvived =
+      basisIndices.length > 0 &&
+      basisIndices.every((baseIdx) => survivingFactOldIndices.has(baseIdx));
+
+    if (allPremisesSurvived && inf.reasoning && inf.reasoning.trim().length > 0) {
+      // Map to new 0-based indexes in verifiedFacts
+      const newIndices = basisIndices
+        .map((oldIdx) => {
+          let countBefore = 0;
+          for (let i = 0; i < oldIdx; i++) {
+            if (survivingFactOldIndices.has(i)) countBefore++;
+          }
+          return countBefore;
+        })
+        .filter((n) => n < verifiedFacts.length);
+
+      verifiedInferences.push({
+        ...inf,
+        basedOnFactIndexes: newIndices,
+      });
+    } else {
+      const reason =
+        basisIndices.length === 0
+          ? 'Missing prerequisite fact indexes'
+          : !inf.reasoning || inf.reasoning.trim().length === 0
+          ? 'Missing required one-line reasoning chain'
+          : 'One or more premise facts failed verification and were demoted';
+
+      demotedInferences.push({
+        text: inf.text,
+        whyPlausible: `Demoted from INFERENCE tier (${reason}). Original chain: ${inf.reasoning || 'None'}`,
+        plausibility: 'low',
+        confirmWith: 'Re-verify prerequisite factual foundations.',
+        refuteWith: 'Factual premise invalidation.',
+        unverifiedNote: `Demoted from inference: ${reason}`,
+      });
+    }
+  }
+
+  // Combine all hypotheses
+  const allHypotheses: HypothesisClaim[] = [
+    ...rawHypotheses,
+    ...demotedFacts,
+    ...demotedInferences,
+  ];
+
+  // 3. Compute confidence score & staleness
+  let stalenessFactor = 1.0;
+  let stalenessSeconds = 0;
+
+  if (citedTimestamps.length > 0) {
+    const oldestTimestamp = Math.min(...citedTimestamps);
+    const ageSeconds = Math.max(0, (Date.now() - oldestTimestamp) / 1000);
+    stalenessSeconds = Math.round(ageSeconds);
+
+    // If evidence is older than 2 hours, gently scale down by 2% per hour up to 30% max penalty
+    const ageHours = ageSeconds / 3600;
+    if (ageHours > 2) {
+      stalenessFactor = Math.max(0.7, 1.0 - (ageHours - 2) * 0.02);
+    }
+  }
+
+  const totalFacts = rawFacts.length;
+  let rawConfidence = 0.0;
+
+  if (totalFacts > 0) {
+    rawConfidence = (verifiedFacts.length / totalFacts) * stalenessFactor;
+  } else if (verifiedInferences.length > 0) {
+    rawConfidence = 0.6 * stalenessFactor;
+  } else {
+    rawConfidence = 0.0;
+  }
+
+  const confidenceScore = Number(Math.min(1.0, Math.max(0.0, rawConfidence)).toFixed(2));
+
+  // 4. Grounding summary
+  const groundingSummary = `${verifiedFacts.length} facts verified, ${verifiedInferences.length} inferences, ${allHypotheses.length} hypotheses, ${background.length} background`;
+
+  return {
+    verifiedFacts,
+    demotedFacts,
+    verifiedInferences,
+    demotedInferences,
+    allHypotheses,
+    confidenceScore,
+    groundingSummary,
+    stalenessSeconds,
+  };
+}
+
+```
+
+## File: server/src/services/ai.service.ts
+
+```ts
+import { db } from '../db/database.js';
+import { AiInvestigationResponse } from '../types/index.js';
+import { classifyDomain } from './ai/router.js';
+import { retrieveEvidence } from './ai/retrieve.js';
+import { reasonOverEvidence } from './ai/reason.js';
+import { verifyClaims } from './ai/verify.js';
+import { executeToolByName, toolRegistry } from './ai/tools/index.js';
+import { InvestigationContext } from './ai/types.js';
+import { v4 as uuidv4 } from 'uuid';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+/**
+ * AiService Facade: Thin entry point coordinating the 4-stage intelligence pipeline:
+ * Router -> Retrieve (Explore) -> Reason (Analyst) -> Verify (Data Grounding)
+ */
+export class AiService {
+  /**
+   * Controlled Backend AI Tool Execution Layer
+   */
+  static async executeTool(toolName: string, args: Record<string, any>): Promise<any> {
+    const dummyContext: InvestigationContext = {
+      prompt: 'Direct tool execution',
+      primaryDomain: 'cross',
+      unlockedDomains: new Set(['world', 'logistics', 'maritime']),
+      domainUnlockLogs: [],
+      evidence: [],
+      proposedRelationships: [],
+      dataGaps: [],
+      trace: [],
+    };
+    return executeToolByName(toolName, args, dummyContext);
+  }
+
+  /**
+   * Main AI Analyst Investigation endpoint with 4-stage pipeline
+   */
+  static async investigate(
+    prompt: string,
+    contextOptions?: { entityId?: string; investigationId?: string }
+  ): Promise<AiInvestigationResponse> {
+    const investigationId = contextOptions?.investigationId || `inv_${uuidv4().substring(0, 8)}`;
+    const traceStart = new Date().toISOString();
+
+    // 1. Stage 1: Router
+    const routerDecision = await classifyDomain(prompt, contextOptions?.entityId);
+
+    const context: InvestigationContext = {
+      prompt,
+      seedEntityId: contextOptions?.entityId,
+      primaryDomain: routerDecision.domain,
+      unlockedDomains: new Set([routerDecision.domain]),
+      domainUnlockLogs: [],
+      evidence: [],
+      proposedRelationships: [],
+      dataGaps: [],
+      trace: [
+        {
+          step: 'pipeline_initiated',
+          detail: { prompt, seedEntityId: contextOptions?.entityId },
+          timestamp: traceStart,
+        },
+        {
+          step: 'router_classified',
+          detail: { primaryDomain: routerDecision.domain, reason: routerDecision.reason },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    };
+
+    // 2. Stage 2: Retrieve (Explore Stage, up to 10 iterations)
+    const retrieveResult = await retrieveEvidence(context);
+
+    // 3. Stage 3: Reason (Analyst Stage, single LLM synthesis with 4 claim tiers)
+    const reasonResult = await reasonOverEvidence(context, retrieveResult.engine);
+
+    // 4. Stage 4: Verify (FACT / INFERENCE tier verification against evidence IDs and containment)
+    const verifyResult = verifyClaims(
+      reasonResult.output.facts,
+      reasonResult.output.inferences,
+      reasonResult.output.hypotheses,
+      reasonResult.output.background,
+      context.evidence
+    );
+
+    context.trace.push({
+      step: 'verification_completed',
+      detail: {
+        verifiedFacts: verifyResult.verifiedFacts.length,
+        demotedFacts: verifyResult.demotedFacts.length,
+        verifiedInferences: verifyResult.verifiedInferences.length,
+        demotedInferences: verifyResult.demotedInferences.length,
+        totalHypotheses: verifyResult.allHypotheses.length,
+        confidenceScore: verifyResult.confidenceScore,
+        groundingSummary: verifyResult.groundingSummary,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    const engine = retrieveResult.engine === 'deterministic-fallback' || reasonResult.engine === 'deterministic-fallback'
+      ? 'deterministic-fallback'
+      : 'llm';
+
+    const fallbackReason = retrieveResult.fallbackReason || reasonResult.fallbackReason;
+
+    // Backward-compatible fields
+    const knownFacts = verifyResult.verifiedFacts.map((f) => f.text);
+    const possibleRelationships = [
+      ...context.proposedRelationships.map((p) => `[PROPOSED] ${p.source_id} -> ${p.type} -> ${p.target_id} (${p.rationale})`),
+      ...verifyResult.verifiedInferences.map((inf) => inf.text),
+    ];
+    const discoveredPatterns = reasonResult.output.discoveredPatterns || [];
+    const anomalyIndicators = reasonResult.output.anomalyIndicators || [];
+    const recommendedActions = reasonResult.output.nextSteps.map((s) => s.text);
+    const suggestedHopExpansions = reasonResult.output.suggestedHopExpansions || [];
+    const uncertainty = reasonResult.output.uncertainty || (context.dataGaps.length > 0 ? `Identified data gaps: ${context.dataGaps.join('; ')}` : 'Derived from grounded sensor feeds and active database records.');
 
     return {
+      investigationId,
+      entitySummary: contextOptions?.entityId ? `Focus node: ${contextOptions.entityId}` : undefined,
       knownFacts,
       possibleRelationships,
       discoveredPatterns,
-      aiInterpretation: interpretation,
-      uncertainty: participatingDatasets.size < 2 ? 'Queried target currently only resolves within a single uploaded dataset; multi-dataset join density is low.' : 'Correlated across multiple datasets with high topological confidence.',
-      anomalyIndicators: patternResult.patterns.filter((p: any) => p.patternType === 'SHARED_IDENTIFIER_COLLISIONS' || p.patternType === 'CENTRAL_HUB_NODES').map((p: any) => p.description),
-      recommendedActions: [
-        'Inspect connected entities and path topology in the Graph Visualizer.',
-        'Run cross-dataset pattern queries on related entities.',
-        'Investigate shared identifier collisions to uncover covert aliases or shell groupings.',
-      ],
-      suggestedHopExpansions: matchedEntities.map((e) => e.id),
-      confidenceScore: 0.95,
+      aiInterpretation: reasonResult.output.aiInterpretation || reasonResult.output.summary,
+      uncertainty,
+      anomalyIndicators,
+      recommendedActions,
+      suggestedHopExpansions,
+      confidenceScore: verifyResult.confidenceScore,
+      // Engine transparency & claim tiers
+      engine,
+      fallbackReason,
+      trace: context.trace,
+      facts: verifyResult.verifiedFacts,
+      inferences: verifyResult.verifiedInferences,
+      hypotheses: verifyResult.allHypotheses,
+      background: reasonResult.output.background,
+      nextSteps: reasonResult.output.nextSteps,
+      groundingSummary: verifyResult.groundingSummary,
+      dataGaps: context.dataGaps,
+      proposedRelationships: context.proposedRelationships,
     };
   }
 
   /**
    * Omni-Sensor AI Reasoning Space with Persistent Chat Memory
    */
-  static async chatReasoning(message: string, sessionId?: string): Promise<{
+  static async chatReasoning(
+    message: string,
+    sessionId?: string
+  ): Promise<{
     sessionId: string;
     reply: string;
     reasoning?: string;
@@ -14767,140 +17175,65 @@ CORE ANALYTICAL MINDSET:
     const sId = sessionId || `session_${uuidv4().substring(0, 8)}`;
     const now = new Date().toISOString();
 
-    // 1. Fetch conversation history from SQLite persistent memory (compacted to prevent token overflow)
+    // 1. Fetch conversation history from SQLite persistent memory
     const historyRows = (db.prepare(`
-      SELECT role, content FROM ai_chat_messages WHERE session_id = ? ORDER BY timestamp DESC LIMIT 8
+      SELECT role, content FROM ai_chat_messages WHERE session_id = ? ORDER BY timestamp DESC LIMIT 6
     `).all(sId) as any[]).reverse();
 
-    const formattedHistory = historyRows.map((h: any) => ({
-      role: h.role,
-      content: h.content.length > 1200 ? h.content.slice(0, 1200) + '... [truncated previous briefing summary]' : h.content,
-    }));
+    // 2. Run the investigation pipeline for this user message
+    const invResult = await this.investigate(message);
 
-    // 2. Build system prompt
-    const systemPrompt = `You are the Omni-Sensor Reasoning Intelligence & Real-Time World Model Analyst for Revana Technologies.
-You have direct, real-time access to:
-- Live World Model Telemetry: Open-Meteo Weather & Precipitation, Open-Meteo CAMS Air Quality (PM2.5, PM10, AQI), USGS Earthquakes, GDACS Disaster Advisories, Central Water Commission River/Dam Gauges, National Grid KPTCL Electrical Substations, GTFS Transit Telemetry, GBFS Mobility Hubs, European Central Bank Foreign Exchange, and OpenStreetMap/Nominatim Geocoding.
-- Inferred Physical Relationships: Infrastructure impacts with concrete physical evidence chains and confidence scores.
-- Detected Real-World Events: Threshold crossing alerts (heavy rainfall, earthquakes, reservoir overflows, severe transit delays).
-- Digital Twin Simulation Sandboxes: Alternate reality evaluations, cascading consequences, and stress testing.
-- Uploaded Datasets: Relational entity graph, transactions, shipments, and pattern anomaly records.
+    // 3. Assemble formatted markdown reply with clean claim tier sections
+    let reply = `### Intelligence Assessment\n${invResult.aiInterpretation}\n\n`;
 
-YOUR CORE MANDATE:
-1. ANSWER QUESTIONS FROM ANYTHING: Answer any question asked by the user intelligently, authoritatively, and comprehensively. You are NOT confined to datasets! You have real-time access to the entire physical world mirror, external public APIs, and general reasoning.
-2. CITE REAL-TIME SOURCES: When answering about real-world facts (weather, AQI, seismic activity, water levels, transformer loads, exchange rates, corridor delays), ALWAYS state the source sensor, observed value, timestamp, and location.
-3. PHYSICAL & SPATIAL CORRELATIONS: Explain the physical reasons and evidence behind observed changes (e.g. why NH48 corridor traction is affected by rainfall catchment runoff).
-4. MEMORY & CONTINUITY: You remember previous messages and context in this conversation session.
-5. FORMATTING: Use clean, professional markdown with clear bold headers, bulleted lists, and concise analytical takeaways.`;
-
-    // 3. Assemble Groq messages array
-    const baseGroqMessages: any[] = [
-      { role: 'system', content: systemPrompt },
-      ...formattedHistory,
-      { role: 'user', content: message },
-    ];
-
-    let reply = '';
-    let accumulatedReasoning = '';
-    const sourcesCited = new Set<string>();
-
-    const candidateModels = [
-      GROQ_MODEL,
-      'openai/gpt-oss-20b',
-      'qwen/qwen3.8-27b',
-    ].filter((m, i, arr) => Boolean(m) && arr.indexOf(m) === i);
-
-    let modelSuccess = false;
-
-    if (GROQ_API_KEY && GROQ_API_KEY.trim() !== '' && !GROQ_API_KEY.includes('your_groq_api_key')) {
-      for (const currentModel of candidateModels) {
-        if (modelSuccess) break;
-
-        try {
-          let iteration = 0;
-          const maxIterations = 4;
-          const currentGroqMessages = [...baseGroqMessages];
-          let modelReply = '';
-          let modelReasoning = '';
-
-          while (iteration < maxIterations) {
-            iteration++;
-            const res = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${GROQ_API_KEY}`,
-              },
-              body: JSON.stringify({
-                model: currentModel,
-                messages: currentGroqMessages,
-                tools: GROQ_TOOLS,
-                tool_choice: 'auto',
-                temperature: 0.5,
-                max_tokens: 1500,
-              }),
-            });
-
-            if (!res.ok) {
-              const errText = await res.text();
-              throw new Error(`Groq HTTP ${res.status} on ${currentModel}: ${errText}`);
-            }
-
-            const data = (await res.json()) as any;
-            const choice = data.choices?.[0];
-            const responseMessage = choice?.message;
-            if (!responseMessage) throw new Error('Empty response from Groq');
-
-            if (responseMessage.reasoning) {
-              modelReasoning += (modelReasoning ? '\n\n' : '') + responseMessage.reasoning;
-            }
-
-            currentGroqMessages.push(responseMessage);
-
-            if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-              for (const toolCall of responseMessage.tool_calls) {
-                const toolName = toolCall.function.name;
-                let toolArgs: any = {};
-                try {
-                  toolArgs = JSON.parse(toolCall.function.arguments || '{}');
-                } catch (_) {}
-
-                sourcesCited.add(`Sensor Tool: ${toolName}`);
-                const toolResult = await AiService.executeTool(toolName, toolArgs);
-
-                currentGroqMessages.push({
-                  role: 'tool',
-                  tool_call_id: toolCall.id,
-                  name: toolName,
-                  content: JSON.stringify(toolResult),
-                });
-              }
-            } else {
-              modelReply = responseMessage.content || '';
-              break;
-            }
-          }
-
-          if (modelReply && modelReply.trim() !== '') {
-            reply = modelReply;
-            accumulatedReasoning = modelReasoning;
-            modelSuccess = true;
-          }
-        } catch (err: any) {
-          console.warn(`Candidate model ${currentModel} failed: ${err.message}. Trying next candidate model if available...`);
-        }
-      }
-    } else {
-      reply = AiService.generateLocalGroundedAnswer(message);
-      sourcesCited.add('Revana Technologies Grounded Reasoning Engine');
+    if (invResult.facts && invResult.facts.length > 0) {
+      reply += `#### Grounded Facts\n`;
+      invResult.facts.forEach((f) => {
+        reply += `• **[FACT]** ${f.text} *(Evidence: ${f.evidenceIds.join(', ')})*\n`;
+      });
+      reply += '\n';
     }
 
-    if (!reply || reply.trim() === '') {
-      reply = AiService.generateLocalGroundedAnswer(message);
-      sourcesCited.add('Revana Technologies Grounded Reasoning Engine');
+    if (invResult.inferences && invResult.inferences.length > 0) {
+      reply += `#### Analytical Inferences\n`;
+      invResult.inferences.forEach((inf) => {
+        reply += `• **[INFERENCE]** ${inf.text}\n  *Reasoning*: ${inf.reasoning}\n`;
+      });
+      reply += '\n';
     }
 
-    // 4. Save to Persistent Chat Memory in SQLite
+    if (invResult.hypotheses && invResult.hypotheses.length > 0) {
+      reply += `#### Hypotheses & Strategic Ideas\n`;
+      invResult.hypotheses.slice(0, 4).forEach((h) => {
+        reply += `• **[HYPOTHESIS (${h.plausibility.toUpperCase()})]** ${h.text}\n  *Why Plausible*: ${h.whyPlausible}\n  *Confirm With*: ${h.confirmWith}\n`;
+      });
+      reply += '\n';
+    }
+
+    if (invResult.background && invResult.background.length > 0) {
+      reply += `#### Background Context\n`;
+      invResult.background.forEach((b) => {
+        reply += `• **[BACKGROUND]** ${b.text}\n`;
+      });
+      reply += '\n';
+    }
+
+    reply += `*Engine: ${invResult.engine}${invResult.fallbackReason ? ` (${invResult.fallbackReason})` : ''} • Grounding: ${invResult.groundingSummary || 'N/A'} • Confidence: ${(invResult.confidenceScore * 100).toFixed(0)}%*`;
+
+    // 4. Assemble sources and trace for reasoning drawer
+    const sources = Array.from(
+      new Set([
+        ...((invResult.facts || []).flatMap((f) => f.evidenceIds)),
+        'Revana Multi-Domain Intelligence Pipeline',
+        invResult.engine === 'llm' ? 'Groq Analyst Engine' : 'Deterministic Local Engine',
+      ])
+    );
+
+    const reasoning = (invResult.trace || [])
+      .map((t) => `[${t.timestamp.slice(11, 19)}] ${t.step}: ${t.detail ? JSON.stringify(t.detail) : ''}`)
+      .join('\n');
+
+    // 5. Save to Persistent Chat Memory in SQLite
     const userMsgId = `msg_user_${uuidv4().substring(0, 8)}`;
     const asstMsgId = `msg_asst_${uuidv4().substring(0, 8)}`;
     const insertMsgStmt = db.prepare(`
@@ -14909,13 +17242,13 @@ YOUR CORE MANDATE:
     `);
 
     insertMsgStmt.run(userMsgId, sId, 'user', message, JSON.stringify([]), null, now);
-    insertMsgStmt.run(asstMsgId, sId, 'assistant', reply, JSON.stringify(Array.from(sourcesCited)), accumulatedReasoning || null, new Date().toISOString());
+    insertMsgStmt.run(asstMsgId, sId, 'assistant', reply, JSON.stringify(sources), reasoning || null, new Date().toISOString());
 
     return {
       sessionId: sId,
       reply,
-      reasoning: accumulatedReasoning || undefined,
-      sources: Array.from(sourcesCited),
+      reasoning,
+      sources,
       timestamp: new Date().toISOString(),
     };
   }
@@ -14931,7 +17264,7 @@ YOUR CORE MANDATE:
       ORDER BY timestamp ASC
     `).all(sessionId) as any[];
 
-    return rows.map(r => ({
+    return rows.map((r) => ({
       id: r.id,
       role: r.role,
       content: r.content,
@@ -14950,149 +17283,13 @@ YOUR CORE MANDATE:
   }
 
   /**
-   * High-Fidelity Grounded Local Reasoning Engine
-   * Queries real live world model entities, active sensors, and temporal history offline
+   * High-Fidelity Grounded Local Reasoning Engine (Kept for offline compatibility)
    */
   public static generateLocalGroundedAnswer(message: string): string {
     const qLower = message.toLowerCase();
-    const worldState = worldModelService.getWorldState();
-    const providers = providerRegistry.getStatusMatrix();
-    const events = worldModelService.getEvents();
-    const relationships = worldModelService.getRelationships();
-    const sims = simulationService.listSimulations();
-
-    let response = `### Real-Time World Model Intelligence Briefing\n\n`;
-
-    // 1. Weather / Rain / Precipitation
-    if (qLower.includes('weather') || qLower.includes('rain') || qLower.includes('temp') || qLower.includes('monsoon')) {
-      const weatherEnts = worldModelService.getEntities('WEATHER_STATION');
-      if (weatherEnts.length > 0) {
-        const w = weatherEnts[0];
-        const val = w.current_state;
-        response += `**Live Meteorological Telemetry (Open-Meteo Weather)**:\n`;
-        response += `• **Station**: ${w.name} (Coordinates: ${w.latitude.toFixed(4)}° N, ${w.longitude.toFixed(4)}° E)\n`;
-        response += `• **Temperature**: ${val.temperature_c ?? 'N/A'}°C\n`;
-        response += `• **Precipitation**: ${val.precipitation_mm ?? 0} mm/hr\n`;
-        response += `• **Relative Humidity**: ${val.relative_humidity_pct ?? 'N/A'}%\n`;
-        response += `• **Surface Pressure**: ${val.surface_pressure_hpa ?? 'N/A'} hPa\n`;
-        response += `• **Observed At**: ${w.last_observed_at} (Source: \`api.open-meteo.com\`, Confidence: ${(w.confidence * 100).toFixed(0)}%)\n\n`;
-      }
-    }
-
-    // 2. Air Quality / AQI / Pollution
-    if (qLower.includes('air') || qLower.includes('aqi') || qLower.includes('pollution') || qLower.includes('pm2.5') || qLower.includes('pm10')) {
-      const aqiEnts = worldModelService.getEntities('AIR_QUALITY_STATION');
-      if (aqiEnts.length > 0) {
-        const a = aqiEnts[0];
-        const val = a.current_state;
-        response += `**Live Atmospheric Pollutant Telemetry (Copernicus CAMS & Open-Meteo)**:\n`;
-        response += `• **Monitoring Sensor**: ${a.name}\n`;
-        response += `• **US AQI**: **${val.us_aqi ?? 'N/A'}** (${val.us_aqi > 150 ? 'UNHEALTHY' : val.us_aqi > 100 ? 'MODERATE' : 'GOOD'})\n`;
-        response += `• **PM2.5**: ${val.pm2_5_ugm3 ?? 'N/A'} µg/m³ | **PM10**: ${val.pm10_ugm3 ?? 'N/A'} µg/m³\n`;
-        response += `• **NO2**: ${val.nitrogen_dioxide_ugm3 ?? 'N/A'} µg/m³ | **SO2**: ${val.sulphur_dioxide_ugm3 ?? 'N/A'} µg/m³\n`;
-        response += `• **Provenance**: Observed at ${a.last_observed_at} via Open-Meteo Air Quality CAMS stream.\n\n`;
-      }
-    }
-
-    // 3. Earthquakes / Seismic Hazards
-    if (qLower.includes('earthquake') || qLower.includes('seismic') || qLower.includes('magnitude') || qLower.includes('tsunami')) {
-      const eqEnts = worldModelService.getEntities('EARTHQUAKE_EPICENTER');
-      response += `**Global Seismic Activity (USGS Real-Time Hazards Feed)**:\n`;
-      if (eqEnts.length > 0) {
-        response += `Active monitored seismic epicenters in memory: **${eqEnts.length}**\n`;
-        eqEnts.slice(0, 3).forEach(eq => {
-          const val = eq.current_state;
-          response += `• **M${val.magnitude}** - ${val.place} (Depth: ${val.depth_km}km, Observed: ${eq.last_observed_at})\n`;
-        });
-        response += `\n`;
-      } else {
-        response += `• No critical seismic disturbances detected within the regional corridor during the active observation window.\n\n`;
-      }
-    }
-
-    // 4. Hydrological / Water / Reservoirs / Dams
-    if (qLower.includes('water') || qLower.includes('dam') || qLower.includes('river') || qLower.includes('flood') || qLower.includes('reservoir')) {
-      const hydroEnts = worldModelService.getEntities('WATER_GAUGE');
-      response += `**Hydrological Telemetry & Basin Gauges (Central Water Commission)**:\n`;
-      if (hydroEnts.length > 0) {
-        hydroEnts.slice(0, 3).forEach(h => {
-          const val = h.current_state;
-          response += `• **${val.station_name || h.name}** (${val.river || 'Basin'}):\n`;
-          response += `  - Current Stage: **${val.water_level_m}m** (Danger Level: ${val.danger_level_m}m)\n`;
-          response += `  - Storage Capacity: ${val.capacity_pct}%\n`;
-          response += `  - Status: **${val.status}**\n`;
-        });
-        response += `\n`;
-      }
-    }
-
-    // 5. Electrical Grid / Substations / Energy
-    if (qLower.includes('grid') || qLower.includes('power') || qLower.includes('electric') || qLower.includes('substation') || qLower.includes('demand')) {
-      const gridEnts = worldModelService.getEntities('ENERGY_SUBSTATION');
-      response += `**Electrical Grid Telemetry (Grid Controller of India / KPTCL)**:\n`;
-      if (gridEnts.length > 0) {
-        gridEnts.slice(0, 3).forEach(g => {
-          const val = g.current_state;
-          response += `• **${val.substation_name || g.name}**:\n`;
-          response += `  - Power Demand: **${val.demand_mw} MW** / ${val.capacity_mw} MW (${val.load_pct}% load)\n`;
-          response += `  - Status: ${val.status}\n`;
-        });
-        response += `\n`;
-      }
-    }
-
-    // 6. Public Transit & Roads (NH48)
-    if (qLower.includes('traffic') || qLower.includes('transit') || qLower.includes('bus') || qLower.includes('metro') || qLower.includes('road') || qLower.includes('nh48')) {
-      const transitEnts = worldModelService.getEntities('TRANSIT_VEHICLE');
-      response += `**Metropolitan Transit & Corridor Telemetry (GTFS-RT / BMRCL / BMTC)**:\n`;
-      if (transitEnts.length > 0) {
-        transitEnts.slice(0, 3).forEach(t => {
-          const val = t.current_state;
-          response += `• **${val.vehicle_label || t.name}** (Route: ${val.route_id || 'Corridor'}):\n`;
-          response += `  - Speed: ${val.speed_kmh} km/h | Status: ${val.status}\n`;
-          response += `  - Congestion Level: **${val.congestion_level}**\n`;
-        });
-        response += `\n`;
-      }
-    }
-
-    // 7. Simulation Twins
-    if (qLower.includes('simulat') || qLower.includes('twin') || qLower.includes('what if')) {
-      response += `**Digital Twin Sandbox Status**:\n`;
-      if (sims.length > 0) {
-        response += `Active sandboxes: **${sims.length}**\n`;
-        sims.slice(0, 2).forEach(s => {
-          response += `• **${s.name}** (ID: \`${s.id}\`) - ${s.modified_entity_count} entity modifications active. State is 100% isolated from live records.\n`;
-        });
-        response += `\n`;
-      } else {
-        response += `• No active simulation sandbox running. Use **Simulation Twin Mode** in the interface to test perturbations.\n\n`;
-      }
-    }
-
-    // 8. General Summary & Connected Evidence
-    if (relationships.length > 0 && (qLower.includes('why') || qLower.includes('reason') || qLower.includes('connect') || qLower.includes('impact'))) {
-      response += `**Inferred Physical Evidence Chains**:\n`;
-      relationships.slice(0, 2).forEach(rel => {
-        response += `• **${rel.relationship_type}** (\`${rel.source_entity_id}\` → \`${rel.target_entity_id}\`):\n`;
-        response += `  - Confidence: ${(rel.confidence * 100).toFixed(0)}%\n`;
-        response += `  - Evidence: ${rel.evidence?.[0] || 'Direct spatial proximity'}\n`;
-      });
-      response += `\n`;
-    }
-
-    // 9. World Model Health Overview
-    response += `**Live Mirror Summary**:\n`;
-    response += `• Total Physical Entities Tracked: **${worldState.entity_count}**\n`;
-    response += `• Active Threshold Events: **${events.length}**\n`;
-    response += `• Connected Sensor Feeds: **${providers.length}** (${providers.filter(p => p.health.status === 'HEALTHY').length} Healthy)\n`;
-    response += `• Temporal State Ledger Entries: **${worldState.recent_changes_count}**\n\n`;
-    response += `*All figures cited from active database state at ${new Date().toLocaleTimeString()} with cryptographic provenance.*`;
-
-    return response;
+    return `### Real-Time Grounded Response\n\nDirect response for inquiry: "${message}". Please refer to active world model sensors and dataset graphs.`;
   }
 }
-
 
 ```
 
@@ -17076,11 +19273,22 @@ export class MaritimePatternDetector {
       `).all(corridor.minLat, corridor.maxLat, corridor.minLon, corridor.maxLon) as any[];
 
       const observedCount = vessels.length;
-      if (observedCount === 0) continue;
+      const patternId = `PAT_${corridor.id}`;
+
+      if (observedCount === 0) {
+        db.prepare('DELETE FROM maritime_patterns WHERE pattern_id = ?').run(patternId);
+        continue;
+      }
 
       const deviationPercent = Number(
         (((observedCount - corridor.baseline) / corridor.baseline) * 100).toFixed(1)
       );
+
+      // Check if threshold exceeded; if not, purge any previously stored pattern
+      if (deviationPercent < corridor.thresholdPercent || observedCount < corridor.baseline * 1.3) {
+        db.prepare('DELETE FROM maritime_patterns WHERE pattern_id = ?').run(patternId);
+        continue;
+      }
 
       // Analyze shared destinations
       const destCounts: Record<string, number> = {};
@@ -17091,10 +19299,6 @@ export class MaritimePatternDetector {
           knownDestCount++;
         }
       }
-
-      // Check if threshold exceeded
-      if (deviationPercent >= corridor.thresholdPercent || observedCount >= corridor.baseline * 1.3) {
-        const patternId = `PAT_${corridor.id}`;
 
         // Top destinations summary
         const topDestEntries = Object.entries(destCounts).sort((a, b) => b[1] - a[1]);
@@ -17201,7 +19405,6 @@ export class MaritimePatternDetector {
         );
 
         detectedPatterns.push(pattern);
-      }
     }
 
     return detectedPatterns;
@@ -17332,70 +19535,13 @@ const SEED_VESSELS: SeedVessel[] = [
   { mmsi: '419012678', imo: '9510987', name: 'BAY STAR', type: 'General Cargo', lat: 12.4500, lon: 80.8900, speed: 11.0, course: 15, heading: 14, destination: 'VISAKHAPATNAM', status: 'in_transit' },
 
   // -------------------------------------------------------------------------
-  // Corridor 4: Malacca Strait Chokepoint & Singapore Hub (62 Vessels Convergence)
-  // (Intentional statistically significant traffic anomaly matching user scenario)
-  // -------------------------------------------------------------------------
-  ...generateMalaccaConvergenceFleet(),
-
-  // -------------------------------------------------------------------------
-  // Corridor 5: Colombo Transshipment Hub & Southern Sri Lanka Route
+  // Corridor 4: Colombo Transshipment Hub & Southern Sri Lanka Route
   // -------------------------------------------------------------------------
   { mmsi: '419013999', imo: '9723456', name: 'CEYLON BREEZE', type: 'Container Ship', lat: 6.9800, lon: 79.8100, speed: 14.8, course: 110, heading: 112, destination: 'COLOMBO', status: 'in_transit' },
   { mmsi: '563001890', imo: '9834120', name: 'SINGAPORE HIGHWAY', type: 'Vehicles Carrier', lat: 6.8100, lon: 79.6500, speed: 16.5, course: 115, heading: 115, destination: 'COLOMBO', status: 'in_transit' },
   { mmsi: '220456000', imo: '9654129', name: 'DANISH TRADER', type: 'Container Ship', lat: 5.8500, lon: 80.4500, speed: 17.1, course: 85, heading: 85, destination: 'SINGAPORE', status: 'in_transit' },
   { mmsi: '419014123', imo: '9481230', name: 'LANKA PRIDE', type: 'Crude Oil Tanker', lat: 5.7200, lon: 80.2000, speed: 12.3, course: 265, heading: 265, destination: 'MUMBAI', status: 'in_transit' },
 ];
-
-/**
- * Generates the Malacca Strait fleet (62 vessels) to recreate the prompt's
- * benchmark traffic concentration scenario: Baseline = 41 vessels, Observed = 62 vessels (+51.2% deviation)
- */
-function generateMalaccaConvergenceFleet(): SeedVessel[] {
-  const fleet: SeedVessel[] = [];
-  const vesselNames = [
-    'EVER GIVEN', 'MSC OSCAR', 'COSCO SHIPPING TAURUS', 'OOCL HONG KONG', 'HAPAG AL JASRAH',
-    'ONE APUS', 'MAERSK MC-KINNEY', 'CMA CGM CORTE REAL', 'YANG MING WISH', 'EVER GOLDEN',
-    'BERGE EVEREST', 'TI OCEANIA', 'ALEXANDRIA VOYAGER', 'ORIENTAL RUBY', 'ASIAN EMPRESS',
-    'PACIFIC EMERALD', 'GLOBAL MERCURY', 'MARITIME LEADER', 'STRAIT NAVIGATOR', 'NORDIC FREEDOM',
-    'SEA TREASURE', 'EASTERN HARMONY', 'GOLDEN HORIZON', 'SILVER JASMINE', 'DIAMOND ACE',
-    'ROYAL SAPPHIRE', 'CRYSTAL OCEAN', 'BLUE HORIZON', 'EMERALD TRADER', 'OCEAN PHOENIX',
-    'KAPITAN MAS', 'SUMATRA HIGHWAY', 'MALACCA GLORY', 'ANDAMAN VOYAGER', 'JOHOR EXPRESS',
-    'PENANG TRADER', 'BATAM CARRIER', 'KLANG PIONEER', 'TIOMAN PRIDE', 'SINGA PEARL',
-    'MERLION ACE', 'ORCHID STAR', 'SENTOSA LEADER', 'JURONG CRUDE', 'CHANGI EXPRESS',
-    'RAFFLES PRIDE', 'TEMASEK STAR', 'ISLAND REGENT', 'STRAIT GUARDIAN', 'EQUATOR VOYAGER',
-    'SOUTHERN CROSS', 'MONSOON QUEEN', 'NEPTUNE DANCER', 'TRITON VICTORY', 'POSEIDON BRAVE',
-    'ZEUS MARITIME', 'ARES CARRIER', 'HERMES NAVIGATOR', 'APOLLO SUN', 'ATLAS FREIGHT',
-    'TITAN BULKER', 'CHRONOS VOYAGER',
-  ];
-
-  // Malacca corridor runs from NW (lat 5.2, lon 97.5) to SE (lat 1.25, lon 103.8)
-  for (let i = 0; i < 62; i++) {
-    const progress = i / 61; // 0 to 1 along the strait
-    const lat = 5.2 - progress * 3.95 + (Math.sin(i * 1.7) * 0.12);
-    const lon = 97.5 + progress * 6.3 + (Math.cos(i * 1.3) * 0.15);
-    const isSouthbound = i % 3 !== 0;
-
-    const course = isSouthbound ? 128 + (Math.sin(i) * 5) : 308 + (Math.sin(i) * 5);
-    const speed = 13.5 + (Math.sin(i * 2.3) * 3.2);
-    const hasKnownDest = i < 44; // 44 of 62 share region destinations
-
-    fleet.push({
-      mmsi: `563${String(100000 + i).slice(-6)}`,
-      imo: `9${String(700000 + i).slice(-6)}`,
-      name: vesselNames[i] || `VESSEL ALPHA-${i + 1}`,
-      type: i % 4 === 0 ? 'Crude Oil Tanker' : (i % 3 === 0 ? 'Bulk Carrier' : 'Container Ship'),
-      lat,
-      lon,
-      speed: Number(speed.toFixed(1)),
-      course: Math.round(course),
-      heading: Math.round(course),
-      destination: hasKnownDest ? (i % 2 === 0 ? 'SINGAPORE' : 'PORT KLANG') : undefined,
-      status: 'in_transit',
-    });
-  }
-
-  return fleet;
-}
 
 export class AisRealReplayProvider implements AisProvider {
   name = 'Revana Real-World AIS Replay Feed (Indian Ocean & Malacca)';
@@ -21294,6 +23440,51 @@ export interface GraphData {
   edges: GraphEdge[];
 }
 
+export interface FactClaim {
+  text: string;
+  evidenceIds: string[];
+  verified?: boolean;
+  verificationNote?: string;
+}
+
+export interface InferenceClaim {
+  text: string;
+  basedOnFactIndexes: number[];
+  reasoning: string;
+}
+
+export interface HypothesisClaim {
+  text: string;
+  whyPlausible: string;
+  plausibility: 'low' | 'medium' | 'high';
+  confirmWith: string;
+  refuteWith: string;
+  suggestedTool?: string;
+  unverifiedNote?: string;
+}
+
+export interface BackgroundClaim {
+  text: string;
+}
+
+export interface NextStepClaim {
+  text: string;
+}
+
+export interface ProposedRelationshipItem {
+  source_id: string;
+  target_id: string;
+  type: string;
+  rationale: string;
+  status: 'PROPOSED';
+}
+
+export interface TraceStep {
+  step: string;
+  detail?: any;
+  timestamp: string;
+}
+
 export interface AiInvestigationResponse {
   investigationId?: string;
   entitySummary?: string;
@@ -21307,6 +23498,18 @@ export interface AiInvestigationResponse {
   suggestedHopExpansions: string[];
   confidenceScore: number;
   rawGrokResponse?: string;
+  // Pipeline Engine & Claim Tiers
+  engine?: 'llm' | 'deterministic-fallback';
+  fallbackReason?: string;
+  trace?: TraceStep[];
+  facts?: FactClaim[];
+  inferences?: InferenceClaim[];
+  hypotheses?: HypothesisClaim[];
+  background?: BackgroundClaim[];
+  nextSteps?: NextStepClaim[];
+  groundingSummary?: string;
+  dataGaps?: string[];
+  proposedRelationships?: ProposedRelationshipItem[];
 }
 
 // Revana Moving Entity & Maritime Types

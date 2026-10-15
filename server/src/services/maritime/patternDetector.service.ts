@@ -84,11 +84,22 @@ export class MaritimePatternDetector {
       `).all(corridor.minLat, corridor.maxLat, corridor.minLon, corridor.maxLon) as any[];
 
       const observedCount = vessels.length;
-      if (observedCount === 0) continue;
+      const patternId = `PAT_${corridor.id}`;
+
+      if (observedCount === 0) {
+        db.prepare('DELETE FROM maritime_patterns WHERE pattern_id = ?').run(patternId);
+        continue;
+      }
 
       const deviationPercent = Number(
         (((observedCount - corridor.baseline) / corridor.baseline) * 100).toFixed(1)
       );
+
+      // Check if threshold exceeded; if not, purge any previously stored pattern
+      if (deviationPercent < corridor.thresholdPercent || observedCount < corridor.baseline * 1.3) {
+        db.prepare('DELETE FROM maritime_patterns WHERE pattern_id = ?').run(patternId);
+        continue;
+      }
 
       // Analyze shared destinations
       const destCounts: Record<string, number> = {};
@@ -99,10 +110,6 @@ export class MaritimePatternDetector {
           knownDestCount++;
         }
       }
-
-      // Check if threshold exceeded
-      if (deviationPercent >= corridor.thresholdPercent || observedCount >= corridor.baseline * 1.3) {
-        const patternId = `PAT_${corridor.id}`;
 
         // Top destinations summary
         const topDestEntries = Object.entries(destCounts).sort((a, b) => b[1] - a[1]);
@@ -209,7 +216,6 @@ export class MaritimePatternDetector {
         );
 
         detectedPatterns.push(pattern);
-      }
     }
 
     return detectedPatterns;

@@ -14,7 +14,6 @@ import { PublicWaterLevelProvider } from '../providers/water/PublicWaterLevelPro
 import { NationalGridEnergyProvider } from '../providers/energy/NationalGridEnergyProvider.js';
 import { ExchangeRateProvider } from '../providers/finance/ExchangeRateProvider.js';
 import { PublicFeedProvider } from '../providers/news/PublicFeedProvider.js';
-import { MockDataProvider } from '../providers/mock/MockDataProvider.js';
 
 export interface ProviderStatusSummary {
   id: string;
@@ -60,7 +59,6 @@ export class ProviderRegistry {
     this.register(new NationalGridEnergyProvider());
     this.register(new ExchangeRateProvider());
     this.register(new PublicFeedProvider());
-    this.register(new MockDataProvider());
   }
 
   public register(provider: DataProvider): void {

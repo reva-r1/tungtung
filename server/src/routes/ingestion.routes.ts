@@ -125,8 +125,14 @@ ingestionRouter.delete('/datasets', (req: Request, res: Response) => {
   }
 });
 
-// Reset / reload demo logistics dataset
+// Reset / reload demo logistics dataset (Guarded by REVANA_DEMO_MODE)
 ingestionRouter.post('/demo/reload', (req: Request, res: Response) => {
+  if (process.env.REVANA_DEMO_MODE !== 'true') {
+    return res.status(403).json({
+      error: 'Demo dataset reload is disabled in production. Set REVANA_DEMO_MODE=true in environment to enable benchmark reload.',
+    });
+  }
+
   try {
     seedDatabase(true);
     res.json({ success: true, message: 'Karnataka-South logistics benchmark dataset reloaded successfully.' });

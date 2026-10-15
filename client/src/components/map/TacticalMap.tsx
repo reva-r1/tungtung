@@ -287,8 +287,8 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     });
   };
 
-  // Malacca Chokepoint anomaly pattern reference (if detected)
-  const malaccaPattern = patterns.find((p) => p.pattern_id === 'PAT_CORRIDOR_MALACCA');
+  // Active traffic concentration or congestion pattern (computed dynamically from observed vessels)
+  const activeSurgePattern = patterns.find((p) => p.deviation_percent >= 30);
 
   return (
     <div className={`relative flex flex-col h-full bg-[#090d16] border border-[#1e293b] rounded-lg overflow-hidden ${className}`}>
@@ -325,15 +325,15 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Detected Maritime Pattern Alert Banner Button */}
-          {malaccaPattern && (
+          {/* Detected Maritime Pattern Alert Banner Button (Dynamic based on live telemetry) */}
+          {activeSurgePattern && (
             <button
-              onClick={() => setActivePatternModal(malaccaPattern)}
+              onClick={() => setActivePatternModal(activeSurgePattern)}
               className="px-2.5 py-1 rounded text-[10px] font-mono bg-rose-950/70 hover:bg-rose-900/80 border border-rose-500/60 text-rose-200 font-bold transition flex items-center gap-1.5 animate-pulse"
               title="Click to view verified observations, hypotheses & AI reasoning"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-              <span>MALACCA CHOKEPOINT: +{malaccaPattern.deviation_percent}% SURGE</span>
+              <span>{activeSurgePattern.region.toUpperCase()}: +{activeSurgePattern.deviation_percent}% SURGE</span>
               <span className="bg-rose-500 text-black px-1 rounded text-[9px] uppercase">INVESTIGATE</span>
             </button>
           )}

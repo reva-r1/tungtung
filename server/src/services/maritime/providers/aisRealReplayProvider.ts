@@ -48,70 +48,13 @@ const SEED_VESSELS: SeedVessel[] = [
   { mmsi: '419012678', imo: '9510987', name: 'BAY STAR', type: 'General Cargo', lat: 12.4500, lon: 80.8900, speed: 11.0, course: 15, heading: 14, destination: 'VISAKHAPATNAM', status: 'in_transit' },
 
   // -------------------------------------------------------------------------
-  // Corridor 4: Malacca Strait Chokepoint & Singapore Hub (62 Vessels Convergence)
-  // (Intentional statistically significant traffic anomaly matching user scenario)
-  // -------------------------------------------------------------------------
-  ...generateMalaccaConvergenceFleet(),
-
-  // -------------------------------------------------------------------------
-  // Corridor 5: Colombo Transshipment Hub & Southern Sri Lanka Route
+  // Corridor 4: Colombo Transshipment Hub & Southern Sri Lanka Route
   // -------------------------------------------------------------------------
   { mmsi: '419013999', imo: '9723456', name: 'CEYLON BREEZE', type: 'Container Ship', lat: 6.9800, lon: 79.8100, speed: 14.8, course: 110, heading: 112, destination: 'COLOMBO', status: 'in_transit' },
   { mmsi: '563001890', imo: '9834120', name: 'SINGAPORE HIGHWAY', type: 'Vehicles Carrier', lat: 6.8100, lon: 79.6500, speed: 16.5, course: 115, heading: 115, destination: 'COLOMBO', status: 'in_transit' },
   { mmsi: '220456000', imo: '9654129', name: 'DANISH TRADER', type: 'Container Ship', lat: 5.8500, lon: 80.4500, speed: 17.1, course: 85, heading: 85, destination: 'SINGAPORE', status: 'in_transit' },
   { mmsi: '419014123', imo: '9481230', name: 'LANKA PRIDE', type: 'Crude Oil Tanker', lat: 5.7200, lon: 80.2000, speed: 12.3, course: 265, heading: 265, destination: 'MUMBAI', status: 'in_transit' },
 ];
-
-/**
- * Generates the Malacca Strait fleet (62 vessels) to recreate the prompt's
- * benchmark traffic concentration scenario: Baseline = 41 vessels, Observed = 62 vessels (+51.2% deviation)
- */
-function generateMalaccaConvergenceFleet(): SeedVessel[] {
-  const fleet: SeedVessel[] = [];
-  const vesselNames = [
-    'EVER GIVEN', 'MSC OSCAR', 'COSCO SHIPPING TAURUS', 'OOCL HONG KONG', 'HAPAG AL JASRAH',
-    'ONE APUS', 'MAERSK MC-KINNEY', 'CMA CGM CORTE REAL', 'YANG MING WISH', 'EVER GOLDEN',
-    'BERGE EVEREST', 'TI OCEANIA', 'ALEXANDRIA VOYAGER', 'ORIENTAL RUBY', 'ASIAN EMPRESS',
-    'PACIFIC EMERALD', 'GLOBAL MERCURY', 'MARITIME LEADER', 'STRAIT NAVIGATOR', 'NORDIC FREEDOM',
-    'SEA TREASURE', 'EASTERN HARMONY', 'GOLDEN HORIZON', 'SILVER JASMINE', 'DIAMOND ACE',
-    'ROYAL SAPPHIRE', 'CRYSTAL OCEAN', 'BLUE HORIZON', 'EMERALD TRADER', 'OCEAN PHOENIX',
-    'KAPITAN MAS', 'SUMATRA HIGHWAY', 'MALACCA GLORY', 'ANDAMAN VOYAGER', 'JOHOR EXPRESS',
-    'PENANG TRADER', 'BATAM CARRIER', 'KLANG PIONEER', 'TIOMAN PRIDE', 'SINGA PEARL',
-    'MERLION ACE', 'ORCHID STAR', 'SENTOSA LEADER', 'JURONG CRUDE', 'CHANGI EXPRESS',
-    'RAFFLES PRIDE', 'TEMASEK STAR', 'ISLAND REGENT', 'STRAIT GUARDIAN', 'EQUATOR VOYAGER',
-    'SOUTHERN CROSS', 'MONSOON QUEEN', 'NEPTUNE DANCER', 'TRITON VICTORY', 'POSEIDON BRAVE',
-    'ZEUS MARITIME', 'ARES CARRIER', 'HERMES NAVIGATOR', 'APOLLO SUN', 'ATLAS FREIGHT',
-    'TITAN BULKER', 'CHRONOS VOYAGER',
-  ];
-
-  // Malacca corridor runs from NW (lat 5.2, lon 97.5) to SE (lat 1.25, lon 103.8)
-  for (let i = 0; i < 62; i++) {
-    const progress = i / 61; // 0 to 1 along the strait
-    const lat = 5.2 - progress * 3.95 + (Math.sin(i * 1.7) * 0.12);
-    const lon = 97.5 + progress * 6.3 + (Math.cos(i * 1.3) * 0.15);
-    const isSouthbound = i % 3 !== 0;
-
-    const course = isSouthbound ? 128 + (Math.sin(i) * 5) : 308 + (Math.sin(i) * 5);
-    const speed = 13.5 + (Math.sin(i * 2.3) * 3.2);
-    const hasKnownDest = i < 44; // 44 of 62 share region destinations
-
-    fleet.push({
-      mmsi: `563${String(100000 + i).slice(-6)}`,
-      imo: `9${String(700000 + i).slice(-6)}`,
-      name: vesselNames[i] || `VESSEL ALPHA-${i + 1}`,
-      type: i % 4 === 0 ? 'Crude Oil Tanker' : (i % 3 === 0 ? 'Bulk Carrier' : 'Container Ship'),
-      lat,
-      lon,
-      speed: Number(speed.toFixed(1)),
-      course: Math.round(course),
-      heading: Math.round(course),
-      destination: hasKnownDest ? (i % 2 === 0 ? 'SINGAPORE' : 'PORT KLANG') : undefined,
-      status: 'in_transit',
-    });
-  }
-
-  return fleet;
-}
 
 export class AisRealReplayProvider implements AisProvider {
   name = 'Revana Real-World AIS Replay Feed (Indian Ocean & Malacca)';
