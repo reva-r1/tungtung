@@ -47,10 +47,16 @@ export class AisStreamProvider implements AisProvider {
         this.reconnectAttempts = 0;
         this.lastError = undefined;
 
+        // Regional bounding box: Indian Ocean / Arabian Sea / Bay of Bengal / Malacca
+        const latMin = Number(process.env.AIS_BBOX_LAT_MIN ?? 0.0);
+        const latMax = Number(process.env.AIS_BBOX_LAT_MAX ?? 26.0);
+        const lonMin = Number(process.env.AIS_BBOX_LON_MIN ?? 60.0);
+        const lonMax = Number(process.env.AIS_BBOX_LON_MAX ?? 105.0);
+
         // Send AISStream subscription envelope
         const subscription = {
           APIKey: this.apiKey,
-          BoundingBoxes: [[[-90, -180], [90, 180]]],
+          BoundingBoxes: [[[latMin, lonMin], [latMax, lonMax]]],
           FilterMessageTypes: [
             'PositionReport',
             'StandardClassBPositionReport',
@@ -63,9 +69,20 @@ export class AisStreamProvider implements AisProvider {
         this.ws.send(JSON.stringify(subscription));
       };
 
-      this.ws.onmessage = (event: any) => {
+      this.ws.onmessage = async (event: any) => {
         try {
-          const raw = typeof event.data === 'string' ? event.data : event.data.toString();
+          let raw: string;
+          if (typeof event.data === 'string') {
+            raw = event.data;
+          } else if (event.data instanceof Blob) {
+            raw = await event.data.text();
+          } else if (Buffer.isBuffer(event.data)) {
+            raw = event.data.toString('utf-8');
+          } else if (event.data instanceof ArrayBuffer) {
+            raw = Buffer.from(event.data).toString('utf-8');
+          } else {
+            raw = String(event.data);
+          }
           const envelope = JSON.parse(raw);
           this.handleEnvelope(envelope);
         } catch (_) { }
@@ -106,18 +123,29 @@ export class AisStreamProvider implements AisProvider {
     const course = message.Cog != null ? Number(message.Cog) : (message.COG != null ? Number(message.COG) : undefined);
     const heading = message.TrueHeading != null ? Number(message.TrueHeading) : (message.Heading != null ? Number(message.Heading) : undefined);
 
+    let etaStr: string | undefined = undefined;
+    if (message.Eta) {
+      if (typeof message.Eta === 'object' && message.Eta.Month && message.Eta.Day) {
+        etaStr = `${message.Eta.Month}/${message.Eta.Day} ${message.Eta.Hour ?? 0}:${String(message.Eta.Minute ?? 0).padStart(2, '0')} UTC`;
+      } else {
+        etaStr = String(message.Eta).trim() || undefined;
+      }
+    }
+
+    const shipName = metadata.ShipName ? String(metadata.ShipName).trim() : (message.Name ? String(message.Name).trim() : undefined);
+
     const update: AisVesselRawUpdate = {
       mmsi,
       imo: message.ImoNumber ? String(message.ImoNumber) : (message.IMO ? String(message.IMO) : undefined),
-      name: metadata.ShipName ? String(metadata.ShipName).trim() : (message.Name ? String(message.Name).trim() : undefined),
-      type: message.ShipType ? String(message.ShipType) : undefined,
+      name: shipName,
+      type: message.Type != null ? `Type ${message.Type}` : (message.ShipType ? String(message.ShipType) : undefined),
       latitude: lat,
       longitude: lon,
       speed: Number.isFinite(speed) && (speed as number) < 102 ? speed : undefined,
       course: Number.isFinite(course) && (course as number) < 360 ? course : undefined,
       heading: Number.isFinite(heading) && (heading as number) < 360 && (heading as number) !== 511 ? heading : undefined,
       destination: message.Destination ? String(message.Destination).trim() : undefined,
-      eta: message.Eta ? String(message.Eta) : undefined,
+      eta: etaStr,
       timestamp: metadata.time_utc || new Date().toISOString(),
     };
 
@@ -142,7 +170,7 @@ export class AisStreamProvider implements AisProvider {
       mode: 'LIVE_STREAM',
       messageCount: this.messageCount,
       lastMessageAt: this.lastMessageAt,
-      error: this.lastError,
+      error: this.lastError || (!this.apiKey || this.apiKey.trim() === '' ? 'AISSTREAM_API_KEY not configured' : undefined),
     };
   }
 }

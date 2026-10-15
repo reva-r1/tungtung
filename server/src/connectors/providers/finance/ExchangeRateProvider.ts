@@ -50,16 +50,7 @@ export class ExchangeRateProvider extends DataProvider {
       return { rawData: data, latencyMs: latency };
     } catch (err: any) {
       this.recordFailure(err.message);
-      // Fallback baseline if offline
-      return {
-        rawData: {
-          amount: 1.0,
-          base: 'USD',
-          date: new Date().toISOString().split('T')[0],
-          rates: { INR: 86.85, EUR: 0.94, GBP: 0.79, AED: 3.67, SGD: 1.34 }
-        },
-        latencyMs: 1
-      };
+      throw err;
     }
   }
 

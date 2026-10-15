@@ -6,7 +6,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../../data');
-const DB_PATH = process.env.DATABASE_FILE || path.join(DATA_DIR, 'aegis_intel.db');
+const isTestRun = process.env.NODE_ENV === 'test' || Boolean(process.argv[1] && process.argv[1].includes('.test.'));
+
+export const DB_PATH = isTestRun
+  ? (process.env.TEST_DATABASE_FILE || path.join(DATA_DIR, 'test_aegis_intel.db'))
+  : (process.env.DATABASE_FILE || path.join(DATA_DIR, 'aegis_intel.db'));
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -321,6 +325,8 @@ export function initDatabase() {
       status TEXT DEFAULT 'ACTIVE',
       confidence REAL DEFAULT 1.0,
       last_observed_at TEXT NOT NULL,
+      last_updated_at TEXT,
+      source_providers TEXT,
       last_provider TEXT NOT NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -346,6 +352,22 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_wrel_tgt ON world_relationships(target_id);
     CREATE INDEX IF NOT EXISTS idx_wrel_type ON world_relationships(relationship_type);
 
+    CREATE TABLE IF NOT EXISTS inferred_relationships (
+      id TEXT PRIMARY KEY,
+      source_entity_id TEXT NOT NULL,
+      target_entity_id TEXT NOT NULL,
+      relationship_type TEXT NOT NULL,
+      provenance_type TEXT NOT NULL DEFAULT 'INFERRED_RELATIONSHIP',
+      confidence REAL NOT NULL,
+      timestamp TEXT NOT NULL,
+      source TEXT NOT NULL,
+      evidence TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_inf_rel_src ON inferred_relationships(source_entity_id);
+    CREATE INDEX IF NOT EXISTS idx_inf_rel_tgt ON inferred_relationships(target_entity_id);
+    CREATE INDEX IF NOT EXISTS idx_inf_rel_type ON inferred_relationships(relationship_type);
+
     CREATE TABLE IF NOT EXISTS temporal_state_history (
       id TEXT PRIMARY KEY,
       entity_id TEXT NOT NULL,
@@ -361,7 +383,8 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_tsh_time ON temporal_state_history(timestamp);
 
     CREATE TABLE IF NOT EXISTS world_events (
-      event_id TEXT PRIMARY KEY,
+      id TEXT PRIMARY KEY,
+      event_id TEXT NOT NULL,
       event_type TEXT NOT NULL,
       entity_id TEXT NOT NULL,
       previous_state TEXT, -- JSON
@@ -369,7 +392,8 @@ export function initDatabase() {
       detected_at TEXT NOT NULL,
       source TEXT NOT NULL,
       confidence REAL NOT NULL,
-      severity TEXT DEFAULT 'MEDIUM'
+      severity TEXT DEFAULT 'MEDIUM',
+      evidence TEXT -- JSON
     );
 
     CREATE INDEX IF NOT EXISTS idx_wevt_time ON world_events(detected_at);
@@ -380,8 +404,10 @@ export function initDatabase() {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       description TEXT,
-      base_snapshot_time TEXT NOT NULL,
+      base_timestamp TEXT,
+      base_snapshot_time TEXT,
       status TEXT DEFAULT 'ACTIVE',
+      parameters TEXT, -- JSON
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -412,6 +438,8 @@ export function initDatabase() {
   try { db.exec("ALTER TABLE world_entities ADD COLUMN status TEXT DEFAULT 'ACTIVE';"); } catch (_) {}
   try { db.exec("ALTER TABLE world_entities ADD COLUMN confidence REAL DEFAULT 1.0;"); } catch (_) {}
   try { db.exec("ALTER TABLE world_entities ADD COLUMN last_observed_at TEXT;"); } catch (_) {}
+  try { db.exec("ALTER TABLE world_entities ADD COLUMN last_updated_at TEXT;"); } catch (_) {}
+  try { db.exec("ALTER TABLE world_entities ADD COLUMN source_providers TEXT;"); } catch (_) {}
   try { db.exec("ALTER TABLE world_entities ADD COLUMN last_provider TEXT;"); } catch (_) {}
   try { db.exec("ALTER TABLE world_entities ADD COLUMN created_at TEXT;"); } catch (_) {}
   try { db.exec("ALTER TABLE world_entities ADD COLUMN updated_at TEXT;"); } catch (_) {}

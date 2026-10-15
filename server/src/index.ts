@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { initDatabase } from './db/database.js';
-import { seedDatabase } from './db/seedData.js';
+import { validateEnvironment } from './config/environment.js';
 import { entitiesRouter } from './routes/entities.routes.js';
 import { graphRouter } from './routes/graph.routes.js';
 import { eventsRouter } from './routes/events.routes.js';
@@ -73,6 +73,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // Bootstrapping
+validateEnvironment();
 initDatabase();
 MaritimeService.initialize().catch((err) => console.error('Failed to init Maritime Service:', err));
 

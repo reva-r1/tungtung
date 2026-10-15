@@ -33,35 +33,18 @@ export class PublicFeedProvider extends DataProvider {
   }
 
   public async fetch(params: any = {}): Promise<{ rawData: any; latencyMs: number }> {
-    const alerts = {
-      timestamp: new Date().toISOString(),
-      items: [
-        {
-          guid: 'GDACS_TC_BOB_2026_01',
-          title: 'Bay of Bengal Deep Depression Advisory',
-          event_type: 'TROPICAL_CYCLONE',
-          alert_level: 'ORANGE',
-          latitude: 13.5,
-          longitude: 83.2,
-          description: 'Depression moving west-northwest towards North Tamil Nadu and South Andhra Coast. Heavy precipitation expected in coastal hinterland.',
-          severity: 'HIGH',
-          published: new Date().toISOString(),
-        },
-        {
-          guid: 'GDACS_FLD_CAUVERY_02',
-          title: 'Cauvery River Basin Inflow High Stage Notice',
-          event_type: 'FLOOD',
-          alert_level: 'YELLOW',
-          latitude: 12.3,
-          longitude: 76.8,
-          description: 'Catchment inflow exceeding 35,000 cusecs due to localized western ghats downpours.',
-          severity: 'MEDIUM',
-          published: new Date().toISOString(),
-        }
-      ]
-    };
+    const externalUrl = process.env.CIVIC_ALERTS_FEED_URL;
+    if (externalUrl) {
+      try {
+        return await this.secureFetch(externalUrl, {}, 6000);
+      } catch (err: any) {
+        this.recordFailure(err.message);
+        throw err;
+      }
+    }
 
-    return { rawData: alerts, latencyMs: 2 };
+    this.recordFailure('CIVIC_ALERTS_FEED_URL not configured');
+    return { rawData: null, latencyMs: 0 };
   }
 
   public async normalize(rawData: any): Promise<NormalizedObservation[]> {

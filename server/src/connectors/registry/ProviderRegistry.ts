@@ -62,6 +62,9 @@ export class ProviderRegistry {
   }
 
   public register(provider: DataProvider): void {
+    if (process.env.NODE_ENV === 'production' && (provider.category === 'MOCK' || provider.id.includes('mock'))) {
+      throw new Error(`[Security Violation] Mock provider "${provider.id}" cannot be registered in production runtime.`);
+    }
     this.providers.set(provider.id, provider);
   }
 

@@ -5,6 +5,23 @@ import { MaritimeReasoningService } from '../services/maritime/maritimeReasoning
 
 export const maritimeRouter = Router();
 
+// GET /api/maritime - Primary endpoint returning vessels + provider status
+maritimeRouter.get('/', (req, res) => {
+  const limit = Math.min(1000, Math.max(1, Number(req.query.limit) || 300));
+  const vessels = MaritimeService.getAllVessels(limit);
+  const status = MaritimeService.getProviderStatus();
+  res.json({
+    total: vessels.length,
+    vessels,
+    mode: status.mode,
+    connected: status.connected,
+    messageCount: status.messageCount,
+    lastMessageAt: status.lastMessageAt,
+    error: status.error,
+    status,
+  });
+});
+
 // GET /api/maritime/status - AIS provider connectivity & feed metrics
 maritimeRouter.get('/status', (req, res) => {
   const status = MaritimeService.getProviderStatus();
@@ -15,9 +32,16 @@ maritimeRouter.get('/status', (req, res) => {
 maritimeRouter.get('/vessels', (req, res) => {
   const limit = Math.min(1000, Math.max(1, Number(req.query.limit) || 300));
   const vessels = MaritimeService.getAllVessels(limit);
+  const status = MaritimeService.getProviderStatus();
   res.json({
     total: vessels.length,
     vessels,
+    mode: status.mode,
+    connected: status.connected,
+    messageCount: status.messageCount,
+    lastMessageAt: status.lastMessageAt,
+    error: status.error,
+    status,
   });
 });
 

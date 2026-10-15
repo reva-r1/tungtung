@@ -35,55 +35,16 @@ export class GBFSProvider extends DataProvider {
   public async fetch(params: any = {}): Promise<{ rawData: any; latencyMs: number }> {
     const externalUrl = process.env.GBFS_FEED_URL;
     if (externalUrl) {
-      return await this.secureFetch(externalUrl, {}, 6000);
+      try {
+        return await this.secureFetch(externalUrl, {}, 6000);
+      } catch (err: any) {
+        this.recordFailure(err.message);
+        throw err;
+      }
     }
 
-    // Default micro-mobility hubs for Bangalore tech corridor
-    const simulatedData = {
-      last_updated: Math.floor(Date.now() / 1000),
-      data: {
-        stations: [
-          {
-            station_id: 'HUB_BLR_KORAMANGALA_01',
-            name: 'Koramangala 4th Block Mobility Hub',
-            lat: 12.9352,
-            lon: 77.6245,
-            num_bikes_available: 14,
-            num_ebikes_available: 8,
-            num_docks_available: 6,
-            is_installed: 1,
-            is_renting: 1,
-            is_returning: 1,
-          },
-          {
-            station_id: 'HUB_BLR_INDIRANAGAR_100FT',
-            name: 'Indiranagar 100ft Road Station',
-            lat: 12.9719,
-            lon: 77.6412,
-            num_bikes_available: 5,
-            num_ebikes_available: 2,
-            num_docks_available: 15,
-            is_installed: 1,
-            is_renting: 1,
-            is_returning: 1,
-          },
-          {
-            station_id: 'HUB_BLR_ELECTRONIC_CITY_GATE1',
-            name: 'Electronic City Phase 1 Hub',
-            lat: 12.8452,
-            lon: 77.6602,
-            num_bikes_available: 22,
-            num_ebikes_available: 12,
-            num_docks_available: 8,
-            is_installed: 1,
-            is_renting: 1,
-            is_returning: 1,
-          }
-        ]
-      }
-    };
-
-    return { rawData: simulatedData, latencyMs: 4 };
+    this.recordFailure('GBFS_FEED_URL not configured');
+    return { rawData: null, latencyMs: 0 };
   }
 
   public async normalize(rawData: any): Promise<NormalizedObservation[]> {

@@ -2,6 +2,10 @@ import { db } from './database.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export function seedDatabase(force: boolean = false) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('[Security Violation] seedDatabase is strictly prohibited in production environments.');
+  }
+
   const existingCount = (db.prepare('SELECT count(*) as count FROM entities').get() as { count: number }).count;
   if (existingCount > 0 && !force) {
     console.log(`ℹ Database already populated with ${existingCount} entities. Skipping seed.`);

@@ -19,23 +19,28 @@ export class MaritimeService {
     if (this.isInitialized) return;
     this.isInitialized = true;
 
-    // Check if AISSTREAM_API_KEY is configured
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isDemoMode = !isProduction && process.env.MARITIME_DEMO_MODE === 'true';
     const apiKey = process.env.AISSTREAM_API_KEY;
-    if (apiKey && apiKey.trim() !== '' && !apiKey.includes('your_')) {
-      console.log('📡 [Maritime] Initializing AISStream.io Live Provider with API key...');
-      this.provider = new AisStreamProvider(apiKey);
-    } else {
-      console.log('🚢 [Maritime] AIS Replay Engine Active (Real-World Indian Ocean & Malacca Telemetry)');
+    const hasValidApiKey = Boolean(apiKey && apiKey.trim() !== '' && !apiKey.includes('your_'));
+
+    if (isDemoMode) {
+      console.log('🚢 [Maritime] DEMO mode — using simulated vessels (MARITIME_DEMO_MODE=true)');
       this.provider = new AisRealReplayProvider();
+      await this.provider.connect((rawUpdate) => {
+        this.ingestRawUpdate(rawUpdate);
+      });
+      this.seedInitialHistoricalTrailsIfEmpty();
+    } else if (hasValidApiKey) {
+      console.log('📡 [Maritime] LIVE mode — connecting to AISStream.io...');
+      this.provider = new AisStreamProvider(apiKey!);
+      await this.provider.connect((rawUpdate) => {
+        this.ingestRawUpdate(rawUpdate);
+      });
+    } else {
+      console.log('⚠️ [Maritime] STANDBY mode — AISSTREAM_API_KEY not configured and MARITIME_DEMO_MODE is not enabled.');
+      this.provider = new AisStreamProvider('');
     }
-
-    // Connect provider with normalized update listener
-    await this.provider.connect((rawUpdate) => {
-      this.ingestRawUpdate(rawUpdate);
-    });
-
-    // Seed historical trails for seeded vessels if empty
-    this.seedInitialHistoricalTrailsIfEmpty();
   }
 
   /**

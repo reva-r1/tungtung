@@ -35,62 +35,18 @@ export class GTFSRealtimeProvider extends DataProvider {
 
   public async fetch(params: { routeId?: string } = {}): Promise<{ rawData: any; latencyMs: number }> {
     // In production or when external GTFS URL is provided via ENV or params:
-    // If external feed configured in env GTFS_FEED_URL, use secureFetch; otherwise provide high-fidelity regional transit telemetry
     const externalFeedUrl = process.env.GTFS_FEED_URL;
     if (externalFeedUrl) {
-      return await this.secureFetch(externalFeedUrl, {}, 6000);
+      try {
+        return await this.secureFetch(externalFeedUrl, {}, 6000);
+      } catch (err: any) {
+        this.recordFailure(err.message);
+        throw err;
+      }
     }
 
-    // Default regional telemetry for Bangalore transit corridor
-    const simulatedFeed = {
-      header: {
-        gtfs_realtime_version: '2.0',
-        timestamp: Math.floor(Date.now() / 1000),
-      },
-      entity: [
-        {
-          id: 'BUS_BMTC_335E_01',
-          vehicle: {
-            trip: { trip_id: 'TRIP_335E_MAJESTIC_ITPL', route_id: '335E', start_time: '08:00:00' },
-            position: { latitude: 12.9784, longitude: 77.6408, bearing: 95.0, speed: 8.5 }, // Indiranagar
-            current_stop_sequence: 12,
-            current_status: 'IN_TRANSIT_TO',
-            timestamp: Math.floor(Date.now() / 1000),
-            congestion_level: 'RUNNING_SMOOTHLY',
-            stop_id: 'STOP_INDIRANAGAR_METRO',
-            vehicle: { id: 'KA-57-F-1204', label: 'BMTC Volvo Electric' },
-          },
-        },
-        {
-          id: 'BUS_BMTC_500D_02',
-          vehicle: {
-            trip: { trip_id: 'TRIP_500D_SILKBOARD_HEBBAL', route_id: '500D', start_time: '08:15:00' },
-            position: { latitude: 12.9166, longitude: 77.6101, bearing: 45.0, speed: 4.2 }, // Silk Board junction
-            current_stop_sequence: 6,
-            current_status: 'STOPPED_AT',
-            timestamp: Math.floor(Date.now() / 1000),
-            congestion_level: 'SEVERE_CONGESTION',
-            stop_id: 'STOP_SILK_BOARD',
-            vehicle: { id: 'KA-01-FA-8899', label: 'BMTC Vajra' },
-          },
-        },
-        {
-          id: 'METRO_PURPLE_TRAIN_05',
-          vehicle: {
-            trip: { trip_id: 'METRO_P_WHITEFIELD_CHALLAGHATTA', route_id: 'PURPLE_LINE', start_time: '08:30:00' },
-            position: { latitude: 12.9756, longitude: 77.6066, bearing: 270.0, speed: 18.0 }, // MG Road
-            current_stop_sequence: 18,
-            current_status: 'STOPPED_AT',
-            timestamp: Math.floor(Date.now() / 1000),
-            congestion_level: 'RUNNING_SMOOTHLY',
-            stop_id: 'STATION_MG_ROAD',
-            vehicle: { id: 'BMRCL_TRAIN_05', label: 'Namma Metro 6-Car' },
-          },
-        }
-      ],
-    };
-
-    return { rawData: simulatedFeed, latencyMs: 5 };
+    this.recordFailure('GTFS_FEED_URL not configured');
+    return { rawData: null, latencyMs: 0 };
   }
 
   public async normalize(rawData: any): Promise<NormalizedObservation[]> {

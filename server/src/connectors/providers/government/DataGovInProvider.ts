@@ -44,56 +44,20 @@ export class DataGovInProvider extends DataProvider {
         return { rawData: data, latencyMs: latency };
       } catch (err: any) {
         this.recordFailure(err.message);
+        throw err;
       }
     }
 
-    // High fidelity Karnataka State Public Open Data baseline
-    const karnatakaGovRecords = {
-      title: 'Karnataka State Essential Supplies & Agricultural Inflows',
-      timestamp: new Date().toISOString(),
-      records: [
-        {
-          market: 'Yeshwanthpur APMC Yard',
-          district: 'Bangalore Urban',
-          state: 'Karnataka',
-          commodity: 'Rice - Sona Masoori',
-          modal_price_inr_quintal: 4250,
-          arrivals_tonnes: 320,
-          latitude: 13.0234,
-          longitude: 77.5489,
-          reported_date: new Date().toISOString().split('T')[0],
-        },
-        {
-          market: 'Peenya Wholesale Grain Depot',
-          district: 'Bangalore Urban',
-          state: 'Karnataka',
-          commodity: 'Wheat',
-          modal_price_inr_quintal: 2850,
-          arrivals_tonnes: 180,
-          latitude: 13.0285,
-          longitude: 77.5186,
-          reported_date: new Date().toISOString().split('T')[0],
-        },
-        {
-          market: 'K.R. Market Terminal',
-          district: 'Bangalore Urban',
-          state: 'Karnataka',
-          commodity: 'Onion / Vegetables',
-          modal_price_inr_quintal: 2200,
-          arrivals_tonnes: 450,
-          latitude: 12.9644,
-          longitude: 77.5768,
-          reported_date: new Date().toISOString().split('T')[0],
-        },
-      ]
-    };
-
-    return { rawData: karnatakaGovRecords, latencyMs: 5 };
+    this.recordFailure('DATA_GOV_API_KEY not configured');
+    return { rawData: null, latencyMs: 0 };
   }
 
   public async normalize(rawData: any): Promise<NormalizedObservation[]> {
-    const records = rawData.records || [];
-    if (!Array.isArray(records)) {
+    if (!rawData) {
+      return [];
+    }
+    const records = rawData.records || rawData.data || [];
+    if (!Array.isArray(records) || records.length === 0) {
       return [];
     }
 

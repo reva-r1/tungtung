@@ -35,56 +35,16 @@ export class PublicWaterLevelProvider extends DataProvider {
   public async fetch(params: any = {}): Promise<{ rawData: any; latencyMs: number }> {
     const externalUrl = process.env.WATER_GAUGE_URL;
     if (externalUrl) {
-      return await this.secureFetch(externalUrl, {}, 6000);
+      try {
+        return await this.secureFetch(externalUrl, {}, 6000);
+      } catch (err: any) {
+        this.recordFailure(err.message);
+        throw err;
+      }
     }
 
-    // Default regional hydrological telemetry for Karnataka / Bangalore catchment
-    const simulatedGauges = {
-      timestamp: new Date().toISOString(),
-      stations: [
-        {
-          id: 'GAUGE_ARKAVATHI_THIPPAGONDANAHALLI',
-          name: 'T.G. Halli Reservoir Gauge',
-          river: 'Arkavathi River',
-          basin: 'Cauvery Basin',
-          latitude: 12.9692,
-          longitude: 77.3482,
-          water_level_m: 68.4,
-          max_level_m: 74.0,
-          danger_level_m: 72.5,
-          discharge_cusecs: 140,
-          status: 'NORMAL',
-        },
-        {
-          id: 'GAUGE_BELLANDUR_OUTLET_WEIR',
-          name: 'Bellandur Lake Outflow Sluice',
-          river: 'Dakshina Pinakini Catchment',
-          basin: 'Pennar Basin',
-          latitude: 12.9366,
-          longitude: 77.6744,
-          water_level_m: 4.8,
-          max_level_m: 5.5,
-          danger_level_m: 5.0,
-          discharge_cusecs: 45,
-          status: 'WARNING_ELEVATED',
-        },
-        {
-          id: 'GAUGE_KRS_DAM_MANDYA',
-          name: 'Krishna Raja Sagara (KRS) Dam',
-          river: 'Cauvery River',
-          basin: 'Cauvery Basin',
-          latitude: 12.4243,
-          longitude: 76.5724,
-          water_level_m: 121.2,
-          max_level_m: 124.8,
-          danger_level_m: 123.0,
-          discharge_cusecs: 2800,
-          status: 'HIGH_STORAGE',
-        }
-      ]
-    };
-
-    return { rawData: simulatedGauges, latencyMs: 3 };
+    this.recordFailure('WATER_GAUGE_URL not configured');
+    return { rawData: null, latencyMs: 0 };
   }
 
   public async normalize(rawData: any): Promise<NormalizedObservation[]> {

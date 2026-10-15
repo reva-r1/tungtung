@@ -35,47 +35,16 @@ export class NationalGridEnergyProvider extends DataProvider {
   public async fetch(params: any = {}): Promise<{ rawData: any; latencyMs: number }> {
     const externalUrl = process.env.GRID_TELEMETRY_URL;
     if (externalUrl) {
-      return await this.secureFetch(externalUrl, {}, 6000);
+      try {
+        return await this.secureFetch(externalUrl, {}, 6000);
+      } catch (err: any) {
+        this.recordFailure(err.message);
+        throw err;
+      }
     }
 
-    const simulatedGrid = {
-      timestamp: new Date().toISOString(),
-      grid_frequency_hz: 50.02,
-      substations: [
-        {
-          id: 'SUBSTATION_PEENYA_400KV',
-          name: 'Peenya 400/220kV Master Receiving Substation',
-          latitude: 13.0315,
-          longitude: 77.5218,
-          demand_mw: 820,
-          capacity_mw: 1000,
-          transformer_load_pct: 82.0,
-          status: 'NORMAL',
-        },
-        {
-          id: 'SUBSTATION_HOODI_400KV',
-          name: 'Hoodi 400kV Substation (Whitefield Tech Hub)',
-          latitude: 12.9892,
-          longitude: 77.7126,
-          demand_mw: 910,
-          capacity_mw: 1050,
-          transformer_load_pct: 86.6,
-          status: 'HIGH_LOAD',
-        },
-        {
-          id: 'SUBSTATION_SOMANAHALLI_400KV',
-          name: 'Somanahalli 400kV Southern Gateway Substation',
-          latitude: 12.7844,
-          longitude: 77.4912,
-          demand_mw: 640,
-          capacity_mw: 900,
-          transformer_load_pct: 71.1,
-          status: 'NORMAL',
-        }
-      ]
-    };
-
-    return { rawData: simulatedGrid, latencyMs: 3 };
+    this.recordFailure('GRID_TELEMETRY_URL not configured');
+    return { rawData: null, latencyMs: 0 };
   }
 
   public async normalize(rawData: any): Promise<NormalizedObservation[]> {

@@ -66,6 +66,9 @@ export class AisRealReplayProvider implements AisProvider {
   private onUpdateCallback: ((update: AisVesselRawUpdate) => void) | null = null;
 
   constructor() {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[Security Violation] AisRealReplayProvider is forbidden in production runtime.');
+    }
     // Clone seed dataset so live mutations don't alter base templates
     this.vessels = JSON.parse(JSON.stringify(SEED_VESSELS));
   }

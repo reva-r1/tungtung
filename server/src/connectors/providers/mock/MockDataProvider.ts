@@ -18,6 +18,9 @@ export class MockDataProvider extends DataProvider {
   public customPayload: any = null;
 
   constructor(customId: string = 'mock_provider') {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[Security Violation] MockDataProvider is strictly forbidden in production runtime.');
+    }
     const metadata: ProviderMetadata = {
       id: customId,
       name: 'Deterministic Test Mock Sensor',
