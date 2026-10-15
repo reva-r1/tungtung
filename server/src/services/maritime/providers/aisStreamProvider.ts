@@ -53,10 +53,10 @@ export class AisStreamProvider implements AisProvider {
         const lonMin = Number(process.env.AIS_BBOX_LON_MIN ?? 60.0);
         const lonMax = Number(process.env.AIS_BBOX_LON_MAX ?? 105.0);
 
-        // Send AISStream subscription envelope
+        // Send AISStream subscription envelope (NW corner: [latMax, lonMin], SE corner: [latMin, lonMax])
         const subscription = {
           APIKey: this.apiKey,
-          BoundingBoxes: [[[latMin, lonMin], [latMax, lonMax]]],
+          BoundingBoxes: [[[latMax, lonMin], [latMin, lonMax]]],
           FilterMessageTypes: [
             'PositionReport',
             'StandardClassBPositionReport',
