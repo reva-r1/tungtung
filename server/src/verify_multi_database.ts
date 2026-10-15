@@ -4,11 +4,12 @@ import { SourceService } from './services/source.service.js';
 import { IngestionService } from './services/ingestion.service.js';
 import { GraphService } from './services/graph.service.js';
 import { ResolutionService } from './services/resolution.service.js';
-import { AiService } from './services/ai.service.js';
+import { assertNotProduction } from './config/environment.js';
 import fs from 'fs';
 import path from 'path';
 
 async function runVerification() {
+  assertNotProduction('Multi-database verification test harness');
   console.log('\n===============================================================');
   console.log('  REVANA TECHNOLOGIES // MULTI-DATABASE INTELLIGENCE VERIFICATION TEST');
   console.log('===============================================================\n');

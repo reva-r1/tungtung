@@ -18,6 +18,7 @@ import { MockDataProvider } from '../connectors/providers/mock/MockDataProvider.
 import { providerRegistry } from '../connectors/registry/ProviderRegistry.js';
 import { AisRealReplayProvider } from '../services/maritime/providers/aisRealReplayProvider.js';
 import { seedDatabase } from '../db/seedData.js';
+import { initSourceDatabases } from '../db/sourceDatabases.js';
 import { runCleanup } from '../db/cleanup_synthetic_data.js';
 
 // Unconfigured providers to verify fail-closed behavior
@@ -296,6 +297,20 @@ export async function runPhase1IsolationTests() {
     const realShipLeft = (db.prepare("SELECT COUNT(*) as c FROM moving_entities WHERE id = 'SHIP_REAL_001'").get() as any).c;
     assert(custLeft === 1, 'Real customer record must remain intact');
     assert(realShipLeft === 1, 'Real AIS vessel must remain intact');
+  });
+
+  // 15. Production mode rejects initSourceDatabases
+  await runTest('15. initSourceDatabases fails closed in production mode', async () => {
+    const prevEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      initSourceDatabases();
+      assert(false, 'Expected initSourceDatabases to throw in production mode');
+    } catch (err: any) {
+      assert(err.message.includes('[Security Violation]'), 'Must throw Security Violation on source DB init in production');
+    } finally {
+      process.env.NODE_ENV = prevEnv;
+    }
   });
 
   // Summary

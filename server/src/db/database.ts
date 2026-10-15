@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../../data');
-const isTestRun = process.env.NODE_ENV === 'test' || Boolean(process.argv[1] && process.argv[1].includes('.test.'));
+const isTestRun = process.env.NODE_ENV === 'test' || Boolean(process.argv[1] && (process.argv[1].includes('.test.') || process.argv[1].includes('verify_')));
 
 export const DB_PATH = isTestRun
   ? (process.env.TEST_DATABASE_FILE || path.join(DATA_DIR, 'test_aegis_intel.db'))
