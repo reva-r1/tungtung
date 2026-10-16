@@ -287,9 +287,6 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     });
   };
 
-  // Active traffic concentration or congestion pattern (computed dynamically from observed vessels)
-  const activeSurgePattern = patterns.find((p) => p.deviation_percent >= 30);
-
   return (
     <div className={`relative flex flex-col h-full bg-[#090d16] border border-[#1e293b] rounded-lg overflow-hidden ${className}`}>
       {/* Pattern Modal */}
@@ -325,43 +322,30 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Detected Maritime Pattern Alert Banner Button (Dynamic based on live telemetry) */}
-          {activeSurgePattern && (
-            <button
-              onClick={() => setActivePatternModal(activeSurgePattern)}
-              className="px-2.5 py-1 rounded text-[10px] font-mono bg-rose-950/70 hover:bg-rose-900/80 border border-rose-500/60 text-rose-200 font-bold transition flex items-center gap-1.5 animate-pulse"
-              title="Click to view verified observations, hypotheses & AI reasoning"
-            >
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-              <span>{activeSurgePattern.region.toUpperCase()}: +{activeSurgePattern.deviation_percent}% SURGE</span>
-              <span className="bg-rose-500 text-black px-1 rounded text-[9px] uppercase">INVESTIGATE</span>
-            </button>
-          )}
-
-          {/* Quick Zoom Altitude Shortcuts */}
+          {/* Quick Zoom Shortcuts */}
           <div className="flex items-center bg-[#090d16] border border-[#1e293b] rounded p-0.5 text-[10px] font-mono">
-            <span className="text-slate-500 px-1.5 text-[9px] uppercase font-bold">Altitude:</span>
+            <span className="text-slate-500 px-1.5 text-[9px] uppercase font-bold">Zoom:</span>
             <button
               onClick={() => zoomToLevel(18)}
               className="px-2 py-0.5 rounded text-amber-300 hover:bg-amber-950/40 transition flex items-center gap-1 font-bold"
-              title="Zoom down to individual Buildings, Rooftops & Street Level"
+              title="Street Level Map View"
             >
               <Building2 className="w-3 h-3 text-amber-400" />
-              Buildings (18x)
+              Street
             </button>
             <button
               onClick={() => zoomToLevel(13)}
               className="px-2 py-0.5 rounded text-slate-300 hover:bg-slate-800 transition"
-              title="City overview zoom"
+              title="City Level Overview"
             >
-              City (13x)
+              City
             </button>
             <button
               onClick={() => zoomToLevel(6)}
               className="px-2 py-0.5 rounded text-slate-300 hover:bg-slate-800 transition"
-              title="Maritime Corridor / Sea zoom"
+              title="Regional / Maritime Overview"
             >
-              Sea (6x)
+              Regional
             </button>
           </div>
 

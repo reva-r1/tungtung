@@ -252,8 +252,8 @@ export const FloatingReasoningSpace: React.FC = () => {
             {
               id: 'welcome_msg',
               role: 'assistant',
-              content: `### Welcome to the Revana Technologies Omni-Sensor Reasoning Space\n\nI am continuously connected to the **Live Digital Mirror** and real-time public telemetry feeds:\n• **Weather & Rain**: Open-Meteo live precipitation & forecasts\n• **Air Quality**: Copernicus CAMS atmospheric pollutants (PM2.5, PM10, AQI)\n• **Seismic**: USGS global earthquake feeds\n• **Water & Reservoirs**: Central Water Commission dams & river gauges\n• **Electrical Grid**: KPTCL / Grid India master substation telemetry\n• **Transit & Mobility**: GTFS-RT buses, BMRCL metro, & GBFS hubs\n• **Foreign Exchange**: European Central Bank reference rates\n• **Digital Twin Sandboxes**: Alternate deluge & capacity simulations\n\nAsk me **anything** about current conditions, physical entity correlations, or hypothetical what-if scenarios. All answers carry persistent memory and verified sensor provenance!`,
-              sources: ['Revana Technologies World Model Engine', '15 Sensor Connectors'],
+              content: `### Welcome to the Revana Technologies Omni-Sensor Reasoning Space\n\nI am continuously connected to the **Live Digital Mirror** and verified real-time public telemetry feeds:\n• **Maritime & AIS**: Live commercial vessel positioning via global AISStream WebSocket\n• **Weather & Rain**: Open-Meteo live precipitation & forecasts\n• **Air Quality**: Real-time atmospheric pollutants (PM2.5, PM10, AQI)\n• **Seismic**: USGS global earthquake feeds\n• **Foreign Exchange**: European Central Bank reference exchange rates\n\nAsk me about current live conditions, physical entity correlations, or verified telemetry. All answers carry persistent memory and verified sensor provenance!`,
+              sources: ['Revana Technologies Live World Model', 'AISStream.io', 'USGS', 'Open-Meteo', 'Frankfurter ECB'],
               timestamp: new Date().toISOString(),
             }
           ]);
@@ -325,7 +325,7 @@ export const FloatingReasoningSpace: React.FC = () => {
         {
           id: 'cleared_msg',
           role: 'assistant',
-          content: 'Session memory cleared. Started fresh thread with access to all 15 live sensor streams.',
+          content: 'Session memory cleared. Started fresh thread with access to the Live Digital Mirror and sensor streams.',
           timestamp: new Date().toISOString(),
         }
       ]);
@@ -3757,9 +3757,6 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     });
   };
 
-  // Active traffic concentration or congestion pattern (computed dynamically from observed vessels)
-  const activeSurgePattern = patterns.find((p) => p.deviation_percent >= 30);
-
   return (
     <div className={`relative flex flex-col h-full bg-[#090d16] border border-[#1e293b] rounded-lg overflow-hidden ${className}`}>
       {/* Pattern Modal */}
@@ -3795,43 +3792,30 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Detected Maritime Pattern Alert Banner Button (Dynamic based on live telemetry) */}
-          {activeSurgePattern && (
-            <button
-              onClick={() => setActivePatternModal(activeSurgePattern)}
-              className="px-2.5 py-1 rounded text-[10px] font-mono bg-rose-950/70 hover:bg-rose-900/80 border border-rose-500/60 text-rose-200 font-bold transition flex items-center gap-1.5 animate-pulse"
-              title="Click to view verified observations, hypotheses & AI reasoning"
-            >
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-              <span>{activeSurgePattern.region.toUpperCase()}: +{activeSurgePattern.deviation_percent}% SURGE</span>
-              <span className="bg-rose-500 text-black px-1 rounded text-[9px] uppercase">INVESTIGATE</span>
-            </button>
-          )}
-
-          {/* Quick Zoom Altitude Shortcuts */}
+          {/* Quick Zoom Shortcuts */}
           <div className="flex items-center bg-[#090d16] border border-[#1e293b] rounded p-0.5 text-[10px] font-mono">
-            <span className="text-slate-500 px-1.5 text-[9px] uppercase font-bold">Altitude:</span>
+            <span className="text-slate-500 px-1.5 text-[9px] uppercase font-bold">Zoom:</span>
             <button
               onClick={() => zoomToLevel(18)}
               className="px-2 py-0.5 rounded text-amber-300 hover:bg-amber-950/40 transition flex items-center gap-1 font-bold"
-              title="Zoom down to individual Buildings, Rooftops & Street Level"
+              title="Street Level Map View"
             >
               <Building2 className="w-3 h-3 text-amber-400" />
-              Buildings (18x)
+              Street
             </button>
             <button
               onClick={() => zoomToLevel(13)}
               className="px-2 py-0.5 rounded text-slate-300 hover:bg-slate-800 transition"
-              title="City overview zoom"
+              title="City Level Overview"
             >
-              City (13x)
+              City
             </button>
             <button
               onClick={() => zoomToLevel(6)}
               className="px-2 py-0.5 rounded text-slate-300 hover:bg-slate-800 transition"
-              title="Maritime Corridor / Sea zoom"
+              title="Regional / Maritime Overview"
             >
-              Sea (6x)
+              Regional
             </button>
           </div>
 
@@ -20008,16 +19992,6 @@ interface CorridorDefinition {
 
 // Key strategic maritime corridors monitored by Revana
 const MONITORED_CORRIDORS: CorridorDefinition[] = [
-  {
-    id: 'CORRIDOR_MALACCA',
-    name: 'Malacca Strait Transit Chokepoint',
-    minLat: 1.0,
-    maxLat: 6.0,
-    minLon: 95.0,
-    maxLon: 104.5,
-    baseline: 41,
-    thresholdPercent: 30,
-  },
   {
     id: 'CORRIDOR_MUMBAI',
     name: 'Arabian Sea & Mumbai JNPT Gateway',

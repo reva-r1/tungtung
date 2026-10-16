@@ -61,8 +61,8 @@ export const FloatingReasoningSpace: React.FC = () => {
             {
               id: 'welcome_msg',
               role: 'assistant',
-              content: `### Welcome to the Revana Technologies Omni-Sensor Reasoning Space\n\nI am continuously connected to the **Live Digital Mirror** and real-time public telemetry feeds:\n• **Weather & Rain**: Open-Meteo live precipitation & forecasts\n• **Air Quality**: Copernicus CAMS atmospheric pollutants (PM2.5, PM10, AQI)\n• **Seismic**: USGS global earthquake feeds\n• **Water & Reservoirs**: Central Water Commission dams & river gauges\n• **Electrical Grid**: KPTCL / Grid India master substation telemetry\n• **Transit & Mobility**: GTFS-RT buses, BMRCL metro, & GBFS hubs\n• **Foreign Exchange**: European Central Bank reference rates\n• **Digital Twin Sandboxes**: Alternate deluge & capacity simulations\n\nAsk me **anything** about current conditions, physical entity correlations, or hypothetical what-if scenarios. All answers carry persistent memory and verified sensor provenance!`,
-              sources: ['Revana Technologies World Model Engine', '15 Sensor Connectors'],
+              content: `### Welcome to the Revana Technologies Omni-Sensor Reasoning Space\n\nI am continuously connected to the **Live Digital Mirror** and verified real-time public telemetry feeds:\n• **Maritime & AIS**: Live commercial vessel positioning via global AISStream WebSocket\n• **Weather & Rain**: Open-Meteo live precipitation & forecasts\n• **Air Quality**: Real-time atmospheric pollutants (PM2.5, PM10, AQI)\n• **Seismic**: USGS global earthquake feeds\n• **Foreign Exchange**: European Central Bank reference exchange rates\n\nAsk me about current live conditions, physical entity correlations, or verified telemetry. All answers carry persistent memory and verified sensor provenance!`,
+              sources: ['Revana Technologies Live World Model', 'AISStream.io', 'USGS', 'Open-Meteo', 'Frankfurter ECB'],
               timestamp: new Date().toISOString(),
             }
           ]);
@@ -134,7 +134,7 @@ export const FloatingReasoningSpace: React.FC = () => {
         {
           id: 'cleared_msg',
           role: 'assistant',
-          content: 'Session memory cleared. Started fresh thread with access to all 15 live sensor streams.',
+          content: 'Session memory cleared. Started fresh thread with access to the Live Digital Mirror and sensor streams.',
           timestamp: new Date().toISOString(),
         }
       ]);

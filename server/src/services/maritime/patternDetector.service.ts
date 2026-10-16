@@ -15,16 +15,6 @@ interface CorridorDefinition {
 // Key strategic maritime corridors monitored by Revana
 const MONITORED_CORRIDORS: CorridorDefinition[] = [
   {
-    id: 'CORRIDOR_MALACCA',
-    name: 'Malacca Strait Transit Chokepoint',
-    minLat: 1.0,
-    maxLat: 6.0,
-    minLon: 95.0,
-    maxLon: 104.5,
-    baseline: 41,
-    thresholdPercent: 30,
-  },
-  {
     id: 'CORRIDOR_MUMBAI',
     name: 'Arabian Sea & Mumbai JNPT Gateway',
     minLat: 18.0,
