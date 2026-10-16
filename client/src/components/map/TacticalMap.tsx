@@ -243,12 +243,21 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
   const [maritimeStatus, setMaritimeStatus] = useState<{ connected: boolean; source: string; mode: string } | null>(null);
   const [aviationStatus, setAviationStatus] = useState<{
     status: string;
+    connectionState: 'CONNECTED' | 'DEGRADED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    dataFreshness: 'FRESH' | 'STALE' | 'HISTORICAL' | 'EMPTY' | 'UNKNOWN';
+    operationalState: 'CONNECTED_FRESH' | 'CONNECTED_STALE' | 'CONNECTED_EMPTY' | 'CONNECTED_HISTORICAL' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
     lastPollAt: string | null;
+    lastSuccessfulPollAt: string | null;
+    newestObservationAt: string | null;
+    newestObservationAgeSec: number | null;
+    freshAircraftCount: number;
+    staleAircraftCount: number;
+    historicalCount: number;
     totalAircraftInDb: number;
     airborneCount: number;
   } | null>(null);
 
-  // 1. Initial Data Fetching
+  // 1. Initial Data Fetching & Periodic Freshness Refresh
   useEffect(() => {
     if (!propLocations) {
       api.getLocations().then(setLocations).catch(console.error);
@@ -258,7 +267,26 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
 
     // Fetch live feed connectivity status
     api.getMaritimeStatus().then(setMaritimeStatus).catch(() => setMaritimeStatus({ connected: false, source: 'AISStream.io', mode: 'STANDBY' }));
-    api.getAviationStatus().then(setAviationStatus).catch(() => setAviationStatus({ status: 'STANDBY', lastPollAt: null, totalAircraftInDb: 0, airborneCount: 0 }));
+    
+    const refreshAviationStatus = () => {
+      api.getAviationStatus().then(setAviationStatus).catch(() => setAviationStatus({
+        status: 'STANDBY',
+        connectionState: 'STANDBY',
+        dataFreshness: 'UNKNOWN',
+        operationalState: 'STANDBY',
+        lastPollAt: null,
+        lastSuccessfulPollAt: null,
+        newestObservationAt: null,
+        newestObservationAgeSec: null,
+        freshAircraftCount: 0,
+        staleAircraftCount: 0,
+        historicalCount: 0,
+        totalAircraftInDb: 0,
+        airborneCount: 0,
+      }));
+    };
+    refreshAviationStatus();
+    const aviationInterval = setInterval(refreshAviationStatus, 15000);
 
     // Fetch initial maritime vessels
     api.getMaritimeVessels(300).then((data) => {
@@ -274,6 +302,10 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     api.getMaritimePatterns().then((data) => {
       if (data?.patterns) setPatterns(data.patterns);
     }).catch(console.error);
+
+    return () => {
+      clearInterval(aviationInterval);
+    };
   }, [propLocations]);
 
   // 2. Real-Time Moving Entity Stream via Server-Sent Events (SSE)
@@ -425,19 +457,51 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
               {vessels.length} {maritimeStatus?.connected ? 'Live Vessels' : 'Recorded Vessels'}
             </span>
           )}
-          {showAviation && (
-            <span
-              className={`text-[11px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${
-                aviationStatus?.status === 'HEALTHY'
-                  ? 'text-sky-300 bg-sky-950/60 border-sky-800/40'
-                  : 'text-amber-400/90 bg-amber-950/60 border-amber-800/40'
-              }`}
-              title={aviationStatus?.status === 'HEALTHY' ? 'Real-time OpenSky ADS-B flights active' : 'Aviation feed standby/offline'}
-            >
-              <Plane className={`w-3 h-3 ${aviationStatus?.status === 'HEALTHY' ? 'text-sky-400' : 'text-amber-400'}`} />
-              {aircraftList.length} {aviationStatus?.status === 'HEALTHY' ? 'Live Aircraft' : 'Aircraft'}
-            </span>
-          )}
+          {showAviation && (() => {
+            const opState = aviationStatus?.operationalState || 'STANDBY';
+            const freshCount = aviationStatus?.freshAircraftCount ?? 0;
+            const totalCount = aircraftList.length;
+
+            let badgeStyle = 'text-slate-400 bg-slate-900/60 border-slate-800/40';
+            let iconStyle = 'text-slate-400';
+            let label = `${totalCount} Aircraft (Standby)`;
+            let title = 'Aviation feed standby / waiting for poll';
+
+            if (opState === 'CONNECTED_FRESH') {
+              badgeStyle = 'text-emerald-300 bg-emerald-950/60 border-emerald-800/40';
+              iconStyle = 'text-emerald-400';
+              label = `${freshCount} Live Aircraft`;
+              title = `OpenSky connected & live: ${freshCount} active flights verified in airspace (< 2m)`;
+            } else if (opState === 'CONNECTED_EMPTY') {
+              badgeStyle = 'text-sky-300 bg-sky-950/60 border-sky-800/40';
+              iconStyle = 'text-sky-400';
+              label = `0 Active Flights (Live)`;
+              title = 'OpenSky connected; 0 aircraft currently reported in sector';
+            } else if (opState === 'CONNECTED_STALE' || opState === 'CONNECTED_HISTORICAL') {
+              badgeStyle = 'text-amber-300 bg-amber-950/60 border-amber-800/40';
+              iconStyle = 'text-amber-400';
+              const ageMin = Math.max(1, Math.round((aviationStatus?.newestObservationAgeSec || 0) / 60));
+              label = `${totalCount} Aircraft (Stale ${ageMin}m)`;
+              title = `OpenSky connected but observation is stale (${ageMin}m ago); displaying recorded positions`;
+            } else if (opState === 'RATE_LIMITED') {
+              badgeStyle = 'text-amber-400 bg-amber-950/60 border-amber-800/40';
+              iconStyle = 'text-amber-400';
+              label = `Aviation: Rate Limited`;
+              title = 'OpenSky API rate limit reached (cooling down)';
+            } else if (opState === 'DISCONNECTED') {
+              badgeStyle = 'text-rose-400 bg-rose-950/60 border-rose-800/40';
+              iconStyle = 'text-rose-400';
+              label = `Aviation: Disconnected`;
+              title = 'OpenSky provider connection failed or network offline';
+            }
+
+            return (
+              <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${badgeStyle}`} title={title}>
+                <Plane className={`w-3 h-3 ${iconStyle}`} />
+                {label}
+              </span>
+            );
+          })()}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -873,47 +937,67 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
 
                 <Popup className="tactical-popup">
                   <div className="p-1 font-mono text-xs text-slate-200 min-w-[250px]">
-                    <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 flex items-center gap-1">
-                        <Plane className="w-3 h-3 text-sky-400" />
-                        {aircraft.vessel_type || 'AIRCRAFT'}
-                      </span>
-                      <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                        aircraft.status === 'airborne' ? 'bg-emerald-950 text-emerald-300' : 'bg-slate-800 text-slate-400'
-                      }`}>
-                        {aircraft.status || 'airborne'}
-                      </span>
-                    </div>
+                    {(() => {
+                      const obsAgeSec = Math.max(0, Math.floor((Date.now() - new Date(aircraft.last_updated_at).getTime()) / 1000));
+                      const isObsFresh = obsAgeSec <= 120;
+                      const isObsStale = obsAgeSec > 120 && obsAgeSec <= 900;
+                      const vRate = props.vertical_rate_mps ?? props.vertical_rate_ms;
 
-                    <div className="font-bold text-white text-sm mb-1 flex items-center justify-between">
-                      <span>{aircraft.name}</span>
-                      <span className="text-[10px] font-mono text-slate-400">{props.icao24 ? String(props.icao24).toUpperCase() : ''}</span>
-                    </div>
+                      let statusBadge = 'bg-slate-800 text-slate-400';
+                      let statusText = `RECORDED (${Math.max(1, Math.round(obsAgeSec / 60))}m AGO)`;
 
-                    <div className="grid grid-cols-2 gap-1.5 my-2 text-[10px] bg-slate-900/90 p-2 rounded border border-slate-800">
-                      <div>
-                        <span className="text-slate-500">ALTITUDE:</span>{' '}
-                        <span className="text-cyan-400 font-bold">
-                          {props.altitude_ft ? `${props.altitude_ft.toLocaleString()} ft` : (props.altitude_m ? `${props.altitude_m} m` : 'N/A')}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">AIRSPEED:</span>{' '}
-                        <span className="text-amber-400 font-bold">
-                          {aircraft.speed ? `${aircraft.speed} kts` : (props.speed_kmh ? `${props.speed_kmh} km/h` : '0 kts')}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">HEADING:</span>{' '}
-                        <span className="text-sky-300 font-bold">{heading}°</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">V/RATE:</span>{' '}
-                        <span className="text-slate-300 font-bold">
-                          {props.vertical_rate_ms != null ? `${props.vertical_rate_ms > 0 ? '+' : ''}${props.vertical_rate_ms} m/s` : '0 m/s'}
-                        </span>
-                      </div>
-                    </div>
+                      if (isObsFresh) {
+                        statusBadge = aircraft.status === 'on_ground' ? 'bg-slate-800 text-slate-300' : 'bg-emerald-950 text-emerald-300';
+                        statusText = aircraft.status === 'on_ground' ? 'ON GROUND (LIVE)' : 'AIRBORNE (LIVE)';
+                      } else if (isObsStale) {
+                        statusBadge = 'bg-amber-950 text-amber-300';
+                        statusText = `STALE (${Math.round(obsAgeSec / 60)}m AGO)`;
+                      }
+
+                      return (
+                        <>
+                          <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 flex items-center gap-1">
+                              <Plane className="w-3 h-3 text-sky-400" />
+                              ADS-B / FLIGHT
+                            </span>
+                            <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${statusBadge}`}>
+                              {statusText}
+                            </span>
+                          </div>
+
+                          <div className="font-bold text-white text-sm mb-1 flex items-center justify-between">
+                            <span>{aircraft.name}</span>
+                            <span className="text-[10px] font-mono text-slate-400">{props.icao24 ? String(props.icao24).toUpperCase() : ''}</span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-1.5 my-2 text-[10px] bg-slate-900/90 p-2 rounded border border-slate-800">
+                            <div>
+                              <span className="text-slate-500">ALTITUDE:</span>{' '}
+                              <span className="text-cyan-400 font-bold">
+                                {props.altitude_ft ? `${props.altitude_ft.toLocaleString()} ft` : (props.altitude_m ? `${props.altitude_m} m` : 'N/A')}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">AIRSPEED:</span>{' '}
+                              <span className="text-amber-400 font-bold">
+                                {aircraft.speed ? `${aircraft.speed} kts` : (props.speed_knots ? `${props.speed_knots} kts` : (props.speed_kmh ? `${props.speed_kmh} km/h` : '0 kts'))}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">HEADING:</span>{' '}
+                              <span className="text-sky-300 font-bold">{heading}°</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">V/RATE:</span>{' '}
+                              <span className="text-slate-300 font-bold">
+                                {vRate != null ? `${vRate > 0 ? '+' : ''}${vRate} m/s` : '0 m/s'}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
 
                     {/* Origin / Provenance Banner */}
                     <div className="p-2 rounded bg-sky-950/30 border border-sky-900/40 text-[11px] mb-2">

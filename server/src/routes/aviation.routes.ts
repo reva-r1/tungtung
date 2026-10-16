@@ -5,7 +5,7 @@ export const aviationRouter = Router();
 
 /**
  * GET /api/aviation/status
- * Returns provider health, connection state, freshness, and database counts
+ * Returns provider health, connection state, independent data freshness, and database counts
  */
 aviationRouter.get('/status', (req: Request, res: Response) => {
   try {
@@ -18,19 +18,28 @@ aviationRouter.get('/status', (req: Request, res: Response) => {
 
 /**
  * GET /api/aviation/aircraft
- * Returns all current aircraft entities in canonical format
+ * Returns current aircraft entities with independent freshness classification
  */
 aviationRouter.get('/aircraft', (req: Request, res: Response) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 300;
-    const aircraft = aviationService.getAllAircraft(limit);
+    const freshOnly = req.query.freshOnly === 'true';
+    const aircraft = aviationService.getAllAircraft(limit, freshOnly);
     const status = aviationService.getStatus();
 
     res.json({
       total: aircraft.length,
+      freshAircraftCount: status.freshAircraftCount,
+      staleAircraftCount: status.staleAircraftCount,
+      historicalCount: status.historicalCount,
       aircraft,
       status: {
         providerStatus: status.status,
+        connectionState: status.connectionState,
+        dataFreshness: status.dataFreshness,
+        operationalState: status.operationalState,
+        newestObservationAt: status.newestObservationAt,
+        newestObservationAgeSec: status.newestObservationAgeSec,
         lastPollAt: status.lastPollAt,
         lastSuccessfulPollAt: status.lastSuccessfulPollAt,
         airborneCount: status.airborneCount,
@@ -60,12 +69,13 @@ aviationRouter.get('/aircraft/:id', (req: Request, res: Response) => {
 
 /**
  * GET /api/aviation/aircraft/:id/track
- * Returns historical coordinate trajectory for an aircraft
+ * Returns historical coordinate trajectory for an aircraft (strictly chronological order)
  */
 aviationRouter.get('/aircraft/:id/track', (req: Request, res: Response) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 64;
-    const track = aviationService.getAircraftTrack(req.params.id, limit);
+    const boundedLimit = Math.min(Math.max(1, limit), 200);
+    const track = aviationService.getAircraftTrack(req.params.id, boundedLimit);
     res.json(track);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -74,7 +84,7 @@ aviationRouter.get('/aircraft/:id/track', (req: Request, res: Response) => {
 
 /**
  * POST /api/aviation/poll
- * Triggers an immediate validated ingestion cycle
+ * Triggers an immediate validated ingestion cycle respecting shared rate limits and cooldowns
  */
 aviationRouter.post('/poll', async (req: Request, res: Response) => {
   try {
@@ -87,6 +97,21 @@ aviationRouter.post('/poll', async (req: Request, res: Response) => {
     });
 
     if (!result.success) {
+      if (result.cooldownRemainingSec) {
+        return res.status(429).json({
+          error: result.error,
+          retryAfter: result.cooldownRemainingSec,
+          details: result,
+        });
+      }
+
+      if (result.error?.includes('already running')) {
+        return res.status(409).json({
+          error: result.error,
+          details: result,
+        });
+      }
+
       return res.status(502).json({
         error: result.error || 'Failed to poll OpenSky Network',
         details: result,

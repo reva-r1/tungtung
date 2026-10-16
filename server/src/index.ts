@@ -79,8 +79,18 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 validateEnvironment();
 initDatabase();
 MaritimeService.initialize().catch((err) => console.error('Failed to init Maritime Service:', err));
-aviationService.pollOnce().catch((err) => console.warn('[Aviation] Initial poll note:', err.message));
-aviationService.startPolling(60000);
+
+// Start background aviation ingestion with single scheduler
+const pollIntervalMs = Number(process.env.OPENSKY_POLL_INTERVAL_MS || 60000);
+aviationService.startPolling(pollIntervalMs);
+
+// Graceful shutdown
+const gracefulShutdown = () => {
+  console.log('[Revana Server] Shutting down background schedulers...');
+  aviationService.stopPolling();
+};
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 app.listen(PORT, () => {
   const hasGroq = Boolean(process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes('your_'));

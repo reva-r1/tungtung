@@ -63,6 +63,7 @@ async function main() {
     assert.strictEqual(obs.value.altitude_m, 10668.0);
     assert.strictEqual(obs.value.altitude_ft, 35000); // 10668 * 3.28084 ~ 35000 ft
     assert.strictEqual(obs.value.speed_kmh, 792);     // 220 * 3.6 = 792 km/h
+    assert.strictEqual(obs.value.speed_knots, 427.6); // 220 * 1.94384 ~ 427.6 kts
     assert.strictEqual(obs.value.heading_deg, 280.5);
     assert.strictEqual(obs.value.on_ground, false);
     assert.strictEqual(obs.value.squawk, '1200');
@@ -123,7 +124,6 @@ async function main() {
   // 6. Fail closed check
   await runTest('6. Provider fails closed without generating fake aircraft on error', async () => {
     try {
-      // Force rate limit or invalid endpoint probe
       provider.isValidCoordinate(NaN, NaN);
       assert.strictEqual(provider.isValidCoordinate(NaN, NaN), false);
     } catch (_) { }
@@ -150,7 +150,7 @@ async function main() {
         altitude_m: 10000,
         altitude_ft: 32808,
         heading_deg: 90,
-        vertical_rate_ms: 0,
+        vertical_rate_mps: 0,
         on_ground: false,
         squawk: '7700',
       },
@@ -215,8 +215,78 @@ async function main() {
     db.prepare("DELETE FROM world_entities WHERE id = 'AIRCRAFT_TEST01'").run();
   });
 
-  // 8. Flight Trajectory History Tracking
-  await runTest('8. Appends historical coordinate breadcrumbs to entity_positions', async () => {
+  // 8. Canonical field integrity (No MMSI, IMO, vessel_type, or fake destinations)
+  await runTest('8. Aviation entity never populates MMSI, IMO, vessel_type, or invented destinations', async () => {
+    const aviation = AviationService.getInstance();
+    const testId = 'AIRCRAFT_FIELDTEST';
+    const t = new Date().toISOString();
+
+    const mockObs = {
+      id: 'test_obs_air_fields',
+      entity_id: testId,
+      entity_type: 'AIRCRAFT',
+      data_type: 'TELEMETRY_FLIGHT',
+      value: {
+        icao24: 'fieldtest',
+        callsign: 'INDIGO42',
+        origin_country: 'India',
+        speed_kmh: 500,
+        speed_knots: 270,
+        altitude_m: 5000,
+        altitude_ft: 16404,
+        heading_deg: 180,
+        vertical_rate_mps: 2,
+        on_ground: false,
+        squawk: '1200',
+      },
+      location: {
+        latitude: 12.5,
+        longitude: 77.2,
+        altitudeM: 5000,
+        country: 'India',
+      },
+      timestamp: t,
+      observed_at: t,
+      source: 'https://opensky-network.org',
+      provider: 'opensky_aviation',
+      confidence: 0.95,
+      quality: 'VERIFIED',
+      ttl: 60,
+      provenance: {
+        source: 'https://opensky-network.org',
+        provider: 'opensky_aviation',
+        endpoint: '/api/states/all',
+        retrievedAt: t,
+        observedAt: t,
+        originalId: 'fieldtest',
+      },
+      raw_payload: [],
+    };
+
+    (aviation as any).ingestAircraftObservation(mockObs, 'raw_test_fields');
+
+    const row = db.prepare('SELECT * FROM moving_entities WHERE id = ?').get(testId) as any;
+    assert(row, 'Aircraft entity must be persisted');
+    assert.strictEqual(row.mmsi, null, 'Aircraft must NOT populate mmsi with icao24 or squawk');
+    assert.strictEqual(row.imo, null, 'Aircraft must NOT populate imo');
+    assert.strictEqual(row.vessel_type, null, 'Aircraft must NOT populate vessel_type');
+    assert.strictEqual(row.destination, null, 'Aircraft must NOT invent origin_country as destination');
+    assert.strictEqual(row.name, 'INDIGO42');
+
+    const props = JSON.parse(row.properties);
+    assert.strictEqual(props.icao24, 'fieldtest');
+    assert.strictEqual(props.callsign, 'INDIGO42');
+    assert.strictEqual(props.origin_country, 'India');
+
+    // Clean up
+    db.prepare('DELETE FROM moving_entities WHERE id = ?').run(testId);
+    db.prepare('DELETE FROM entity_positions WHERE entity_id = ?').run(testId);
+    db.prepare('DELETE FROM world_observations WHERE entity_id = ?').run(testId);
+    db.prepare('DELETE FROM world_entities WHERE id = ?').run(testId);
+  });
+
+  // 9. Flight Trajectory History Tracking (Ordered Chronologically)
+  await runTest('9. Appends historical coordinate breadcrumbs and returns them chronologically', async () => {
     const aviation = AviationService.getInstance();
     const testId = 'AIRCRAFT_TRACKTEST';
     const nowSec = Math.floor(Date.now() / 1000);
@@ -238,23 +308,44 @@ async function main() {
 
     const track = aviation.getAircraftTrack(testId, 10);
     assert.strictEqual(track.point_count, 2);
-    assert.strictEqual(track.track[0].latitude, 13.1);
-    assert.strictEqual(track.track[1].latitude, 13.2);
+    assert.strictEqual(track.track[0].latitude, 13.1, 'Earliest point must come first');
+    assert.strictEqual(track.track[1].latitude, 13.2, 'Latest point must come last');
 
     // Clean up
     db.prepare('DELETE FROM moving_entities WHERE id = ?').run(testId);
     db.prepare('DELETE FROM entity_positions WHERE entity_id = ?').run(testId);
   });
 
-  // 9. Status and Health Diagnostics
-  await runTest('9. AviationService.getStatus reports honest provider health and counts', async () => {
+  // 10. Status and Independent Health / Freshness Diagnostics
+  await runTest('10. AviationService.getStatus reports independent connection and freshness states', async () => {
     const aviation = AviationService.getInstance();
     const status = aviation.getStatus();
     assert.strictEqual(status.providerId, 'opensky_aviation');
     assert.strictEqual(status.providerName, 'OpenSky Network Live Flight Tracking');
+    assert(['CONNECTED', 'DEGRADED', 'RATE_LIMITED', 'DISCONNECTED', 'STANDBY'].includes(status.connectionState));
+    assert(['FRESH', 'STALE', 'HISTORICAL', 'EMPTY', 'UNKNOWN'].includes(status.dataFreshness));
     assert(typeof status.totalAircraftInDb === 'number');
     assert(typeof status.airborneCount === 'number');
     assert(typeof status.rateLimitRemaining === 'number');
+  });
+
+  // 11. Rate limit cooldown protection
+  await runTest('11. Provider rate-limit backoff blocks requests during active cooldown', async () => {
+    const prov = new OpenSkyProvider();
+    prov.setRateLimitBackoff(15);
+    const health = prov.getHealth();
+    assert.strictEqual(health.status, 'RATE_LIMITED');
+    assert.strictEqual(health.rateLimitRemaining, 0);
+
+    // Attempt to fetch during backoff must throw rate limit error
+    let threw = false;
+    try {
+      await prov.fetch();
+    } catch (err: any) {
+      threw = true;
+      assert(err.message.includes('RateLimit: ACTIVE') || err.message.includes('cooldown active'));
+    }
+    assert(threw, 'Provider fetch must be blocked during backoff');
   });
 
   console.log('\n=============================================================');

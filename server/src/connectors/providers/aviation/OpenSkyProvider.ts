@@ -77,7 +77,21 @@ export class OpenSkyProvider extends DataProvider {
                 resolve({ data: body, latency });
               }
             } else if (res.statusCode === 429) {
-              reject(new Error('Provider returned 429 Too Many Requests'));
+              // Parse Retry-After header if provided
+              const retryAfterHeader = res.headers['retry-after'];
+              let retryAfterSec = 60;
+              if (retryAfterHeader) {
+                const parsed = parseInt(Array.isArray(retryAfterHeader) ? retryAfterHeader[0] : retryAfterHeader, 10);
+                if (!isNaN(parsed) && parsed > 0) {
+                  retryAfterSec = Math.min(parsed, 300);
+                }
+              }
+              this.setRateLimitBackoff(retryAfterSec);
+              reject(new Error(`Provider returned 429 Too Many Requests (Retry-After: ${retryAfterSec}s)`));
+            } else if (res.statusCode === 401 || res.statusCode === 403) {
+              reject(new Error(`OpenSky Authentication Error (HTTP ${res.statusCode}): Invalid credentials or unauthorized`));
+            } else if (res.statusCode && res.statusCode >= 500) {
+              reject(new Error(`OpenSky Provider Outage (HTTP ${res.statusCode}): ${res.statusMessage || 'Server Error'}`));
             } else {
               reject(new Error(`HTTP Error ${res.statusCode}: ${res.statusMessage || 'Bad Request'}`));
             }
@@ -98,6 +112,16 @@ export class OpenSkyProvider extends DataProvider {
     });
   }
 
+  /**
+   * Set explicit rate limit backoff epoch from provider feedback
+   */
+  public setRateLimitBackoff(seconds: number): void {
+    this.health.status = 'RATE_LIMITED';
+    this.health.rateLimitRemaining = 0;
+    this.health.rateLimitResetEpoch = Math.floor(Date.now() / 1000) + seconds;
+    this.health.lastError = `Rate limited by OpenSky (HTTP 429). Retry after ${seconds}s`;
+  }
+
   public async fetch(params: OpenSkyBoundingBox = {}): Promise<{ rawData: any; latencyMs: number }> {
     // Default bounding box: South India air corridor (Bengaluru, Chennai, Hyderabad airspace)
     const lamin = params.lamin ?? Number(process.env.OPENSKY_BBOX_LAMIN ?? 11.0);
@@ -113,6 +137,13 @@ export class OpenSkyProvider extends DataProvider {
 
     if (this.isCircuitOpen()) {
       throw new Error(`[CircuitBreaker: OPEN] Provider ${this.metadata.id} is temporarily blocked due to repeated failures.`);
+    }
+
+    // Check if active rate limit backoff epoch is in the future
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (this.health.rateLimitResetEpoch && nowSec < this.health.rateLimitResetEpoch) {
+      const waitSec = this.health.rateLimitResetEpoch - nowSec;
+      throw new Error(`[RateLimit: ACTIVE] OpenSky rate limit cooldown active. ${waitSec}s remaining before next request.`);
     }
 
     if (!this.checkRateLimit()) {
@@ -194,15 +225,16 @@ export class OpenSkyProvider extends DataProvider {
         data_type: 'TELEMETRY_FLIGHT',
         value: {
           icao24,
-          callsign: callsign || icao24.toUpperCase(),
+          callsign: callsign ? callsign : null,
           origin_country: originCountry,
+          speed_mps: velocityMs,
           speed_kmh: speedKmh,
           speed_knots: speedKnots,
           altitude_m: baroAltitudeM,
           altitude_ft: altitudeFt,
           geo_altitude_m: geoAltitudeM,
           heading_deg: trueTrackDeg,
-          vertical_rate_ms: verticalRateMs,
+          vertical_rate_mps: verticalRateMs,
           on_ground: onGround,
           squawk,
         },

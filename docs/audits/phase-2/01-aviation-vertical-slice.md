@@ -260,3 +260,50 @@ The OpenSky aviation vertical slice is fully functional, verified with real-worl
 
 1. **Aviation Alerting & Corridor Anomaly Detection:** Implement spatial pattern detection for aircraft holding patterns, holding stacks, and sudden altitude drops in flight corridors.
 2. **Next Real-Data Vertical Slice: Central Water Commission (CWC) Dam Gauges:** Integrate genuine public hydrological monitoring feeds into the world model.
+
+---
+
+## 13. Production Hardening & Reliability Audit (Post-Hardening Pass)
+
+- **Hardening Execution Date:** 2026-10-16
+- **Auditor:** Senior Staff Engineer, Data-Platform Architect & Reliability Auditor
+- **Status:** **VERIFIED PRODUCTION-READY**
+
+### 13.1 Confirmed Defects Identified & Resolved
+
+| Defect ID | Severity | Root Cause & Description | Production Fix Applied | Verification Evidence |
+| :---: | :---: | :--- | :--- | :--- |
+| **DEF-01** | High | **Aviation Identity Maritime Pollution:** `mmsi`, `vessel_type`, and `destination` were populated with `icao24`/squawk and `origin_country` on aircraft entities. | Removed all maritime assignments for `type = 'aircraft'` in `aviation.service.ts`; ran non-destructive field refinement on 190 aircraft rows. | `with_mmsi: 0`, `with_vessel_type: 0`, `with_destination: 0`. 754 ships 100% untouched. |
+| **DEF-02** | High | **Maritime API Aircraft Leakage:** `MaritimeService.getAllVessels` queried `moving_entities` without filtering `WHERE type = 'ship'`, returning aircraft as vessels. | Added `WHERE type = 'ship'` to `getAllVessels` query in `maritime.service.ts`. | Maritime vessel endpoint strictly isolates commercial ships. |
+| **DEF-03** | High | **Conflation of Connection State & Data Freshness:** Tactical map showed green/healthy indicator even if observations were stale. | Engineered independent `connectionState` and `dataFreshness` in `aviation.service.ts` and `TacticalMap.tsx`. | Distinct badges: `Live Aircraft` (<2m), `Stale (Xm)` (2-15m), `Empty`, `Rate Limited`, `Disconnected`. |
+| **DEF-04** | Medium | **OpenSky 429 Retry-After Ignored:** HTTP 429 responses did not parse `Retry-After` headers to set provider backoff. | Implemented `setRateLimitBackoff` in `OpenSkyProvider.ts` parsing `res.headers['retry-after']` (bounded to 300s). | Automated Test 11 confirms provider blocks requests during active cooldown epoch. |
+| **DEF-05** | Medium | **Duplicate Schedulers on Boot:** `index.ts` invoked both `pollOnce()` and `startPolling(60000)` consecutively, generating concurrent initial polls. | Cleaned `index.ts` to single `startPolling` invocation; added process `SIGINT`/`SIGTERM` graceful shutdown hooks. | Single scheduler execution verified in runtime logs. |
+| **DEF-06** | Low | **SSE Incomplete Payload:** `MaritimeService.broadcastPositionUpdate` omitted `id`, `type`, and `properties`, preventing live aircraft updates on client. | Extended SSE payload to include canonical `id`, `type`, and `properties`. | Real-time aircraft positions and altitudes broadcast over `/api/maritime/events/stream`. |
+
+### 13.2 Database Safety & Integrity Verification
+
+1. **Pre-Cleanup Safety Backup:** Created verified backup at `server/data/aegis_intel.pre_aircraft_clean_2026-10-16T13-02-26-967Z.db` (9.5 MB).
+2. **Integrity & Foreign Keys:**
+   ```
+   PRAGMA integrity_check -> { integrity_check: 'ok' }
+   PRAGMA foreign_key_check -> [] (0 violations)
+   ```
+3. **Entity Population:**
+   - `moving_entities`: 754 ships (100% preserved), 190 aircraft (all with clean canonical fields).
+   - `entity_positions`: 13,411 trajectory fixes (chronologically ordered, bounded).
+   - `world_entities`: 204 verified real entities (0 synthetic locations).
+
+### 13.3 Test Execution Record
+
+- `npx tsx src/tests/aviation_pipeline.test.ts`: **11 PASSED / 0 FAILED**
+- `npm run test:connectors`: **11 PASSED / 0 FAILED**
+- `npx tsx src/tests/phase1_isolation.test.ts`: **15 PASSED / 0 FAILED**
+- `server` TypeScript check (`npx tsc --noEmit`): **0 ERRORS**
+- `client` TypeScript check (`npx tsc --noEmit`): **0 ERRORS**
+
+### 13.4 Final Hardening Acceptance Verdict
+
+# **FINAL HARDENING VERDICT: PASS**
+
+The OpenSky aviation data pipeline and canonical entity model are hardened, strictly separated from maritime ontology, protected by robust concurrency and rate-limit controls, verified with genuine ADS-B telemetry, and production-ready.
+

@@ -212,23 +212,26 @@ export class MaritimeService {
   /**
    * Broadcasts a normalized position update to all active SSE subscribers
    */
-  public static broadcastPositionUpdate(vessel: MovingEntity): void {
+  public static broadcastPositionUpdate(entity: MovingEntity): void {
     if (this.sseClients.size === 0) return;
 
     const payload = JSON.stringify({
       event: 'entity_position_update',
-      entity_id: vessel.id,
-      mmsi: vessel.mmsi,
-      name: vessel.name,
-      vessel_type: vessel.vessel_type,
-      latitude: vessel.latitude,
-      longitude: vessel.longitude,
-      speed: vessel.speed,
-      course: vessel.course,
-      heading: vessel.heading,
-      destination: vessel.destination,
-      status: vessel.status,
-      timestamp: vessel.last_updated_at,
+      id: entity.id,
+      entity_id: entity.id,
+      type: entity.type || 'ship',
+      mmsi: entity.mmsi,
+      name: entity.name,
+      vessel_type: entity.vessel_type,
+      latitude: entity.latitude,
+      longitude: entity.longitude,
+      speed: entity.speed,
+      course: entity.course,
+      heading: entity.heading,
+      destination: entity.destination,
+      status: entity.status,
+      timestamp: entity.last_updated_at,
+      properties: entity.properties || {},
     });
 
     const msg = `event: entity_position_update\ndata: ${payload}\n\n`;
@@ -248,6 +251,7 @@ export class MaritimeService {
   static getAllVessels(limit: number = 300): MovingEntity[] {
     const rows = db.prepare(`
       SELECT * FROM moving_entities
+      WHERE type = 'ship'
       ORDER BY last_updated_at DESC
       LIMIT ?
     `).all(limit) as any[];

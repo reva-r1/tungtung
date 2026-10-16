@@ -385,9 +385,18 @@ export const api = {
     providerId: string;
     providerName: string;
     status: string;
+    connectionState: 'CONNECTED' | 'DEGRADED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    dataFreshness: 'FRESH' | 'STALE' | 'HISTORICAL' | 'EMPTY' | 'UNKNOWN';
+    operationalState: 'CONNECTED_FRESH' | 'CONNECTED_STALE' | 'CONNECTED_EMPTY' | 'CONNECTED_HISTORICAL' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
     isPollingActive: boolean;
+    pollIntervalMs: number;
     lastPollAt: string | null;
     lastSuccessfulPollAt: string | null;
+    newestObservationAt: string | null;
+    newestObservationAgeSec: number | null;
+    freshAircraftCount: number;
+    staleAircraftCount: number;
+    historicalCount: number;
     totalAircraftInDb: number;
     airborneCount: number;
     onGroundCount: number;
