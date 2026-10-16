@@ -176,6 +176,7 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
   const [vesselTrack, setVesselTrack] = useState<[number, number][]>([]);
   const [patterns, setPatterns] = useState<MaritimePattern[]>([]);
   const [activePatternModal, setActivePatternModal] = useState<MaritimePattern | null>(null);
+  const [maritimeStatus, setMaritimeStatus] = useState<{ connected: boolean; source: string; mode: string } | null>(null);
 
   // 1. Initial Data Fetching
   useEffect(() => {
@@ -184,6 +185,9 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     } else {
       setLocations(propLocations);
     }
+
+    // Fetch live feed connectivity status
+    api.getMaritimeStatus().then(setMaritimeStatus).catch(() => setMaritimeStatus({ connected: false, source: 'AISStream.io', mode: 'STANDBY' }));
 
     // Fetch initial maritime vessels
     api.getMaritimeVessels(300).then((data) => {
@@ -314,9 +318,16 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
             {filteredLocations.length} Land Points
           </span>
           {showMaritime && (
-            <span className="text-[11px] font-mono text-amber-400/90 bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-800/40 flex items-center gap-1">
-              <Anchor className="w-3 h-3 text-amber-400" />
-              {vessels.length} Live Vessels
+            <span
+              className={`text-[11px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${
+                maritimeStatus?.connected
+                  ? 'text-emerald-400/90 bg-emerald-950/60 border-emerald-800/40'
+                  : 'text-amber-400/90 bg-amber-950/60 border-amber-800/40'
+              }`}
+              title={maritimeStatus?.connected ? 'Real-time WebSocket streaming active' : 'Feed standby/offline; displaying verified historical vessel telemetry'}
+            >
+              <Anchor className={`w-3 h-3 ${maritimeStatus?.connected ? 'text-emerald-400' : 'text-amber-400'}`} />
+              {vessels.length} {maritimeStatus?.connected ? 'Live Vessels' : 'Recorded Vessels'}
             </span>
           )}
         </div>

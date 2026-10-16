@@ -61,7 +61,7 @@ export const FloatingReasoningSpace: React.FC = () => {
             {
               id: 'welcome_msg',
               role: 'assistant',
-              content: `### Welcome to the Revana Technologies Omni-Sensor Reasoning Space\n\nI am continuously connected to the **Live Digital Mirror** and verified real-time public telemetry feeds:\n• **Maritime & AIS**: Live commercial vessel positioning via global AISStream WebSocket\n• **Weather & Rain**: Open-Meteo live precipitation & forecasts\n• **Air Quality**: Real-time atmospheric pollutants (PM2.5, PM10, AQI)\n• **Seismic**: USGS global earthquake feeds\n• **Foreign Exchange**: European Central Bank reference exchange rates\n\nAsk me about current live conditions, physical entity correlations, or verified telemetry. All answers carry persistent memory and verified sensor provenance!`,
+              content: `### Welcome to the Revana Technologies Omni-Sensor Reasoning Space\n\nI am continuously connected to the **Live Digital Mirror** and verified sensor telemetry feeds:\n• **Maritime & AIS**: Authentic commercial vessel telemetry (recorded historical telemetry & live AISStream WebSocket)\n• **Weather & Rain**: Open-Meteo live precipitation & forecasts\n• **Air Quality**: Real-time atmospheric pollutants (PM2.5, PM10, AQI)\n• **Seismic**: USGS global earthquake feeds\n• **Foreign Exchange**: European Central Bank reference exchange rates\n\nAsk me about verified conditions, physical entity correlations, or sensor telemetry. All answers carry persistent memory and verified sensor provenance!`,
               sources: ['Revana Technologies Live World Model', 'AISStream.io', 'USGS', 'Open-Meteo', 'Frankfurter ECB'],
               timestamp: new Date().toISOString(),
             }
