@@ -21,6 +21,7 @@ async function runTest(name: string, fn: () => Promise<void>) {
 async function main() {
   console.log('\n=============================================================');
   console.log('  REVANA TECHNOLOGIES — PHASE 2 HYDROLOGY PIPELINE TEST SUITE');
+  console.log('  (DETERMINISTIC SUITE — FIXTURES & CANONICAL PERSISTENCE)');
   console.log('=============================================================\n');
 
   const provider = new CwcHydrologyProvider();
@@ -37,7 +38,7 @@ async function main() {
         current_live_storage: 3.104, // 3.104 BMC
         storage_last_year: 2.85,
         storage_last_ten_year: 2.60,
-        observation_date: '2026-10-15',
+        observation_date: '2024-01-15',
       },
       {
         agencyName: 'CWC',
@@ -48,7 +49,7 @@ async function main() {
         current_live_storage: 1.150, // 1.150 BMC
         storage_last_year: 1.20,
         storage_last_ten_year: 1.05,
-        observation_date: '2026-10-15',
+        observation_date: '2024-01-15',
       }
     ];
 
@@ -98,7 +99,7 @@ async function main() {
         agencyName: 'CWC',
         reservoirName: 'Kabini',
         current_live_storage: 0.500, // 0.5 BMC
-        observation_date: '2026-10-15',
+        observation_date: '2024-01-15',
       }
     ];
 
@@ -138,7 +139,7 @@ async function main() {
       {
         reservoirName: 'NonExistentDamXYZ',
         current_live_storage: 2.5,
-        observation_date: '2026-10-15',
+        observation_date: '2024-01-15',
       }
     ];
 
@@ -165,7 +166,7 @@ async function main() {
         reservoirName: 'Kabini',
         level: 695.5,
         current_live_storage: 0.485,
-        observation_date: '2026-10-15',
+        observation_date: '2024-01-16',
       }
     ]);
 
@@ -224,6 +225,65 @@ async function main() {
     assert.strictEqual(res2.success, false, 'Immediate subsequent poll must not succeed');
     assert((res2.cooldownRemainingSec || 0) > 0, 'Must report cooldownRemainingSec');
     assert.strictEqual(res2.recordsReceived, 0, 'No outbound fetch during cooldown');
+  });
+
+  // 11. Truth-in-Labeling: Old observation timestamps never report as FRESH or LIVE
+  await runTest('11. Successful HTTP responses containing 1000+ day old observations remain HISTORICAL', async () => {
+    const hydroService = HydrologyService.getInstance();
+    const status = hydroService.getStatus();
+
+    // In aegis_intel.db, observations are from 2024-01-16 (> 1000 days ago)
+    assert.strictEqual(status.connectionState, 'CONNECTED', 'HTTP transport must be connected');
+    assert.strictEqual(status.dataFreshness, 'HISTORICAL', 'Freshness must be HISTORICAL, not FRESH');
+    assert.strictEqual(status.operationalState, 'CONNECTED_HISTORICAL', 'Operational state must be CONNECTED_HISTORICAL, not CONNECTED_FRESH');
+    assert((status.newestObservationAgeDays || 0) > 30, 'Age in days must exceed 30 days threshold');
+  });
+
+  // 12. Freshness calculated strictly from source observation time, not polling time
+  await runTest('12. Freshness age is calculated from observation timestamp, not lastPollAt', async () => {
+    const hydroService = HydrologyService.getInstance();
+    const status = hydroService.getStatus();
+
+    assert(status.lastPollAt !== null, 'lastPollAt must be set');
+    assert(status.newestObservationAt !== null, 'newestObservationAt must be set');
+
+    const pollTime = new Date(status.lastPollAt!).getTime();
+    const obsTime = new Date(status.newestObservationAt!).getTime();
+    assert(pollTime > obsTime, 'Poll time must be much newer than the source observation date');
+
+    const computedAgeDays = Math.floor((Date.now() - obsTime) / (1000 * 60 * 60 * 24));
+    assert.strictEqual(status.newestObservationAgeDays, computedAgeDays, 'Age in days must match observation date difference');
+  });
+
+  // 13. 16-versus-32 Station Reconciliation Verification
+  await runTest('13. Reconciled database entities contain exactly 16 unique dams with zero duplicate stubs', async () => {
+    const entities = db.prepare("SELECT id, name FROM world_entities WHERE type = 'WATER_RESERVOIR_GAUGE'").all() as any[];
+    assert.strictEqual(entities.length, 16, 'Total reservoir entities in database must be exactly 16');
+
+    // Verify zero legacy HYDRO_CWC_* orphan stubs remain
+    const legacyStubs = db.prepare("SELECT count(*) as c FROM world_entities WHERE id LIKE 'HYDRO_CWC_%'").get() as any;
+    assert.strictEqual(legacyStubs.c, 0, 'Must have zero orphan HYDRO_CWC_* stubs');
+
+    // Verify all 16 follow canonical RESERVOIR_*_KARNATAKA naming
+    for (const e of entities) {
+      assert(e.id.startsWith('RESERVOIR_') && e.id.endsWith('_KARNATAKA'), `Entity ID ${e.id} must follow canonical naming convention`);
+    }
+
+    // Verify total observations in database is at least 32 (2 temporal points for each of the 16 dams)
+    const obsTotal = db.prepare("SELECT count(*) as c FROM world_observations WHERE data_type = 'HYDROLOGICAL'").get() as any;
+    assert(obsTotal.c >= 32, 'Must preserve all authentic historical observations');
+  });
+
+  // 14. Denominator and Capacity Percentage Accuracy
+  await runTest('14. Capacity percentage uses official NRLD full capacity denominator', async () => {
+    const almattiMeta = CWC_KARNATAKA_RESERVOIRS['Almatti Reservoir'];
+    assert.strictEqual(almattiMeta.fullCapacityBmc, 3.44, 'Almatti design capacity must be 3.44 BMC');
+
+    const krsMeta = CWC_KARNATAKA_RESERVOIRS['Krishnaraja Sagar'];
+    assert.strictEqual(krsMeta.fullCapacityBmc, 1.399, 'KRS design capacity must be 1.399 BMC');
+
+    const tungabhadraMeta = CWC_KARNATAKA_RESERVOIRS['Tungabhadra Reservoir'];
+    assert.strictEqual(tungabhadraMeta.fullCapacityBmc, 3.75, 'Tungabhadra design capacity must be 3.75 BMC');
   });
 
   console.log('\n=============================================================');

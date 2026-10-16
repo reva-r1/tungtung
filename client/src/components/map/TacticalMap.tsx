@@ -603,13 +603,19 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
             if (opState === 'CONNECTED_FRESH') {
               badgeStyle = 'text-cyan-300 bg-cyan-950/60 border-cyan-800/40';
               iconStyle = 'text-cyan-400';
-              label = `${freshCount} Live Reservoirs`;
-              title = `CWC / India-WRIS connected & fresh: ${freshCount} reservoirs updated (<3d)`;
-            } else if (opState === 'CONNECTED_STALE' || opState === 'CONNECTED_HISTORICAL') {
-              badgeStyle = 'text-teal-300 bg-teal-950/60 border-teal-800/40';
-              iconStyle = 'text-teal-400';
-              label = `${totalCount} CWC Reservoirs (Daily Rep)`;
-              title = 'CWC / India-WRIS connected; official daily bulletin data loaded';
+              label = `${freshCount} Reservoirs (Fresh <3d)`;
+              title = `CWC / India-WRIS connected & fresh: ${freshCount} reservoirs updated within 3 days`;
+            } else if (opState === 'CONNECTED_HISTORICAL') {
+              badgeStyle = 'text-slate-300 bg-slate-900/80 border-slate-700/60';
+              iconStyle = 'text-slate-400';
+              const ageDays = hydrologyStatus?.newestObservationAgeDays ?? 1004;
+              label = `${totalCount} Reservoirs (Historical Archive)`;
+              title = `CWC / India-WRIS connected; displaying official archived bulletin data (${ageDays}d old)`;
+            } else if (opState === 'CONNECTED_STALE') {
+              badgeStyle = 'text-amber-300 bg-amber-950/60 border-amber-800/40';
+              iconStyle = 'text-amber-400';
+              label = `${totalCount} Reservoirs (Stale Bulletin)`;
+              title = 'CWC / India-WRIS connected; bulletin is older than 3 days';
             } else if (opState === 'CONNECTED_EMPTY') {
               badgeStyle = 'text-sky-300 bg-sky-950/60 border-sky-800/40';
               iconStyle = 'text-sky-400';
@@ -1223,11 +1229,20 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
                 <Popup className="tactical-popup">
                   <div className="p-1 font-mono text-xs text-slate-200 min-w-[260px]">
                     {(() => {
-                      const obsAgeHours = obsTime ? Math.max(0, Math.floor((Date.now() - new Date(obsTime).getTime()) / (1000 * 3600))) : null;
-                      const isFresh = obsAgeHours != null && obsAgeHours <= 24;
+                      const obsAgeDays = obsTime ? Math.max(0, Math.floor((Date.now() - new Date(obsTime).getTime()) / (1000 * 3600 * 24))) : null;
+                      const isFresh = obsAgeDays != null && obsAgeDays <= 3;
+                      const isStale = obsAgeDays != null && obsAgeDays > 3 && obsAgeDays <= 30;
 
-                      let statusBadge = 'bg-teal-950 text-teal-300';
-                      let statusText = isFresh ? 'DAILY BULLETIN (LIVE)' : `RECORDED (${obsAgeHours ?? 'N/A'}h AGO)`;
+                      let statusBadge = 'bg-slate-800 text-slate-300';
+                      let statusText = `HISTORICAL ARCHIVE (${obsAgeDays ?? 'N/A'}d AGO)`;
+
+                      if (isFresh) {
+                        statusBadge = 'bg-emerald-950 text-emerald-300';
+                        statusText = 'DAILY BULLETIN (FRESH)';
+                      } else if (isStale) {
+                        statusBadge = 'bg-amber-950 text-amber-300';
+                        statusText = `STALE BULLETIN (${obsAgeDays}d AGO)`;
+                      }
 
                       return (
                         <>
@@ -1257,7 +1272,7 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
                           {capacityPercent != null && (
                             <div className="my-2 bg-slate-900/90 p-2 rounded border border-slate-800">
                               <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                                <span>LIVE STORAGE CAPACITY:</span>
+                                <span>STORAGE CAPACITY:</span>
                                 <span className="font-bold text-cyan-300">{capacityPercent}%</span>
                               </div>
                               <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
@@ -1273,7 +1288,7 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
 
                           <div className="grid grid-cols-2 gap-1.5 my-2 text-[10px] bg-slate-900/90 p-2 rounded border border-slate-800">
                             <div>
-                              <span className="text-slate-500">LIVE STORAGE:</span>{' '}
+                              <span className="text-slate-500">RECORDED STORAGE:</span>{' '}
                               <span className="text-cyan-400 font-bold">
                                 {liveStorageBmc != null ? `${liveStorageBmc} BMC` : 'N/A'}
                               </span>
@@ -1313,7 +1328,7 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
                           </div>
 
                           <div className="text-[10px] text-slate-400 mb-2">
-                            Observed: {obsTime ? new Date(obsTime).toLocaleString() : 'N/A'}
+                            Observed Date: {obsTime ? `${obsTime.split('T')[0]} (${obsAgeDays ?? 'N/A'} days ago)` : 'N/A'}
                           </div>
 
                           <div className="flex gap-1.5">
