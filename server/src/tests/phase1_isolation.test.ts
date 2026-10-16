@@ -254,7 +254,12 @@ export async function runPhase1IsolationTests() {
     // Populate test DB with real customer location, real ship, and synthetic data
     db.prepare(`
       INSERT OR REPLACE INTO locations (id, name, city, state, latitude, longitude, type)
-      VALUES ('LOC-ENT-CUST-TEST01', 'Test Customer Logistics Hub', 'Bangalore', 'Karnataka', 12.97, 77.59, 'TRANSIT_POINT')
+      VALUES ('LOC-PROD-CUST-001', 'Acme Real Enterprise Warehouse', 'Bangalore', 'Karnataka', 12.97, 77.59, 'TRANSIT_POINT')
+    `).run();
+
+    db.prepare(`
+      INSERT OR REPLACE INTO locations (id, name, city, state, latitude, longitude, type)
+      VALUES ('LOC-ENT-CUST-DEMO01', 'Demo Customer Hub', 'Bangalore', 'Karnataka', 12.97, 77.59, 'TRANSIT_POINT')
     `).run();
 
     db.prepare(`
@@ -280,7 +285,7 @@ export async function runPhase1IsolationTests() {
 
     // Run cleanup in execute mode against active test database
     const plan = runCleanup(true, db.name);
-    assert(plan.preservedCustomerRecords >= 1, 'Must preserve customer records');
+    assert(plan.preservedCustomerRecords >= 1, 'Must preserve real customer records');
     assert(plan.foreignKeyErrors.length === 0, 'Must have 0 foreign key errors');
     assert(plan.integrityStatus === 'ok', 'SQLite integrity check must be ok');
 
@@ -288,12 +293,14 @@ export async function runPhase1IsolationTests() {
     const replayLeft = (db.prepare("SELECT COUNT(*) as c FROM moving_entities WHERE id = 'SHIP_REPLAY_001'").get() as any).c;
     const malaccaLeft = (db.prepare("SELECT COUNT(*) as c FROM maritime_patterns WHERE pattern_id = 'PAT_CORRIDOR_MALACCA'").get() as any).c;
     const busLeft = (db.prepare("SELECT COUNT(*) as c FROM world_entities WHERE id = 'BUS_BMTC_335E'").get() as any).c;
+    const demoCustLeft = (db.prepare("SELECT COUNT(*) as c FROM locations WHERE id = 'LOC-ENT-CUST-DEMO01'").get() as any).c;
     assert(replayLeft === 0, 'Synthetic replay vessel must be deleted');
     assert(malaccaLeft === 0, 'Fabricated Malacca pattern must be deleted');
     assert(busLeft === 0, 'Simulated world entity must be deleted');
+    assert(demoCustLeft === 0, 'Synthetic demo location must be deleted');
 
     // Verify real records remain
-    const custLeft = (db.prepare("SELECT COUNT(*) as c FROM locations WHERE id = 'LOC-ENT-CUST-TEST01'").get() as any).c;
+    const custLeft = (db.prepare("SELECT COUNT(*) as c FROM locations WHERE id = 'LOC-PROD-CUST-001'").get() as any).c;
     const realShipLeft = (db.prepare("SELECT COUNT(*) as c FROM moving_entities WHERE id = 'SHIP_REAL_001'").get() as any).c;
     assert(custLeft === 1, 'Real customer record must remain intact');
     assert(realShipLeft === 1, 'Real AIS vessel must remain intact');

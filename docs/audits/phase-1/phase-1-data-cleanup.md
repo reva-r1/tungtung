@@ -55,27 +55,43 @@ The objective of the Phase 1 database purge was to permanently eliminate all ver
 
 ---
 
-## 4. Verified Exclusions & Preservation Invariants
+---
 
-The following genuine datasets and entities were verified and excluded from the purge:
+## 4. Map Remediation & Secondary Purge (Tactical Map & Digital Mirror)
 
-1. **Customer Logistics Reference Data:**
-   - `LOC-ENT-CUST-001` — Apex Global Logistics (Transit Point) [PRESERVED]
-   - `LOC-ENT-CUST-002` — Zenith Freight Carriers (Transit Point) [PRESERVED]
-   - `LOC-ENT-CUST-003` — Orion Supply Depot (Transit Point) [PRESERVED]
-   - **Post-cleanup count:** 3 / 3 (100% preserved).
+During visual verification, map inspections revealed remaining synthetic markers:
+1. **Tactical Map:** Rendered pins for `Apex Global Logistics` (Mumbai), `Zenith Freight Carriers` (Bangalore), `Orion Supply Depot` (Chennai), and `Test Customer Logistics Hub` (Bengaluru) from the `locations` table. While Phase 0 initially hypothesized these were real customer master data, investigation confirmed they are hardcoded demo benchmark fixtures.
+2. **Digital Mirror View:** Rendered green circular markers (`OBS` and `WX`) over Bengaluru. Traced to 113 legacy/test records in `world_entities` (80 un-sourced entities with `last_provider IS NULL` including BMTC bus lines, Karnataka checkpoints, GBFS mobility hubs, 14 `test_event_detection` mock sensors, 3 mock transit buses, and 16 test weather stations).
 
-2. **Real Live Streamed AIS Maritime Vessels:**
-   - 73 authentic vessels actively broadcasting via `AISStream.io` (e.g. `SHIP_351965000 KUO LUNG`, `SHIP_525601594 TB AMADEUS 1`, `SHIP_249174000 CMA CGM HONG KONG`).
-   - All 87 real coordinate breadcrumbs preserved.
-
-3. **Real Geospatial & Seismic Entities:**
-   - 128 genuine operational entities preserved, including USGS global earthquakes (`quake_event_*`), Open-Meteo regional weather grids (`loc_geo_*`), and offshore marine telemetry nodes (`loc_marine_sector_*`).
+### Remediation Executed:
+- Purged 4/4 synthetic demo locations (`LOC-ENT-CUST-*`) from `locations`.
+- Purged 113 synthetic/test entities from `world_entities`.
+- Purged 44 simulated readings from `observations` and 50 simulated payloads from `raw_observation_payloads`.
+- Purged associated cascaded events (130) and relationships (130).
 
 ---
 
-## 5. Referential Integrity & Validation
+## 5. Verified Exclusions & Preservation Invariants
+
+The following genuine datasets and live entities remain strictly preserved:
+
+1. **Real Live Streamed AIS Maritime Vessels:**
+   - 203+ authentic commercial vessels actively broadcasting via `AISStream.io` (e.g. `SHIP_351965000 KUO LUNG`, `SHIP_525601594 TB AMADEUS 1`, `SHIP_249174000 CMA CGM HONG KONG`, etc.) with authentic MMSIs in the Strait of Malacca and Southeast Asia.
+   - All genuine live coordinate tracks preserved.
+
+2. **Real World Entities (Live Feeds Only):**
+   - 15 genuine real-world records actively fetched from verified public APIs:
+     - 13 real-time USGS seismic event records (`SEISMIC_EVENT_*`)
+     - 1 live European Central Bank FX rate feed via Frankfurter (`FX_RATES_USD`)
+     - 1 live air quality reading via Open-Meteo (`AQI_SENSOR_1300_7760`)
+   - Zero synthetic, un-sourced, or mock entities remain in production.
+
+---
+
+## 6. Referential Integrity & Validation
 
 - `PRAGMA foreign_key_check`: **0 errors**.
 - `PRAGMA integrity_check`: **ok**.
-- `data_migration_log`: Audit record stored under ID `phase1_cleanup_1760552903918`.
+- `data_migration_log`: Audit records stored under `phase1_cleanup_*` and `phase1_map_cleanup_*`.
+- Verification API endpoints `/api/locations` returns `[]` and `/api/world/state` contains only genuine live feeds.
+
