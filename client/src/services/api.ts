@@ -510,6 +510,174 @@ export const api = {
   },
 
   // =========================================================================
+  // USGS EARTHQUAKE HAZARDS PROGRAM (SEISMIC FEEDS)
+  // =========================================================================
+  async getEarthquakeStatus(): Promise<{
+    providerId: string;
+    providerName: string;
+    status: string;
+    connectionState: 'CONNECTED' | 'DEGRADED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    dataFreshness: 'FRESH' | 'STALE' | 'HISTORICAL' | 'EMPTY' | 'UNKNOWN';
+    operationalState: 'CONNECTED_FRESH' | 'CONNECTED_STALE' | 'CONNECTED_EMPTY' | 'CONNECTED_HISTORICAL' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    isPollingActive: boolean;
+    lastPollAt: string | null;
+    lastSuccessfulPollAt: string | null;
+    newestObservationAt: string | null;
+    newestObservationAgeMinutes: number | null;
+    totalEventsInDb: number;
+    maxMagnitude: number | null;
+    lastError: string | null;
+    rateLimitRemaining: number;
+  }> {
+    const res = await fetch(`${API_BASE}/earthquakes/status`);
+    if (!res.ok) throw new Error('Failed to fetch earthquake status');
+    return res.json();
+  },
+
+  async getEarthquakeEvents(limit: number = 100): Promise<{
+    meta: any;
+    events: Array<{
+      id: string;
+      name: string;
+      type: string;
+      category: string;
+      latitude: number;
+      longitude: number;
+      depth_km: number;
+      magnitude: number | null;
+      magType: string;
+      place: string;
+      status: string;
+      tsunami_alert: number;
+      significance: number;
+      felt_reports: number | null;
+      origin_time: string;
+      updated_at: string;
+      observed_at: string;
+      last_updated_at: string;
+      provider: string;
+      source_network: string;
+      data_kind: string;
+      is_direct_instrument_sensor: boolean;
+      provenance: any;
+    }>;
+  }> {
+    const res = await fetch(`${API_BASE}/earthquakes/events?limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to fetch earthquake events');
+    return res.json();
+  },
+
+  async pollEarthquakes(params: any = {}): Promise<any> {
+    const res = await fetch(`${API_BASE}/earthquakes/poll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) throw new Error('Failed to poll earthquakes');
+    return res.json();
+  },
+
+  // =========================================================================
+  // OPEN-METEO WEATHER & AIR QUALITY (ENVIRONMENTAL NODES)
+  // =========================================================================
+  async getEnvironmentStatus(): Promise<{
+    weatherProviderId: string;
+    weatherConnectionState: 'CONNECTED' | 'DEGRADED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    weatherFreshness: 'FRESH' | 'STALE' | 'HISTORICAL' | 'EMPTY' | 'UNKNOWN';
+    weatherOperationalState: string;
+    airQualityProviderId: string;
+    airQualityConnectionState: 'CONNECTED' | 'DEGRADED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    airQualityFreshness: 'FRESH' | 'STALE' | 'HISTORICAL' | 'EMPTY' | 'UNKNOWN';
+    airQualityOperationalState: string;
+    configuredNodesCount: number;
+    totalWeatherNodesInDb: number;
+    totalAirQualityNodesInDb: number;
+    lastPollAt: string | null;
+    lastSuccessfulPollAt: string | null;
+    newestWeatherObservationAt: string | null;
+    newestAirQualityObservationAt: string | null;
+    isPollingActive: boolean;
+    lastErrors: string[];
+  }> {
+    const res = await fetch(`${API_BASE}/environment/status`);
+    if (!res.ok) throw new Error('Failed to fetch environment status');
+    return res.json();
+  },
+
+  async getWeatherNodes(): Promise<{
+    meta: any;
+    nodes: Array<{
+      id: string;
+      name: string;
+      type: string;
+      category: string;
+      latitude: number;
+      longitude: number;
+      temperature_c: number | null;
+      relative_humidity_pct: number | null;
+      precipitation_mm: number;
+      rain_mm: number;
+      surface_pressure_hpa: number | null;
+      wind_speed_kmh: number | null;
+      wind_direction_deg: number | null;
+      weather_code: number | null;
+      elevation_m: number | null;
+      model_source: string;
+      data_kind: string;
+      is_direct_instrument_sensor: boolean;
+      observed_at: string;
+      last_updated_at: string;
+      provider: string;
+      provenance: any;
+    }>;
+  }> {
+    const res = await fetch(`${API_BASE}/environment/weather`);
+    if (!res.ok) throw new Error('Failed to fetch weather nodes');
+    return res.json();
+  },
+
+  async getAirQualityNodes(): Promise<{
+    meta: any;
+    nodes: Array<{
+      id: string;
+      name: string;
+      type: string;
+      category: string;
+      latitude: number;
+      longitude: number;
+      us_aqi: number | null;
+      european_aqi: number | null;
+      pm2_5_ugm3: number | null;
+      pm10_ugm3: number | null;
+      nitrogen_dioxide_ugm3: number | null;
+      sulphur_dioxide_ugm3: number | null;
+      ozone_ugm3: number | null;
+      carbon_monoxide_ugm3: number | null;
+      model_source: string;
+      data_kind: string;
+      is_direct_instrument_sensor: boolean;
+      observed_at: string;
+      last_updated_at: string;
+      provider: string;
+      provenance: any;
+    }>;
+  }> {
+    const res = await fetch(`${API_BASE}/environment/air-quality`);
+    if (!res.ok) throw new Error('Failed to fetch air quality nodes');
+    return res.json();
+  },
+
+  async pollEnvironment(params: any = {}): Promise<any> {
+    const res = await fetch(`${API_BASE}/environment/poll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) throw new Error('Failed to poll environment');
+    return res.json();
+  },
+
+  // =========================================================================
   // LIVE WORLD MODEL & DATA CONNECTOR LAYER
   // =========================================================================
   async getWorldState(): Promise<any> {

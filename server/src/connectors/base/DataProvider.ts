@@ -1,3 +1,5 @@
+import https from 'https';
+import http from 'http';
 import {
   ProviderMetadata,
   ProviderHealthMetrics,
@@ -166,9 +168,9 @@ export abstract class DataProvider {
   }
 
   /**
-   * Resilient HTTP fetcher with timeout and auth headers
+   * Resilient HTTP fetcher with timeout, auth headers, and native TLS support
    */
-  protected async secureFetch(url: string, options: RequestInit = {}, timeoutMs: number = 8000): Promise<any> {
+  protected async secureFetch(urlStr: string, options: RequestInit = {}, timeoutMs: number = 15000): Promise<{ data: any; latency: number; rawData: any; latencyMs: number } | any> {
     if (this.isCircuitOpen()) {
       throw new Error(`[CircuitBreaker: OPEN] Provider ${this.metadata.id} is temporarily blocked due to repeated failures.`);
     }
@@ -192,49 +194,57 @@ export abstract class DataProvider {
       }
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    // Try native node https/http for robust TLS renegotiation support on Windows
+    return new Promise<{ data: any; latency: number; rawData: any; latencyMs: number } | any>((resolve, reject) => {
+      try {
+        const url = new URL(urlStr);
+        const isHttps = url.protocol === 'https:';
+        const client = isHttps ? https : http;
+        const startTime = Date.now();
 
-    const startTime = Date.now();
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-        signal: controller.signal
-      });
+        const req = client.request(url, {
+          method: (options.method as string) || 'GET',
+          headers,
+          timeout: timeoutMs,
+        }, (res) => {
+          let body = '';
+          res.on('data', chunk => body += chunk);
+          res.on('end', () => {
+            const latency = Date.now() - startTime;
+            if (res.statusCode === 429) {
+              this.health.status = 'RATE_LIMITED';
+              return reject(new Error('Provider returned 429 Too Many Requests'));
+            }
+            if (res.statusCode && res.statusCode >= 400) {
+              return reject(new Error(`HTTP Error ${res.statusCode}: ${res.statusMessage || 'Request failed'}`));
+            }
 
-      clearTimeout(timeoutId);
-      const latency = Date.now() - startTime;
+            try {
+              const parsed = JSON.parse(body);
+              resolve({ data: parsed, latency, rawData: parsed, latencyMs: latency });
+            } catch (_) {
+              resolve({ data: body, latency, rawData: body, latencyMs: latency });
+            }
+          });
+        });
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          this.health.status = 'RATE_LIMITED';
-          throw new Error(`Provider returned 429 Too Many Requests`);
+        req.on('timeout', () => {
+          req.destroy(new Error(`Request timeout after ${timeoutMs}ms`));
+        });
+
+        req.on('error', (err) => {
+          reject(err);
+        });
+
+        if (options.body) {
+          req.write(typeof options.body === 'string' ? options.body : JSON.stringify(options.body));
         }
-        throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
-      }
 
-      const contentType = response.headers.get('content-type') || '';
-      let data: any;
-      if (contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        try {
-          data = JSON.parse(text);
-        } catch (_) {
-          data = text;
-        }
+        req.end();
+      } catch (err) {
+        reject(err);
       }
-
-      return { data, latency };
-    } catch (err: any) {
-      clearTimeout(timeoutId);
-      if (err.name === 'AbortError') {
-        throw new Error(`Request timeout after ${timeoutMs}ms`);
-      }
-      throw err;
-    }
+    });
   }
 
   /**

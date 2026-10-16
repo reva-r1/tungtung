@@ -21,7 +21,9 @@ import {
   Eye,
   EyeOff,
   Plane,
-  Droplets
+  Droplets,
+  CloudRain,
+  Radio
 } from 'lucide-react';
 
 interface TacticalMapProps {
@@ -258,6 +260,100 @@ const createReservoirIcon = (station: any, isSelected: boolean) => {
   });
 };
 
+// Custom SVG Icon for Earthquake Epicenters (pulsing ring sized and colored by magnitude)
+const createEarthquakeIcon = (eq: any, isSelected: boolean) => {
+  const mag = typeof eq.magnitude === 'number' ? eq.magnitude : 3.0;
+  const color = mag >= 5.0 ? '#ef4444' : mag >= 4.0 ? '#f59e0b' : '#38bdf8';
+  const size = Math.min(42, Math.max(22, Math.round(18 + mag * 3.5)));
+
+  return L.divIcon({
+    className: 'custom-earthquake-pin',
+    html: `
+      <div style="
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: ${size}px;
+        height: ${size}px;
+      ">
+        <div style="
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          background: ${color}22;
+          border: 1.5px solid ${color};
+          animation: pulse-ring 2.5s infinite ease-in-out;
+        "></div>
+        ${isSelected ? `
+          <div style="
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px dashed ${color};
+          "></div>
+        ` : ''}
+        <div style="
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: ${color};
+          box-shadow: 0 0 8px ${color};
+        "></div>
+      </div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+  });
+};
+
+// Custom SVG Icon for Weather & Environmental Monitoring Nodes
+const createEnvironmentIcon = (node: any, isSelected: boolean) => {
+  const color = '#10b981'; // Emerald
+  return L.divIcon({
+    className: 'custom-env-pin',
+    html: `
+      <div style="
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+      ">
+        ${isSelected ? `
+          <div style="
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            border: 2px dashed ${color};
+          "></div>
+        ` : ''}
+        <div style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          background: rgba(9, 13, 22, 0.94);
+          border: 2px solid ${color};
+          box-shadow: 0 0 10px ${color}88;
+        ">
+          <!-- Environmental Atmosphere / Cloud Glyph -->
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+          </svg>
+        </div>
+      </div>
+    `,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -14],
+  });
+};
+
 // Smooth Camera Controller
 const MapFlyController: React.FC<{
   target: { lat: number; lng: number; zoom: number; id: number } | null;
@@ -287,16 +383,23 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
   const [showPinNames, setShowPinNames] = useState<boolean>(true);
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number; zoom: number; id: number } | null>(null);
 
-  // Revana Maritime & Aviation Moving Entity States
+  // Revana Maritime, Aviation, Hydrological & Environmental States
   const [showMaritime, setShowMaritime] = useState<boolean>(true);
   const [showAviation, setShowAviation] = useState<boolean>(true);
   const [showHydrology, setShowHydrology] = useState<boolean>(true);
+  const [showEarthquakes, setShowEarthquakes] = useState<boolean>(true);
+  const [showEnvironment, setShowEnvironment] = useState<boolean>(true);
   const [showTrails, setShowTrails] = useState<boolean>(true);
   const [vessels, setVessels] = useState<MovingEntity[]>([]);
   const [aircraftList, setAircraftList] = useState<MovingEntity[]>([]);
   const [hydrologyStations, setHydrologyStations] = useState<any[]>([]);
+  const [earthquakes, setEarthquakes] = useState<any[]>([]);
+  const [weatherNodes, setWeatherNodes] = useState<any[]>([]);
+  const [airQualityNodes, setAirQualityNodes] = useState<any[]>([]);
   const [selectedVesselId, setSelectedVesselId] = useState<string | null>(null);
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
+  const [selectedEarthquakeId, setSelectedEarthquakeId] = useState<string | null>(null);
+  const [selectedEnvNodeId, setSelectedEnvNodeId] = useState<string | null>(null);
   const [vesselTrack, setVesselTrack] = useState<[number, number][]>([]);
   const [patterns, setPatterns] = useState<MaritimePattern[]>([]);
   const [activePatternModal, setActivePatternModal] = useState<MaritimePattern | null>(null);
@@ -317,6 +420,8 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     airborneCount: number;
   } | null>(null);
   const [hydrologyStatus, setHydrologyStatus] = useState<any | null>(null);
+  const [earthquakeStatus, setEarthquakeStatus] = useState<any | null>(null);
+  const [environmentStatus, setEnvironmentStatus] = useState<any | null>(null);
 
   // 1. Initial Data Fetching & Periodic Freshness Refresh
   useEffect(() => {
@@ -355,6 +460,27 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     refreshHydrologyStatus();
     const hydroInterval = setInterval(refreshHydrologyStatus, 15000);
 
+    const refreshEarthquakeData = () => {
+      api.getEarthquakeStatus().then(setEarthquakeStatus).catch(() => setEarthquakeStatus(null));
+      api.getEarthquakeEvents(100).then((data) => {
+        if (data?.events) setEarthquakes(data.events);
+      }).catch(console.error);
+    };
+    refreshEarthquakeData();
+    const eqInterval = setInterval(refreshEarthquakeData, 20000);
+
+    const refreshEnvironmentData = () => {
+      api.getEnvironmentStatus().then(setEnvironmentStatus).catch(() => setEnvironmentStatus(null));
+      api.getWeatherNodes().then((data) => {
+        if (data?.nodes) setWeatherNodes(data.nodes);
+      }).catch(console.error);
+      api.getAirQualityNodes().then((data) => {
+        if (data?.nodes) setAirQualityNodes(data.nodes);
+      }).catch(console.error);
+    };
+    refreshEnvironmentData();
+    const envInterval = setInterval(refreshEnvironmentData, 30000);
+
     // Fetch initial maritime vessels
     api.getMaritimeVessels(300).then((data) => {
       if (data?.vessels) setVessels(data.vessels);
@@ -378,6 +504,8 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     return () => {
       clearInterval(aviationInterval);
       clearInterval(hydroInterval);
+      clearInterval(eqInterval);
+      clearInterval(envInterval);
     };
   }, [propLocations]);
 
@@ -640,6 +768,83 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
               </span>
             );
           })()}
+          {showEarthquakes && (() => {
+            const opState = earthquakeStatus?.operationalState || 'STANDBY';
+            const totalCount = earthquakes.length || earthquakeStatus?.totalEventsInDb || 0;
+
+            let badgeStyle = 'text-slate-400 bg-slate-900/60 border-slate-800/40';
+            let iconStyle = 'text-slate-400';
+            let label = `${totalCount} Earthquakes (Standby)`;
+            let title = 'USGS Earthquake feed standby / waiting for poll';
+
+            if (opState === 'CONNECTED_FRESH') {
+              badgeStyle = 'text-amber-300 bg-amber-950/60 border-amber-800/40';
+              iconStyle = 'text-amber-400';
+              label = `${totalCount} Earthquakes (Fresh <3h)`;
+              title = `USGS Seismic feed connected: ${totalCount} seismic events reported`;
+            } else if (opState === 'CONNECTED_STALE') {
+              badgeStyle = 'text-amber-400/80 bg-amber-950/40 border-amber-800/30';
+              iconStyle = 'text-amber-400';
+              label = `${totalCount} Earthquakes (Past 24h)`;
+              title = 'USGS connected; latest events in 24h window';
+            } else if (opState === 'CONNECTED_HISTORICAL') {
+              badgeStyle = 'text-slate-300 bg-slate-900/80 border-slate-700/60';
+              iconStyle = 'text-slate-400';
+              label = `${totalCount} Earthquakes (Historical)`;
+              title = 'USGS feed connected; displaying historical seismic events';
+            } else if (opState === 'CONNECTED_EMPTY') {
+              badgeStyle = 'text-sky-300 bg-sky-950/60 border-sky-800/40';
+              iconStyle = 'text-sky-400';
+              label = `0 Earthquakes (Live Feed)`;
+              title = 'USGS feed connected; zero seismic events in query window';
+            } else if (opState === 'RATE_LIMITED') {
+              badgeStyle = 'text-amber-400 bg-amber-950/60 border-amber-800/40';
+              iconStyle = 'text-amber-400';
+              label = `Seismic: Rate Limited`;
+              title = 'USGS provider cooldown active';
+            } else if (opState === 'DISCONNECTED') {
+              badgeStyle = 'text-rose-400 bg-rose-950/60 border-rose-800/40';
+              iconStyle = 'text-rose-400';
+              label = `Seismic: Disconnected`;
+              title = 'USGS provider connection failed';
+            }
+
+            return (
+              <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${badgeStyle}`} title={title}>
+                <Activity className={`w-3 h-3 ${iconStyle}`} />
+                {label}
+              </span>
+            );
+          })()}
+          {showEnvironment && (() => {
+            const wxCount = weatherNodes.length || environmentStatus?.totalWeatherNodesInDb || 0;
+            const aqiCount = airQualityNodes.length || environmentStatus?.totalAirQualityNodesInDb || 0;
+            const wxConn = environmentStatus?.weatherConnectionState || 'STANDBY';
+
+            let badgeStyle = 'text-emerald-300 bg-emerald-950/60 border-emerald-800/40';
+            let iconStyle = 'text-emerald-400';
+            let label = `${wxCount} Weather / ${aqiCount} AQI Nodes (NWP & CAMS Models)`;
+            let title = 'Open-Meteo & Copernicus CAMS numerical models; not direct station telemetry';
+
+            if (wxConn === 'DISCONNECTED') {
+              badgeStyle = 'text-rose-400 bg-rose-950/60 border-rose-800/40';
+              iconStyle = 'text-rose-400';
+              label = `Environment: Disconnected`;
+              title = 'Open-Meteo provider connection failed';
+            } else if (wxConn === 'RATE_LIMITED') {
+              badgeStyle = 'text-amber-400 bg-amber-950/60 border-amber-800/40';
+              iconStyle = 'text-amber-400';
+              label = `Environment: Rate Limited`;
+              title = 'Open-Meteo cooldown active';
+            }
+
+            return (
+              <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${badgeStyle}`} title={title}>
+                <CloudRain className={`w-3 h-3 ${iconStyle}`} />
+                {label}
+              </span>
+            );
+          })()}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -757,6 +962,34 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
           >
             <Droplets className="w-3 h-3" />
             Water: {showHydrology ? 'ON' : 'OFF'}
+          </button>
+
+          {/* USGS Earthquakes Seismic Layer Toggle */}
+          <button
+            onClick={() => setShowEarthquakes(!showEarthquakes)}
+            className={`px-2 py-1 rounded text-[10px] font-mono border transition flex items-center gap-1.5 ${
+              showEarthquakes
+                ? 'bg-amber-950/70 border-amber-500/50 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
+                : 'bg-[#090d16] border-[#1e293b] text-slate-500 hover:text-slate-300'
+            }`}
+            title="Toggle USGS Real-Time Global Seismic & Earthquake Hazard Layer"
+          >
+            <Activity className="w-3 h-3" />
+            Seismic: {showEarthquakes ? 'ON' : 'OFF'}
+          </button>
+
+          {/* Environmental Weather & Air Quality Models Layer Toggle */}
+          <button
+            onClick={() => setShowEnvironment(!showEnvironment)}
+            className={`px-2 py-1 rounded text-[10px] font-mono border transition flex items-center gap-1.5 ${
+              showEnvironment
+                ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.2)]'
+                : 'bg-[#090d16] border-[#1e293b] text-slate-500 hover:text-slate-300'
+            }`}
+            title="Toggle Open-Meteo Weather & Copernicus CAMS Air Quality Models Layer"
+          >
+            <CloudRain className="w-3 h-3" />
+            Atmosphere: {showEnvironment ? 'ON' : 'OFF'}
           </button>
 
           {/* Historical Trails Toggle */}
@@ -1349,6 +1582,221 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
               </Marker>
             );
           })}
+
+          {/* ================================================================= */}
+          {/* USGS REAL-TIME SEISMIC HAZARDS & EARTHQUAKE EPICENTER LAYER       */}
+          {/* ================================================================= */}
+          {showEarthquakes && earthquakes.map((eq) => {
+            if (!eq.latitude || !eq.longitude) return null;
+            const isSelected = selectedEarthquakeId === eq.id;
+            const mag = eq.magnitude ?? (eq.properties?.magnitude ?? 0);
+            const depth = eq.depth_km ?? (eq.properties?.depth_km ?? 0);
+            const place = eq.place || eq.name || 'Seismic Epicenter';
+            const status = eq.status || eq.properties?.status || 'preliminary';
+            const originTime = eq.origin_time || eq.observed_at;
+
+            return (
+              <Marker
+                key={eq.id}
+                position={[eq.latitude, eq.longitude]}
+                icon={createEarthquakeIcon(eq, isSelected)}
+                eventHandlers={{
+                  click: () => {
+                    setSelectedEarthquakeId(eq.id);
+                    zoomToLocation(eq.latitude, eq.longitude, 8);
+                  },
+                }}
+              >
+                {showPinNames && (
+                  <Tooltip direction="top" offset={[0, -16]} className="tactical-marker-tooltip">
+                    <span>M{typeof mag === 'number' ? mag.toFixed(1) : mag} - {place}</span>
+                  </Tooltip>
+                )}
+
+                <Popup className="tactical-popup">
+                  <div className="p-1 font-mono text-xs text-slate-200 min-w-[260px]">
+                    <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 flex items-center gap-1">
+                        <Activity className="w-3 h-3 text-amber-400" />
+                        USGS / SEISMIC
+                      </span>
+                      <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${status === 'reviewed' ? 'bg-emerald-950 text-emerald-300' : 'bg-amber-950 text-amber-400'}`}>
+                        {status.toUpperCase()}
+                      </span>
+                    </div>
+
+                    <div className="font-bold text-white text-sm mb-0.5 flex items-center justify-between">
+                      <span>M{typeof mag === 'number' ? mag.toFixed(1) : mag} Earthquake</span>
+                      <span className="text-amber-400 text-xs font-mono">{eq.magType || 'seismic'}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 mb-2 truncate" title={place}>
+                      {place}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5 bg-slate-900/60 p-2 rounded border border-slate-800 text-[11px] mb-2">
+                      <div>
+                        <span className="text-slate-500">DEPTH:</span>{' '}
+                        <span className="text-amber-300 font-bold">{typeof depth === 'number' ? depth.toFixed(1) : depth} km</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">TSUNAMI:</span>{' '}
+                        <span className={`font-bold ${eq.tsunami_alert ? 'text-rose-400' : 'text-slate-300'}`}>
+                          {eq.tsunami_alert ? 'ALERT ACTIVE' : 'NO ALERT'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">LAT / LON:</span>{' '}
+                        <span className="text-slate-300">{eq.latitude.toFixed(2)}, {eq.longitude.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">SIGNIFICANCE:</span>{' '}
+                        <span className="text-cyan-400">{eq.significance ?? 'N/A'}</span>
+                      </div>
+                    </div>
+
+                    {/* Source Provenance */}
+                    <div className="p-2 rounded bg-amber-950/20 border border-amber-900/30 text-[11px] mb-2">
+                      <div className="text-[9px] text-slate-400 uppercase font-bold mb-0.5">SOURCE PROVENANCE:</div>
+                      <div className="text-amber-300 text-[10px] font-bold">U.S. Geological Survey (USGS)</div>
+                      <div className="text-[9px] text-slate-400 mt-0.5">
+                        Feed: Real-Time GeoJSON / Public Domain
+                      </div>
+                      <div className="text-[9px] text-slate-400 mt-0.5">
+                        Origin Time: {originTime ? new Date(originTime).toLocaleString() : 'N/A'}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => zoomToLocation(eq.latitude, eq.longitude, 10)}
+                        className="w-full py-1.5 px-2 bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 text-amber-200 text-[10px] font-bold rounded transition flex items-center justify-center gap-1"
+                        title="Center map on seismic epicenter"
+                      >
+                        <Navigation className="w-3 h-3" />
+                        FOCUS EPICENTER
+                      </button>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+
+          {/* ================================================================= */}
+          {/* OPEN-METEO WEATHER & AIR QUALITY OPERATIONAL MONITORING LAYER      */}
+          {/* ================================================================= */}
+          {showEnvironment && weatherNodes.map((wn) => {
+            if (!wn.latitude || !wn.longitude) return null;
+            const isSelected = selectedEnvNodeId === wn.id;
+            const aqiNode = airQualityNodes.find(a => a.id.replace('AQI_NODE_', '') === wn.id.replace('WEATHER_NODE_', ''));
+
+            return (
+              <Marker
+                key={wn.id}
+                position={[wn.latitude, wn.longitude]}
+                icon={createEnvironmentIcon(wn, isSelected)}
+                eventHandlers={{
+                  click: () => {
+                    setSelectedEnvNodeId(wn.id);
+                    zoomToLocation(wn.latitude, wn.longitude, 11);
+                  },
+                }}
+              >
+                {showPinNames && (
+                  <Tooltip direction="top" offset={[0, -16]} className="tactical-marker-tooltip">
+                    <span>{wn.name} ({wn.temperature_c ?? '--'}°C)</span>
+                  </Tooltip>
+                )}
+
+                <Popup className="tactical-popup">
+                  <div className="p-1 font-mono text-xs text-slate-200 min-w-[280px]">
+                    <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 flex items-center gap-1">
+                        <CloudRain className="w-3 h-3 text-emerald-400" />
+                        NWP & CAMS MODELS
+                      </span>
+                      <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                        MODEL ESTIMATE
+                      </span>
+                    </div>
+
+                    <div className="font-bold text-white text-sm mb-0.5">
+                      {wn.name}
+                    </div>
+                    <div className="text-[10px] text-slate-400 mb-2">
+                      Coordinates: {wn.latitude.toFixed(3)}°N, {wn.longitude.toFixed(3)}°E
+                    </div>
+
+                    {/* Meteorological Conditions */}
+                    <div className="grid grid-cols-2 gap-1.5 bg-slate-900/60 p-2 rounded border border-slate-800 text-[11px] mb-2">
+                      <div>
+                        <span className="text-slate-500">TEMP:</span>{' '}
+                        <span className="text-emerald-300 font-bold">{wn.temperature_c != null ? `${wn.temperature_c}°C` : 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">HUMIDITY:</span>{' '}
+                        <span className="text-sky-300 font-bold">{wn.relative_humidity_pct != null ? `${wn.relative_humidity_pct}%` : 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">PRECIP:</span>{' '}
+                        <span className="text-cyan-300 font-bold">{wn.precipitation_mm ?? 0} mm</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">PRESSURE:</span>{' '}
+                        <span className="text-slate-300">{wn.surface_pressure_hpa != null ? `${wn.surface_pressure_hpa} hPa` : 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">WIND:</span>{' '}
+                        <span className="text-amber-300 font-bold">{wn.wind_speed_kmh != null ? `${wn.wind_speed_kmh} km/h` : 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">DIRECTION:</span>{' '}
+                        <span className="text-slate-300">{wn.wind_direction_deg != null ? `${wn.wind_direction_deg}°` : 'N/A'}</span>
+                      </div>
+                    </div>
+
+                    {/* Air Quality Pollutants (Copernicus CAMS) */}
+                    {aqiNode && (
+                      <div className="grid grid-cols-2 gap-1.5 bg-teal-950/20 p-2 rounded border border-teal-900/30 text-[11px] mb-2">
+                        <div>
+                          <span className="text-slate-500">US AQI:</span>{' '}
+                          <span className="text-teal-300 font-bold">{aqiNode.us_aqi ?? 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500">EU AQI:</span>{' '}
+                          <span className="text-teal-300">{aqiNode.european_aqi ?? 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500">PM2.5:</span>{' '}
+                          <span className="text-amber-300 font-bold">{aqiNode.pm2_5_ugm3 != null ? `${aqiNode.pm2_5_ugm3} μg/m³` : 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500">PM10:</span>{' '}
+                          <span className="text-slate-300">{aqiNode.pm10_ugm3 != null ? `${aqiNode.pm10_ugm3} μg/m³` : 'N/A'}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Truth in Labeling Warning */}
+                    <div className="p-2 rounded bg-amber-950/20 border border-amber-900/30 text-[10px] text-amber-300/90 mb-2">
+                      ⚠️ <span className="font-bold">Model Truth:</span> Derived from ECMWF/GFS weather prediction & Copernicus Atmosphere Monitoring Service (CAMS). Not direct physical sensor telemetry.
+                    </div>
+
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => zoomToLocation(wn.latitude, wn.longitude, 12)}
+                        className="w-full py-1.5 px-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-200 text-[10px] font-bold rounded transition flex items-center justify-center gap-1"
+                        title="Center map on environmental node"
+                      >
+                        <Navigation className="w-3 h-3" />
+                        FOCUS NODE
+                      </button>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
 
@@ -1365,7 +1813,7 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
             <span className="w-2 h-2 rounded-full bg-[#06b6d4]"></span> Bulk Carrier
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#a855f7]"></span> Tug / Support
+            <span className="w-2 h-2 rounded-full bg-[#a855f7]"></span> Tug / Service
           </span>
           <span className="flex items-center gap-1 text-slate-400">
             | Aircraft: <span className="w-2 h-2 rounded-full bg-[#06b6d4] inline-block"></span> FL250+ <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block"></span> FL100-250 <span className="w-2 h-2 rounded-full bg-[#f59e0b] inline-block"></span> &lt;FL100
@@ -1373,8 +1821,11 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
           <span className="flex items-center gap-1 text-slate-400">
             | Water: <span className="w-2 h-2 rounded-full bg-[#06b6d4] inline-block"></span> &gt;70% <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block"></span> 40-70% <span className="w-2 h-2 rounded-full bg-[#f59e0b] inline-block"></span> &lt;40%
           </span>
-          <span className="flex items-center gap-1 text-slate-500">
-            | Land: <span className="w-2 h-2 rounded-full bg-[#38bdf8] inline-block"></span> Facility
+          <span className="flex items-center gap-1 text-amber-400">
+            | Seismic: <span className="w-2 h-2 rounded-full bg-[#ef4444] inline-block"></span> M5+ <span className="w-2 h-2 rounded-full bg-[#f59e0b] inline-block"></span> M4+ <span className="w-2 h-2 rounded-full bg-[#38bdf8] inline-block"></span> &lt;M4
+          </span>
+          <span className="flex items-center gap-1 text-emerald-400">
+            | Atmosphere: <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block"></span> NWP/CAMS Model
           </span>
         </div>
 

@@ -43,7 +43,7 @@ export class USGSEarthquakeProvider extends DataProvider {
     }
 
     try {
-      const { data, latency } = await this.secureFetch(url, {}, 8000);
+      const { data, latency } = await this.secureFetch(url, {}, 12000);
       this.setCached(cacheKey, data, this.metadata.rateLimit.cacheTtlSeconds);
       return { rawData: data, latencyMs: latency };
     } catch (err: any) {
@@ -62,36 +62,58 @@ export class USGSEarthquakeProvider extends DataProvider {
     let rejected = 0;
 
     for (const feature of rawData.features) {
+      if (!feature || typeof feature !== 'object') {
+        rejected++;
+        continue;
+      }
+
       const props = feature.properties || {};
       const geom = feature.geometry || {};
       const coords = geom.coordinates || [];
 
+      if (!Array.isArray(coords) || coords.length < 2) {
+        rejected++;
+        continue;
+      }
+
       const lon = coords[0];
       const lat = coords[1];
-      const depthKm = coords[2] ?? 0;
+      const depthKm = typeof coords[2] === 'number' ? coords[2] : 0;
 
       if (!this.isValidCoordinate(lat, lon)) {
         rejected++;
         continue;
       }
 
-      const entityId = `SEISMIC_EVENT_${feature.id || Math.round(lat * 1000) + '_' + Math.round(lon * 1000)}`;
+      const featureId = feature.id || `eq_${Math.round(lat * 1000)}_${Math.round(lon * 1000)}`;
+      const entityId = `SEISMIC_EVENT_${featureId}`;
       const observedAt = props.time ? new Date(props.time).toISOString() : new Date().toISOString();
+      const updatedAt = props.updated ? new Date(props.updated).toISOString() : observedAt;
+
+      // Deterministic observation ID keyed by feature ID and update revision
+      const obsId = `obs_eq_${featureId}_${props.updated || props.time || Date.now()}`;
 
       observations.push({
-        id: `obs_eq_${feature.id || Date.now()}`,
+        id: obsId,
         entity_id: entityId,
         entity_type: 'EARTHQUAKE_EPICENTER',
         data_type: 'SEISMIC',
         value: {
-          magnitude: props.mag,
-          magType: props.magType,
+          magnitude: typeof props.mag === 'number' ? props.mag : null,
+          magType: props.magType || 'unknown',
           depth_km: depthKm,
-          place: props.place,
-          status: props.status,
-          tsunami_alert: props.tsunami,
-          significance: props.sig,
-          felt_reports: props.felt,
+          place: props.place || 'Unknown Location',
+          status: props.status || 'preliminary',
+          tsunami_alert: props.tsunami ?? 0,
+          significance: props.sig ?? 0,
+          felt_reports: props.felt ?? null,
+          url: props.url || null,
+          origin_time: observedAt,
+          updated_at: updatedAt,
+          source_network: props.net || 'USGS',
+          data_kind: 'DIRECT_OBSERVATION',
+          is_direct_instrument_sensor: true,
+          agency_attribution: 'U.S. Geological Survey (USGS) Earthquake Hazards Program',
         },
         location: {
           latitude: lat,
@@ -112,6 +134,7 @@ export class USGSEarthquakeProvider extends DataProvider {
           endpoint: '/summary/all_hour.geojson',
           retrievedAt: new Date().toISOString(),
           observedAt,
+          updatedAt,
           originalId: feature.id,
         },
         raw_payload: feature,

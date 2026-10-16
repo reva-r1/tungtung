@@ -7,7 +7,9 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "test:connectors": "tsx src/tests/connectors.test.ts"
+    "test:connectors": "tsx src/tests/connectors.test.ts",
+    "test:p0": "tsx src/tests/p0_connectors.test.ts",
+    "test:all": "tsx src/tests/p0_connectors.test.ts && tsx src/tests/aviation_pipeline.test.ts && tsx src/tests/hydrology_pipeline.test.ts && tsx src/tests/connectors.test.ts && tsx src/tests/phase1_isolation.test.ts"
   },
   "dependencies": {
     "better-sqlite3": "^11.8.1",

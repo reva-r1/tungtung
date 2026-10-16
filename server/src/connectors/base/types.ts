@@ -91,8 +91,10 @@ export interface ObservationProvenance {
   endpoint: string;
   retrievedAt: string;
   observedAt: string;
+  updatedAt?: string;
   originalId?: string;
   originalPayloadReference?: string;
+  [key: string]: any;
 }
 
 export type ObservationQuality = 'VERIFIED' | 'PRELIMINARY' | 'ESTIMATED' | 'UNCERTAIN';

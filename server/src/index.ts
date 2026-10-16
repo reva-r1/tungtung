@@ -25,6 +25,10 @@ import { aviationRouter } from './routes/aviation.routes.js';
 import { aviationService } from './services/aviation/aviation.service.js';
 import { hydrologyRouter } from './routes/hydrology.routes.js';
 import { hydrologyService } from './services/hydrology/hydrology.service.js';
+import { earthquakeRouter } from './routes/earthquake.routes.js';
+import { earthquakeService } from './services/earthquake/earthquake.service.js';
+import { environmentRouter } from './routes/environment.routes.js';
+import { environmentService } from './services/environment/environment.service.js';
 
 dotenv.config();
 
@@ -61,6 +65,8 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/maritime', maritimeRouter);
 app.use('/api/aviation', aviationRouter);
 app.use('/api/hydrology', hydrologyRouter);
+app.use('/api/earthquakes', earthquakeRouter);
+app.use('/api/environment', environmentRouter);
 
 // World Model & Connector Layer Routes (accessible via /world, /simulation, /providers and /api/*)
 app.use('/world', worldRouter);
@@ -91,11 +97,21 @@ aviationService.startPolling(pollIntervalMs);
 const hydroIntervalMs = Number(process.env.CWC_POLL_INTERVAL_MS || 3600000);
 hydrologyService.startPolling(hydroIntervalMs);
 
+// Start background USGS earthquake ingestion (5-minute seismic feed sync)
+const usgsIntervalMs = Number(process.env.USGS_POLL_INTERVAL_MS || 300000);
+earthquakeService.startPolling(usgsIntervalMs);
+
+// Start background Open-Meteo environmental ingestion (15-minute weather/AQI sync)
+const envIntervalMs = Number(process.env.OPEN_METEO_POLL_INTERVAL_MS || 900000);
+environmentService.startPolling(envIntervalMs);
+
 // Graceful shutdown
 const gracefulShutdown = () => {
   console.log('[Revana Server] Shutting down background schedulers...');
   aviationService.stopPolling();
   hydrologyService.stopPolling();
+  earthquakeService.stopPolling();
+  environmentService.stopPolling();
 };
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);

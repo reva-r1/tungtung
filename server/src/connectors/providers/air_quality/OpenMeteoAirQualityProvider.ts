@@ -1,5 +1,6 @@
 import { DataProvider } from '../../base/DataProvider.js';
 import { NormalizedObservation, ProviderMetadata } from '../../base/types.js';
+import { OPERATIONAL_WEATHER_NODES, WeatherLocationConfig } from '../weather/OpenMeteoWeatherProvider.js';
 
 export class OpenMeteoAirQualityProvider extends DataProvider {
   constructor() {
@@ -33,11 +34,24 @@ export class OpenMeteoAirQualityProvider extends DataProvider {
     super(metadata);
   }
 
-  public async fetch(params: { latitude?: number; longitude?: number } = {}): Promise<{ rawData: any; latencyMs: number }> {
-    const lat = params.latitude ?? 12.9716;
-    const lon = params.longitude ?? 77.5946;
+  public async fetch(params: { latitude?: number; longitude?: number; nodeId?: string } = {}): Promise<{ rawData: any; latencyMs: number }> {
+    let lat = params.latitude;
+    let lon = params.longitude;
 
-    const cacheKey = `aqi_${lat}_${lon}`;
+    if (params.nodeId) {
+      const found = OPERATIONAL_WEATHER_NODES.find(n => n.id === params.nodeId);
+      if (found) {
+        lat = found.latitude;
+        lon = found.longitude;
+      }
+    }
+
+    if (lat === undefined || lon === undefined) {
+      lat = 12.9716;
+      lon = 77.5946;
+    }
+
+    const cacheKey = `aqi_${Math.round(lat * 100)}_${Math.round(lon * 100)}`;
     const cached = this.getCached<any>(cacheKey);
     if (cached) {
       return { rawData: cached, latencyMs: 2 };
@@ -46,7 +60,7 @@ export class OpenMeteoAirQualityProvider extends DataProvider {
     const url = `${this.metadata.endpointUrl}?latitude=${lat}&longitude=${lon}&current=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi,european_aqi&timezone=auto`;
 
     try {
-      const { data, latency } = await this.secureFetch(url, {}, 6000);
+      const { data, latency } = await this.secureFetch(url, {}, 15000);
       this.setCached(cacheKey, data, this.metadata.rateLimit.cacheTtlSeconds);
       return { rawData: data, latencyMs: latency };
     } catch (err: any) {
@@ -71,28 +85,45 @@ export class OpenMeteoAirQualityProvider extends DataProvider {
 
     const current = rawData.current;
     const observedAt = current.time ? new Date(current.time).toISOString() : new Date().toISOString();
-    const stationId = `AQI_SENSOR_${Math.round(lat * 100)}_${Math.round(lon * 100)}`;
+
+    const matchedNode = OPERATIONAL_WEATHER_NODES.find(n => 
+      Math.abs(n.latitude - lat) < 0.15 && Math.abs(n.longitude - lon) < 0.15
+    );
+
+    const stationId = matchedNode ? `AQI_NODE_${matchedNode.id}` : `AQI_SENSOR_${Math.round(lat * 100)}_${Math.round(lon * 100)}`;
+    const stationName = matchedNode ? `${matchedNode.name.split(' ')[0]} Air Quality Monitoring` : `AQI Station (${lat.toFixed(2)}, ${lon.toFixed(2)})`;
+    const cityName = matchedNode ? matchedNode.name.split(' ')[0] : 'Regional Station';
+    const stateName = matchedNode?.state || 'India';
+    const districtName = matchedNode?.district || cityName;
+
+    const obsId = `obs_aqi_${stationId}_${observedAt.replace(/[:.]/g, '_')}`;
 
     const observation: NormalizedObservation = {
-      id: `obs_aqi_${stationId}_${Date.now()}`,
+      id: obsId,
       entity_id: stationId,
       entity_type: 'AIR_QUALITY_STATION',
       data_type: 'AIR_QUALITY',
       value: {
-        us_aqi: current.us_aqi,
-        european_aqi: current.european_aqi,
-        pm2_5_ugm3: current.pm2_5,
-        pm10_ugm3: current.pm10,
-        nitrogen_dioxide_ugm3: current.nitrogen_dioxide,
-        sulphur_dioxide_ugm3: current.sulphur_dioxide,
-        ozone_ugm3: current.ozone,
-        carbon_monoxide_ugm3: current.carbon_monoxide,
+        station_name: stationName,
+        us_aqi: typeof current.us_aqi === 'number' ? current.us_aqi : null,
+        european_aqi: typeof current.european_aqi === 'number' ? current.european_aqi : null,
+        pm2_5_ugm3: typeof current.pm2_5 === 'number' ? current.pm2_5 : null,
+        pm10_ugm3: typeof current.pm10 === 'number' ? current.pm10 : null,
+        nitrogen_dioxide_ugm3: typeof current.nitrogen_dioxide === 'number' ? current.nitrogen_dioxide : null,
+        sulphur_dioxide_ugm3: typeof current.sulphur_dioxide === 'number' ? current.sulphur_dioxide : null,
+        ozone_ugm3: typeof current.ozone === 'number' ? current.ozone : null,
+        carbon_monoxide_ugm3: typeof current.carbon_monoxide === 'number' ? current.carbon_monoxide : null,
+        model_source: 'COPERNICUS_CAMS_GLOBAL',
+        data_kind: 'ATMOSPHERIC_MODEL_ESTIMATE',
+        is_direct_instrument_sensor: false,
+        attribution_warning: 'Copernicus Atmosphere Monitoring Service (CAMS) model estimate; not a direct regulatory CPCB physical ground sensor reading.',
       },
       location: {
         latitude: lat,
         longitude: lon,
-        city: 'Bangalore',
-        state: 'Karnataka',
+        city: cityName,
+        district: districtName,
+        state: stateName,
         country: 'India',
       },
       timestamp: new Date().toISOString(),
