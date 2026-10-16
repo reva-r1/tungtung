@@ -202,6 +202,10 @@ export abstract class DataProvider {
         const client = isHttps ? https : http;
         const startTime = Date.now();
 
+        const deadlineTimer = setTimeout(() => {
+          req.destroy(new Error(`Request timeout after ${timeoutMs}ms`));
+        }, timeoutMs);
+
         const req = client.request(url, {
           method: (options.method as string) || 'GET',
           headers,
@@ -210,6 +214,7 @@ export abstract class DataProvider {
           let body = '';
           res.on('data', chunk => body += chunk);
           res.on('end', () => {
+            clearTimeout(deadlineTimer);
             const latency = Date.now() - startTime;
             if (res.statusCode === 429) {
               this.health.status = 'RATE_LIMITED';
@@ -229,10 +234,12 @@ export abstract class DataProvider {
         });
 
         req.on('timeout', () => {
+          clearTimeout(deadlineTimer);
           req.destroy(new Error(`Request timeout after ${timeoutMs}ms`));
         });
 
         req.on('error', (err) => {
+          clearTimeout(deadlineTimer);
           reject(err);
         });
 

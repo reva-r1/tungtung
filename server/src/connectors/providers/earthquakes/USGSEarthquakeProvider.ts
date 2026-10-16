@@ -111,8 +111,8 @@ export class USGSEarthquakeProvider extends DataProvider {
           origin_time: observedAt,
           updated_at: updatedAt,
           source_network: props.net || 'USGS',
-          data_kind: 'DIRECT_OBSERVATION',
-          is_direct_instrument_sensor: true,
+          data_kind: 'PROCESSED_SEISMIC_EVENT',
+          is_direct_instrument_sensor: false, // Inverted multi-station seismic network hypocenter solution, not raw instrument feed
           agency_attribution: 'U.S. Geological Survey (USGS) Earthquake Hazards Program',
         },
         location: {

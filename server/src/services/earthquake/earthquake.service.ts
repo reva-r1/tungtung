@@ -228,8 +228,8 @@ export class EarthquakeService {
         last_updated_at: r.last_updated_at || r.last_observed_at,
         provider: r.last_provider || 'usgs_earthquake',
         source_network: state.source_network || 'USGS',
-        data_kind: 'DIRECT_OBSERVATION',
-        is_direct_instrument_sensor: true,
+        data_kind: state.data_kind || 'PROCESSED_SEISMIC_EVENT',
+        is_direct_instrument_sensor: false,
         provenance: {
           agency: 'USGS',
           source: 'https://earthquake.usgs.gov/earthquakes/feed/',
@@ -274,8 +274,8 @@ export class EarthquakeService {
       last_updated_at: r.last_updated_at || r.last_observed_at,
       provider: r.last_provider || 'usgs_earthquake',
       source_network: state.source_network || 'USGS',
-      data_kind: 'DIRECT_OBSERVATION',
-      is_direct_instrument_sensor: true,
+      data_kind: state.data_kind || 'PROCESSED_SEISMIC_EVENT',
+      is_direct_instrument_sensor: false,
       provenance: {
         agency: 'USGS',
         source: 'https://earthquake.usgs.gov/earthquakes/feed/',

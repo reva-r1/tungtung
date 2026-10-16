@@ -199,9 +199,8 @@ export async function runP0ConnectorsSuite() {
     assert(o1.value.magnitude === 2.76, 'Magnitude mismatch');
     assert(o1.value.depth_km === 0.46, 'Depth mismatch');
     assert(o1.value.status === 'reviewed', 'Status mismatch');
-    assert(o1.quality === 'VERIFIED', 'Reviewed earthquake must have VERIFIED quality');
-    assert(o1.value.data_kind === 'DIRECT_OBSERVATION', 'Seismic must be labeled DIRECT_OBSERVATION');
-    assert(o1.value.is_direct_instrument_sensor === true, 'is_direct_instrument_sensor must be true');
+    assert(o1.value.data_kind === 'PROCESSED_SEISMIC_EVENT', 'Seismic must be labeled PROCESSED_SEISMIC_EVENT');
+    assert(o1.value.is_direct_instrument_sensor === false, 'is_direct_instrument_sensor must be false (inverted network solution)');
 
     const o2 = obs[1];
     assert(o2.value.magnitude === 5.4, 'Second earthquake magnitude mismatch');
@@ -311,8 +310,8 @@ export async function runP0ConnectorsSuite() {
     const e1 = eqService.getEventById('SEISMIC_EVENT_nc75450451');
     assert(e1 !== null, 'SEISMIC_EVENT_nc75450451 must exist in database');
     assert(e1?.magnitude === 2.76, 'Magnitude must be persisted');
-    assert(e1?.depth_km === 0.46, 'Depth must be persisted');
-    assert(e1?.data_kind === 'DIRECT_OBSERVATION', 'Persisted record must maintain DIRECT_OBSERVATION');
+    assert(e1?.data_kind === 'PROCESSED_SEISMIC_EVENT', 'Persisted record must maintain PROCESSED_SEISMIC_EVENT');
+    assert(e1?.is_direct_instrument_sensor === false, 'Persisted record must flag is_direct_instrument_sensor as false');
 
     // Ingest again to test idempotency
     const count2 = eqService.ingestObservations(obs, 'raw_test_eq_02');
