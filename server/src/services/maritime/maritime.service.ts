@@ -212,7 +212,7 @@ export class MaritimeService {
   /**
    * Broadcasts a normalized position update to all active SSE subscribers
    */
-  private static broadcastPositionUpdate(vessel: MovingEntity): void {
+  public static broadcastPositionUpdate(vessel: MovingEntity): void {
     if (this.sseClients.size === 0) return;
 
     const payload = JSON.stringify({

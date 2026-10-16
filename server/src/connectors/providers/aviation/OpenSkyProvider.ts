@@ -1,5 +1,14 @@
 import { DataProvider } from '../../base/DataProvider.js';
 import { NormalizedObservation, ProviderMetadata } from '../../base/types.js';
+import https from 'https';
+import { URL } from 'url';
+
+export interface OpenSkyBoundingBox {
+  lamin?: number;
+  lomin?: number;
+  lamax?: number;
+  lomax?: number;
+}
 
 export class OpenSkyProvider extends DataProvider {
   constructor() {
@@ -15,7 +24,7 @@ export class OpenSkyProvider extends DataProvider {
       envKeyName: 'OPENSKY_CREDENTIALS',
       endpointUrl: 'https://opensky-network.org/api/states/all',
       rateLimit: {
-        requestsPerMinute: 10, // Anonymous users: 10s limit
+        requestsPerMinute: 10, // Anonymous users: 10s limit; Authenticated: 5s
         maxBurst: 2,
         backoffMs: 5000,
         pollIntervalMs: 60000,
@@ -33,12 +42,68 @@ export class OpenSkyProvider extends DataProvider {
     super(metadata);
   }
 
-  public async fetch(params: { lamin?: number; lomin?: number; lamax?: number; lomax?: number } = {}): Promise<{ rawData: any; latencyMs: number }> {
-    // Default bounding box: South India air corridor (Bangalore / Chennai / Hyderabad)
-    const lamin = params.lamin ?? 11.5;
-    const lomin = params.lomin ?? 76.0;
-    const lamax = params.lamax ?? 14.5;
-    const lomax = params.lomax ?? 79.5;
+  /**
+   * Resilient HTTP GET using IPv4 to avoid Node Undici connect timeouts on Windows
+   */
+  private resilientGet(url: string, headers: Record<string, string>, timeoutMs: number = 8000): Promise<{ data: any; latency: number }> {
+    return new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      const parsedUrl = new URL(url);
+
+      const req = https.request(
+        parsedUrl,
+        {
+          method: 'GET',
+          family: 4, // Force IPv4 resolution
+          headers: {
+            'User-Agent': 'Revana-WorldModel/2.0',
+            'Accept': 'application/json',
+            ...headers,
+          },
+          timeout: timeoutMs,
+        },
+        (res) => {
+          let body = '';
+          res.on('data', (chunk) => {
+            body += chunk;
+          });
+          res.on('end', () => {
+            const latency = Date.now() - startTime;
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              try {
+                const parsed = JSON.parse(body);
+                resolve({ data: parsed, latency });
+              } catch (_) {
+                resolve({ data: body, latency });
+              }
+            } else if (res.statusCode === 429) {
+              reject(new Error('Provider returned 429 Too Many Requests'));
+            } else {
+              reject(new Error(`HTTP Error ${res.statusCode}: ${res.statusMessage || 'Bad Request'}`));
+            }
+          });
+        }
+      );
+
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error(`Request timeout after ${timeoutMs}ms`));
+      });
+
+      req.on('error', (err) => {
+        reject(err);
+      });
+
+      req.end();
+    });
+  }
+
+  public async fetch(params: OpenSkyBoundingBox = {}): Promise<{ rawData: any; latencyMs: number }> {
+    // Default bounding box: South India air corridor (Bengaluru, Chennai, Hyderabad airspace)
+    const lamin = params.lamin ?? Number(process.env.OPENSKY_BBOX_LAMIN ?? 11.0);
+    const lomin = params.lomin ?? Number(process.env.OPENSKY_BBOX_LOMIN ?? 75.5);
+    const lamax = params.lamax ?? Number(process.env.OPENSKY_BBOX_LAMAX ?? 15.0);
+    const lomax = params.lomax ?? Number(process.env.OPENSKY_BBOX_LOMAX ?? 80.0);
 
     const cacheKey = `opensky_${lamin}_${lomin}_${lamax}_${lomax}`;
     const cached = this.getCached<any>(cacheKey);
@@ -46,10 +111,30 @@ export class OpenSkyProvider extends DataProvider {
       return { rawData: cached, latencyMs: 2 };
     }
 
+    if (this.isCircuitOpen()) {
+      throw new Error(`[CircuitBreaker: OPEN] Provider ${this.metadata.id} is temporarily blocked due to repeated failures.`);
+    }
+
+    if (!this.checkRateLimit()) {
+      throw new Error(`[RateLimit: EXCEEDED] Provider ${this.metadata.id} rate limit exceeded. Backing off.`);
+    }
+
     const url = `${this.metadata.endpointUrl}?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`;
 
+    // Optional OpenSky Basic Auth credentials
+    const headers: Record<string, string> = {};
+    const username = process.env.OPENSKY_USERNAME;
+    const password = process.env.OPENSKY_PASSWORD;
+    const credentials = process.env.OPENSKY_CREDENTIALS;
+
+    if (username && password) {
+      headers['Authorization'] = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
+    } else if (credentials && credentials.includes(':')) {
+      headers['Authorization'] = `Basic ${Buffer.from(credentials).toString('base64')}`;
+    }
+
     try {
-      const { data, latency } = await this.secureFetch(url, {}, 8000);
+      const { data, latency } = await this.resilientGet(url, headers, 8000);
       this.setCached(cacheKey, data, this.metadata.rateLimit.cacheTtlSeconds);
       return { rawData: data, latencyMs: latency };
     } catch (err: any) {
@@ -71,42 +156,60 @@ export class OpenSkyProvider extends DataProvider {
       // [0: icao24, 1: callsign, 2: origin_country, 3: time_position, 4: last_contact,
       //  5: longitude, 6: latitude, 7: baro_altitude, 8: on_ground, 9: velocity (m/s),
       //  10: true_track, 11: vertical_rate, 12: sensors, 13: geo_altitude, 14: squawk, 15: spi, 16: position_source]
-      const icao24 = state[0];
-      const callsign = (state[1] || '').trim();
-      const originCountry = state[2];
+      const icao24 = typeof state[0] === 'string' ? state[0].trim().toLowerCase() : '';
+      if (!icao24) {
+        rejected++;
+        continue;
+      }
+
+      const callsign = typeof state[1] === 'string' ? state[1].trim() : '';
+      const originCountry = state[2] || 'Unknown';
       const lon = state[5];
       const lat = state[6];
-      const baroAltitudeM = state[7];
+      const baroAltitudeM = state[7] != null ? Number(state[7]) : null;
       const onGround = Boolean(state[8]);
-      const velocityMs = state[9];
-      const trueTrackDeg = state[10];
+      const velocityMs = state[9] != null ? Number(state[9]) : null;
+      const trueTrackDeg = state[10] != null ? Number(state[10]) : null;
+      const verticalRateMs = state[11] != null ? Number(state[11]) : null;
+      const geoAltitudeM = state[13] != null ? Number(state[13]) : null;
+      const squawk = state[14] ? String(state[14]).trim() : null;
 
+      // Coordinate boundary check
       if (!this.isValidCoordinate(lat, lon)) {
         rejected++;
         continue;
       }
 
       const entityId = `AIRCRAFT_${icao24.toUpperCase()}`;
-      const observedAt = state[3] ? new Date(state[3] * 1000).toISOString() : new Date().toISOString();
+      const observedAt = state[3] ? new Date(state[3] * 1000).toISOString() : (state[4] ? new Date(state[4] * 1000).toISOString() : new Date().toISOString());
+
+      const speedKmh = velocityMs !== null ? Math.round(velocityMs * 3.6) : null;
+      const speedKnots = velocityMs !== null ? Math.round(velocityMs * 1.94384 * 10) / 10 : null;
+      const altitudeFt = baroAltitudeM !== null ? Math.round(baroAltitudeM * 3.28084) : null;
 
       observations.push({
-        id: `obs_flight_${icao24}_${Date.now()}`,
+        id: `obs_flight_${icao24}_${state[3] || Date.now()}`,
         entity_id: entityId,
         entity_type: 'AIRCRAFT',
         data_type: 'TELEMETRY_FLIGHT',
         value: {
           icao24,
-          callsign,
+          callsign: callsign || icao24.toUpperCase(),
           origin_country: originCountry,
-          speed_kmh: velocityMs ? Math.round(velocityMs * 3.6) : null,
+          speed_kmh: speedKmh,
+          speed_knots: speedKnots,
           altitude_m: baroAltitudeM,
+          altitude_ft: altitudeFt,
+          geo_altitude_m: geoAltitudeM,
           heading_deg: trueTrackDeg,
+          vertical_rate_ms: verticalRateMs,
           on_ground: onGround,
+          squawk,
         },
         location: {
-          latitude: lat,
-          longitude: lon,
-          altitudeM: baroAltitudeM,
+          latitude: Number(lat),
+          longitude: Number(lon),
+          altitudeM: baroAltitudeM ?? undefined,
           country: originCountry,
         },
         timestamp: new Date().toISOString(),
@@ -115,7 +218,7 @@ export class OpenSkyProvider extends DataProvider {
         provider: this.metadata.id,
         confidence: 0.95,
         quality: 'VERIFIED',
-        ttl: 30,
+        ttl: 45,
         provenance: {
           source: this.metadata.endpointUrl,
           provider: this.metadata.id,
@@ -128,7 +231,7 @@ export class OpenSkyProvider extends DataProvider {
       });
     }
 
-    this.recordSuccess(12, rawData.states.length, observations.length, rejected);
+    this.recordSuccess(15, rawData.states.length, observations.length, rejected);
     return observations;
   }
 }

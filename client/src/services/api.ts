@@ -380,6 +380,49 @@ export const api = {
     return res.json();
   },
 
+  // Aviation OpenSky Live Tracking
+  async getAviationStatus(): Promise<{
+    providerId: string;
+    providerName: string;
+    status: string;
+    isPollingActive: boolean;
+    lastPollAt: string | null;
+    lastSuccessfulPollAt: string | null;
+    totalAircraftInDb: number;
+    airborneCount: number;
+    onGroundCount: number;
+    lastError: string | null;
+    rateLimitRemaining: number;
+  }> {
+    const res = await fetch(`${API_BASE}/aviation/status`);
+    if (!res.ok) throw new Error('Failed to fetch aviation status');
+    return res.json();
+  },
+
+  async getAviationAircraft(limit: number = 300): Promise<{ total: number; aircraft: MovingEntity[]; status: any }> {
+    const res = await fetch(`${API_BASE}/aviation/aircraft?limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to fetch aviation aircraft');
+    return res.json();
+  },
+
+  async getAviationAircraftById(id: string): Promise<MovingEntity> {
+    const res = await fetch(`${API_BASE}/aviation/aircraft/${id}`);
+    if (!res.ok) throw new Error(`Failed to fetch aircraft ${id}`);
+    return res.json();
+  },
+
+  async getAviationAircraftTrack(id: string, limit: number = 64): Promise<{ entity_id: string; point_count: number; track: EntityPositionHistory[] }> {
+    const res = await fetch(`${API_BASE}/aviation/aircraft/${id}/track?limit=${limit}`);
+    if (!res.ok) throw new Error(`Failed to fetch aircraft track for ${id}`);
+    return res.json();
+  },
+
+  async pollAviation(): Promise<any> {
+    const res = await fetch(`${API_BASE}/aviation/poll`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to poll aviation');
+    return res.json();
+  },
+
   // =========================================================================
   // LIVE WORLD MODEL & DATA CONNECTOR LAYER
   // =========================================================================

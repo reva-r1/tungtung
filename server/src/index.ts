@@ -21,6 +21,8 @@ import { SourceService } from './services/source.service.js';
 import { worldRouter } from './routes/world.routes.js';
 import { simulationRouter } from './routes/simulation.routes.js';
 import { providersRouter } from './routes/providers.routes.js';
+import { aviationRouter } from './routes/aviation.routes.js';
+import { aviationService } from './services/aviation/aviation.service.js';
 
 dotenv.config();
 
@@ -55,6 +57,7 @@ app.use('/api/ai', aiRouter);
 app.use('/api/investigations', investigationsRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/maritime', maritimeRouter);
+app.use('/api/aviation', aviationRouter);
 
 // World Model & Connector Layer Routes (accessible via /world, /simulation, /providers and /api/*)
 app.use('/world', worldRouter);
@@ -76,6 +79,8 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 validateEnvironment();
 initDatabase();
 MaritimeService.initialize().catch((err) => console.error('Failed to init Maritime Service:', err));
+aviationService.pollOnce().catch((err) => console.warn('[Aviation] Initial poll note:', err.message));
+aviationService.startPolling(60000);
 
 app.listen(PORT, () => {
   const hasGroq = Boolean(process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes('your_'));

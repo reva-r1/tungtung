@@ -19,7 +19,8 @@ import {
   RotateCcw,
   Navigation,
   Eye,
-  EyeOff
+  EyeOff,
+  Plane
 } from 'lucide-react';
 
 interface TacticalMapProps {
@@ -139,6 +140,67 @@ const createVesselIcon = (vessel: MovingEntity, isSelected: boolean) => {
   });
 };
 
+// Dynamic Aircraft Marker with Altitude-Aware Colors and Heading Rotation
+const getAircraftColor = (altitudeFt?: number, onGround?: boolean) => {
+  if (onGround) return '#94a3b8'; // Slate (On Ground)
+  if (!altitudeFt) return '#38bdf8'; // Sky
+  if (altitudeFt >= 25000) return '#06b6d4'; // Cyan (Cruising FL250+)
+  if (altitudeFt >= 10000) return '#10b981'; // Emerald (Mid Flight Level)
+  return '#f59e0b'; // Amber (Low Approach / Departure)
+};
+
+const createAircraftIcon = (aircraft: MovingEntity, isSelected: boolean) => {
+  const altFt = aircraft.properties?.altitude_ft;
+  const onGround = aircraft.status === 'on_ground' || Boolean(aircraft.properties?.on_ground);
+  const color = getAircraftColor(altFt, onGround);
+  const heading = aircraft.heading ?? aircraft.course ?? 0;
+
+  return L.divIcon({
+    className: 'custom-aircraft-pin',
+    html: `
+      <div style="
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+      ">
+        ${isSelected ? `
+          <div style="
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px dashed ${color};
+            animation: pulse-ring 2s infinite ease-in-out;
+          "></div>
+        ` : ''}
+        <div style="
+          transform: rotate(${heading}deg);
+          transition: transform 0.6s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          border-radius: 6px;
+          background: rgba(9, 13, 22, 0.94);
+          border: 1.5px solid ${color};
+          box-shadow: 0 0 10px ${color}88;
+        ">
+          <!-- Sleek Directional Airplane SVG Glyph -->
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="${color}" stroke="${color}" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+          </svg>
+        </div>
+      </div>
+    `,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -16],
+  });
+};
+
 // Smooth Camera Controller
 const MapFlyController: React.FC<{
   target: { lat: number; lng: number; zoom: number; id: number } | null;
@@ -168,15 +230,23 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
   const [showPinNames, setShowPinNames] = useState<boolean>(true);
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number; zoom: number; id: number } | null>(null);
 
-  // Revana Maritime Moving Entity States
+  // Revana Maritime & Aviation Moving Entity States
   const [showMaritime, setShowMaritime] = useState<boolean>(true);
+  const [showAviation, setShowAviation] = useState<boolean>(true);
   const [showTrails, setShowTrails] = useState<boolean>(true);
   const [vessels, setVessels] = useState<MovingEntity[]>([]);
+  const [aircraftList, setAircraftList] = useState<MovingEntity[]>([]);
   const [selectedVesselId, setSelectedVesselId] = useState<string | null>(null);
   const [vesselTrack, setVesselTrack] = useState<[number, number][]>([]);
   const [patterns, setPatterns] = useState<MaritimePattern[]>([]);
   const [activePatternModal, setActivePatternModal] = useState<MaritimePattern | null>(null);
   const [maritimeStatus, setMaritimeStatus] = useState<{ connected: boolean; source: string; mode: string } | null>(null);
+  const [aviationStatus, setAviationStatus] = useState<{
+    status: string;
+    lastPollAt: string | null;
+    totalAircraftInDb: number;
+    airborneCount: number;
+  } | null>(null);
 
   // 1. Initial Data Fetching
   useEffect(() => {
@@ -188,10 +258,16 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
 
     // Fetch live feed connectivity status
     api.getMaritimeStatus().then(setMaritimeStatus).catch(() => setMaritimeStatus({ connected: false, source: 'AISStream.io', mode: 'STANDBY' }));
+    api.getAviationStatus().then(setAviationStatus).catch(() => setAviationStatus({ status: 'STANDBY', lastPollAt: null, totalAircraftInDb: 0, airborneCount: 0 }));
 
     // Fetch initial maritime vessels
     api.getMaritimeVessels(300).then((data) => {
       if (data?.vessels) setVessels(data.vessels);
+    }).catch(console.error);
+
+    // Fetch initial aviation aircraft
+    api.getAviationAircraft(300).then((data) => {
+      if (data?.aircraft) setAircraftList(data.aircraft);
     }).catch(console.error);
 
     // Fetch detected patterns
@@ -209,19 +285,36 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
       eventSource.addEventListener('entity_position_update', (event) => {
         try {
           const update = JSON.parse(event.data) as MovingEntity;
-          setVessels((prev) => {
-            const index = prev.findIndex((v) => v.id === update.id || v.mmsi === update.mmsi);
-            if (index !== -1) {
-              const updated = [...prev];
-              updated[index] = { ...updated[index], ...update };
-              return updated;
-            }
-            return [update, ...prev];
-          });
 
-          // If updated vessel is currently selected, append to track
-          if (selectedVesselId && (selectedVesselId === update.id || selectedVesselId.endsWith(update.mmsi || ''))) {
-            setVesselTrack((prev) => [...prev, [update.latitude, update.longitude]]);
+          if (update.type === 'aircraft' || update.id?.startsWith('AIRCRAFT_')) {
+            setAircraftList((prev) => {
+              const index = prev.findIndex((a) => a.id === update.id);
+              if (index !== -1) {
+                const updated = [...prev];
+                updated[index] = { ...updated[index], ...update };
+                return updated;
+              }
+              return [update, ...prev];
+            });
+
+            if (selectedVesselId && selectedVesselId === update.id) {
+              setVesselTrack((prev) => [...prev, [update.latitude, update.longitude]]);
+            }
+          } else {
+            setVessels((prev) => {
+              const index = prev.findIndex((v) => v.id === update.id || v.mmsi === update.mmsi);
+              if (index !== -1) {
+                const updated = [...prev];
+                updated[index] = { ...updated[index], ...update };
+                return updated;
+              }
+              return [update, ...prev];
+            });
+
+            // If updated vessel is currently selected, append to track
+            if (selectedVesselId && (selectedVesselId === update.id || selectedVesselId.endsWith(update.mmsi || ''))) {
+              setVesselTrack((prev) => [...prev, [update.latitude, update.longitude]]);
+            }
           }
         } catch (_) { }
       });
@@ -236,19 +329,21 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     };
   }, [selectedVesselId]);
 
-  // 3. Historical Track Retrieval on Vessel Selection
-  const handleSelectVessel = async (vessel: MovingEntity) => {
-    setSelectedVesselId(vessel.id);
+  // 3. Historical Track Retrieval on Entity Selection
+  const handleSelectVessel = async (entity: MovingEntity) => {
+    setSelectedVesselId(entity.id);
     try {
-      const trackRes = await api.getMaritimeVesselTrack(vessel.id, 64);
+      const trackRes = entity.type === 'aircraft'
+        ? await api.getAviationAircraftTrack(entity.id, 64)
+        : await api.getMaritimeVesselTrack(entity.id, 64);
       if (trackRes?.track && trackRes.track.length > 0) {
         const coords: [number, number][] = trackRes.track.map((t) => [t.latitude, t.longitude]);
         setVesselTrack(coords);
       } else {
-        setVesselTrack([[vessel.latitude, vessel.longitude]]);
+        setVesselTrack([[entity.latitude, entity.longitude]]);
       }
     } catch (_) {
-      setVesselTrack([[vessel.latitude, vessel.longitude]]);
+      setVesselTrack([[entity.latitude, entity.longitude]]);
     }
   };
 
@@ -328,6 +423,19 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
             >
               <Anchor className={`w-3 h-3 ${maritimeStatus?.connected ? 'text-emerald-400' : 'text-amber-400'}`} />
               {vessels.length} {maritimeStatus?.connected ? 'Live Vessels' : 'Recorded Vessels'}
+            </span>
+          )}
+          {showAviation && (
+            <span
+              className={`text-[11px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${
+                aviationStatus?.status === 'HEALTHY'
+                  ? 'text-sky-300 bg-sky-950/60 border-sky-800/40'
+                  : 'text-amber-400/90 bg-amber-950/60 border-amber-800/40'
+              }`}
+              title={aviationStatus?.status === 'HEALTHY' ? 'Real-time OpenSky ADS-B flights active' : 'Aviation feed standby/offline'}
+            >
+              <Plane className={`w-3 h-3 ${aviationStatus?.status === 'HEALTHY' ? 'text-sky-400' : 'text-amber-400'}`} />
+              {aircraftList.length} {aviationStatus?.status === 'HEALTHY' ? 'Live Aircraft' : 'Aircraft'}
             </span>
           )}
         </div>
@@ -419,6 +527,20 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
           >
             <Anchor className="w-3 h-3" />
             AIS Ships: {showMaritime ? 'ON' : 'OFF'}
+          </button>
+
+          {/* Aviation OpenSky Moving Entity Layer Toggle */}
+          <button
+            onClick={() => setShowAviation(!showAviation)}
+            className={`px-2 py-1 rounded text-[10px] font-mono border transition flex items-center gap-1.5 ${
+              showAviation
+                ? 'bg-sky-950/70 border-sky-500/50 text-sky-300 shadow-[0_0_8px_rgba(56,189,248,0.2)]'
+                : 'bg-[#090d16] border-[#1e293b] text-slate-500 hover:text-slate-300'
+            }`}
+            title="Toggle Live OpenSky Aviation ADS-B Entity Layer"
+          >
+            <Plane className="w-3 h-3" />
+            Aircraft: {showAviation ? 'ON' : 'OFF'}
           </button>
 
           {/* Historical Trails Toggle */}
@@ -721,6 +843,116 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
               </Marker>
             );
           })}
+
+          {/* ================================================================= */}
+          {/* DYNAMIC MOVING-ENTITY LAYER (OPENSKY AIRCRAFT)                   */}
+          {/* ================================================================= */}
+          {showAviation && aircraftList.map((aircraft) => {
+            const isSelected = selectedVesselId === aircraft.id;
+            const heading = aircraft.heading ?? aircraft.course ?? 0;
+            const props = aircraft.properties || {};
+
+            return (
+              <Marker
+                key={aircraft.id}
+                position={[aircraft.latitude, aircraft.longitude]}
+                icon={createAircraftIcon(aircraft, isSelected)}
+                eventHandlers={{
+                  click: () => handleSelectVessel(aircraft),
+                }}
+              >
+                {showPinNames && (
+                  <Tooltip
+                    direction="top"
+                    offset={[0, -16]}
+                    className="tactical-marker-tooltip"
+                  >
+                    <span>{aircraft.name}</span>
+                  </Tooltip>
+                )}
+
+                <Popup className="tactical-popup">
+                  <div className="p-1 font-mono text-xs text-slate-200 min-w-[250px]">
+                    <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 flex items-center gap-1">
+                        <Plane className="w-3 h-3 text-sky-400" />
+                        {aircraft.vessel_type || 'AIRCRAFT'}
+                      </span>
+                      <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                        aircraft.status === 'airborne' ? 'bg-emerald-950 text-emerald-300' : 'bg-slate-800 text-slate-400'
+                      }`}>
+                        {aircraft.status || 'airborne'}
+                      </span>
+                    </div>
+
+                    <div className="font-bold text-white text-sm mb-1 flex items-center justify-between">
+                      <span>{aircraft.name}</span>
+                      <span className="text-[10px] font-mono text-slate-400">{props.icao24 ? String(props.icao24).toUpperCase() : ''}</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5 my-2 text-[10px] bg-slate-900/90 p-2 rounded border border-slate-800">
+                      <div>
+                        <span className="text-slate-500">ALTITUDE:</span>{' '}
+                        <span className="text-cyan-400 font-bold">
+                          {props.altitude_ft ? `${props.altitude_ft.toLocaleString()} ft` : (props.altitude_m ? `${props.altitude_m} m` : 'N/A')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">AIRSPEED:</span>{' '}
+                        <span className="text-amber-400 font-bold">
+                          {aircraft.speed ? `${aircraft.speed} kts` : (props.speed_kmh ? `${props.speed_kmh} km/h` : '0 kts')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">HEADING:</span>{' '}
+                        <span className="text-sky-300 font-bold">{heading}°</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">V/RATE:</span>{' '}
+                        <span className="text-slate-300 font-bold">
+                          {props.vertical_rate_ms != null ? `${props.vertical_rate_ms > 0 ? '+' : ''}${props.vertical_rate_ms} m/s` : '0 m/s'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Origin / Provenance Banner */}
+                    <div className="p-2 rounded bg-sky-950/30 border border-sky-900/40 text-[11px] mb-2">
+                      <div className="text-[9px] text-slate-400 uppercase font-bold mb-0.5">SOURCE PROVENANCE:</div>
+                      <div className="text-sky-300 text-[10px] font-bold flex items-center gap-1">
+                        <span>The OpenSky Network (ADS-B / Mode S)</span>
+                      </div>
+                      {props.origin_country && (
+                        <div className="text-[10px] text-slate-400 mt-0.5">
+                          Origin: <span className="text-slate-200">{props.origin_country}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-[10px] text-slate-400 mb-2">
+                      Coordinates: {aircraft.latitude.toFixed(4)}, {aircraft.longitude.toFixed(4)}
+                    </div>
+
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => handleSelectVessel(aircraft)}
+                        className="flex-1 py-1.5 bg-sky-600/30 hover:bg-sky-600/50 border border-sky-500/50 text-sky-200 text-[10px] font-bold rounded transition flex items-center justify-center gap-1"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        TRACE FLIGHT PATH
+                      </button>
+                      <button
+                        onClick={() => zoomToLocation(aircraft.latitude, aircraft.longitude, 14)}
+                        className="py-1.5 px-2 bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 text-amber-200 text-[10px] font-bold rounded transition"
+                        title="Zoom to aircraft position"
+                      >
+                        CENTER
+                      </button>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
 
@@ -738,6 +970,9 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-[#a855f7]"></span> Tug / Support
+          </span>
+          <span className="flex items-center gap-1 text-slate-400">
+            | Aircraft: <span className="w-2 h-2 rounded-full bg-[#06b6d4] inline-block"></span> FL250+ <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block"></span> FL100-250 <span className="w-2 h-2 rounded-full bg-[#f59e0b] inline-block"></span> &lt;FL100
           </span>
           <span className="flex items-center gap-1 text-slate-500">
             | Land: <span className="w-2 h-2 rounded-full bg-[#38bdf8] inline-block"></span> Facility
