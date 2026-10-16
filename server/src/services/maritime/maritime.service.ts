@@ -246,6 +246,41 @@ export class MaritimeService {
   }
 
   /**
+   * Broadcasts a normalized hydrological observation update to all active SSE subscribers
+   */
+  public static broadcastHydroUpdate(station: any): void {
+    if (this.sseClients.size === 0) return;
+
+    const payload = JSON.stringify({
+      event: 'hydro_observation_update',
+      id: station.id,
+      entity_id: station.id,
+      name: station.name,
+      type: 'WATER_RESERVOIR_GAUGE',
+      latitude: station.latitude,
+      longitude: station.longitude,
+      river: station.river,
+      basin: station.basin,
+      district: station.district,
+      current_live_storage_bmc: station.current_live_storage_bmc,
+      current_live_storage_tmc: station.current_live_storage_tmc,
+      full_capacity_bmc: station.full_capacity_bmc,
+      capacity_pct: station.capacity_pct,
+      observed_at: station.observed_at,
+    });
+
+    const msg = `event: hydro_observation_update\ndata: ${payload}\n\n`;
+
+    for (const client of this.sseClients) {
+      try {
+        client.write(msg);
+      } catch (_) {
+        this.sseClients.delete(client);
+      }
+    }
+  }
+
+  /**
    * Retrieves all current moving vessels (with optional limit)
    */
   static getAllVessels(limit: number = 300): MovingEntity[] {

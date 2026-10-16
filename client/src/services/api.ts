@@ -432,6 +432,83 @@ export const api = {
     return res.json();
   },
 
+  // Hydrological Central Water Commission (India-WRIS) Telemetry
+  async getHydrologyStatus(): Promise<{
+    providerId: string;
+    providerName: string;
+    status: string;
+    connectionState: 'CONNECTED' | 'DEGRADED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    dataFreshness: 'FRESH' | 'STALE' | 'HISTORICAL' | 'EMPTY' | 'UNKNOWN';
+    operationalState: 'CONNECTED_FRESH' | 'CONNECTED_STALE' | 'CONNECTED_EMPTY' | 'CONNECTED_HISTORICAL' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    isPollingActive: boolean;
+    lastPollAt: string | null;
+    lastSuccessfulPollAt: string | null;
+    newestObservationAt: string | null;
+    newestObservationAgeDays: number | null;
+    totalStationsInDb: number;
+    totalLiveStorageBmc: number;
+    totalFullCapacityBmc: number;
+    overallCapacityPct: number | null;
+    lastError: string | null;
+    rateLimitRemaining: number;
+  }> {
+    const res = await fetch(`${API_BASE}/hydrology/status`);
+    if (!res.ok) throw new Error('Failed to fetch hydrology status');
+    return res.json();
+  },
+
+  async getHydrologyStations(): Promise<{
+    total: number;
+    stations: Array<{
+      id: string;
+      name: string;
+      type: string;
+      category: string;
+      latitude: number;
+      longitude: number;
+      district?: string;
+      state?: string;
+      river?: string;
+      basin?: string;
+      current_live_storage_bmc: number;
+      current_live_storage_tmc: number;
+      full_capacity_bmc: number;
+      capacity_pct: number | null;
+      observation_date: string;
+      observed_at: string;
+      last_updated_at: string;
+      provider: string;
+      provenance: any;
+    }>;
+    status: any;
+  }> {
+    const res = await fetch(`${API_BASE}/hydrology/stations`);
+    if (!res.ok) throw new Error('Failed to fetch hydrology stations');
+    return res.json();
+  },
+
+  async getHydrologyStationById(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/hydrology/stations/${id}`);
+    if (!res.ok) throw new Error(`Failed to fetch hydrology station ${id}`);
+    return res.json();
+  },
+
+  async getHydrologyStationHistory(id: string, limit: number = 50): Promise<{ entity_id: string; count: number; history: any[] }> {
+    const res = await fetch(`${API_BASE}/hydrology/stations/${id}/history?limit=${limit}`);
+    if (!res.ok) throw new Error(`Failed to fetch hydrology station history for ${id}`);
+    return res.json();
+  },
+
+  async pollHydrology(params: any = {}): Promise<any> {
+    const res = await fetch(`${API_BASE}/hydrology/poll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) throw new Error('Failed to poll hydrology');
+    return res.json();
+  },
+
   // =========================================================================
   // LIVE WORLD MODEL & DATA CONNECTOR LAYER
   // =========================================================================

@@ -20,7 +20,8 @@ import {
   Navigation,
   Eye,
   EyeOff,
-  Plane
+  Plane,
+  Droplets
 } from 'lucide-react';
 
 interface TacticalMapProps {
@@ -201,6 +202,62 @@ const createAircraftIcon = (aircraft: MovingEntity, isSelected: boolean) => {
   });
 };
 
+// Official Water-Level & Reservoir Monitoring Station Marker
+const getReservoirColor = (percent?: number) => {
+  if (percent == null || isNaN(percent)) return '#38bdf8'; // Sky blue default
+  if (percent >= 70) return '#06b6d4'; // Cyan (Abundant / High capacity)
+  if (percent >= 40) return '#10b981'; // Emerald (Normal capacity)
+  return '#f59e0b'; // Amber (Low / Depleted capacity)
+};
+
+const createReservoirIcon = (station: any, isSelected: boolean) => {
+  const percent = station.properties?.capacity_percent ?? station.capacity_percent;
+  const color = getReservoirColor(percent);
+
+  return L.divIcon({
+    className: 'custom-reservoir-pin',
+    html: `
+      <div style="
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+      ">
+        ${isSelected ? `
+          <div style="
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px dashed ${color};
+            animation: pulse-ring 2s infinite ease-in-out;
+          "></div>
+        ` : ''}
+        <div style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: rgba(9, 13, 22, 0.94);
+          border: 2px solid ${color};
+          box-shadow: 0 0 10px ${color}aa;
+        ">
+          <!-- Water Droplet / Dam Reservoir SVG Glyph -->
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="${color}" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+          </svg>
+        </div>
+      </div>
+    `,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -15],
+  });
+};
+
 // Smooth Camera Controller
 const MapFlyController: React.FC<{
   target: { lat: number; lng: number; zoom: number; id: number } | null;
@@ -233,10 +290,13 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
   // Revana Maritime & Aviation Moving Entity States
   const [showMaritime, setShowMaritime] = useState<boolean>(true);
   const [showAviation, setShowAviation] = useState<boolean>(true);
+  const [showHydrology, setShowHydrology] = useState<boolean>(true);
   const [showTrails, setShowTrails] = useState<boolean>(true);
   const [vessels, setVessels] = useState<MovingEntity[]>([]);
   const [aircraftList, setAircraftList] = useState<MovingEntity[]>([]);
+  const [hydrologyStations, setHydrologyStations] = useState<any[]>([]);
   const [selectedVesselId, setSelectedVesselId] = useState<string | null>(null);
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const [vesselTrack, setVesselTrack] = useState<[number, number][]>([]);
   const [patterns, setPatterns] = useState<MaritimePattern[]>([]);
   const [activePatternModal, setActivePatternModal] = useState<MaritimePattern | null>(null);
@@ -256,6 +316,7 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     totalAircraftInDb: number;
     airborneCount: number;
   } | null>(null);
+  const [hydrologyStatus, setHydrologyStatus] = useState<any | null>(null);
 
   // 1. Initial Data Fetching & Periodic Freshness Refresh
   useEffect(() => {
@@ -288,6 +349,12 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     refreshAviationStatus();
     const aviationInterval = setInterval(refreshAviationStatus, 15000);
 
+    const refreshHydrologyStatus = () => {
+      api.getHydrologyStatus().then(setHydrologyStatus).catch(() => setHydrologyStatus(null));
+    };
+    refreshHydrologyStatus();
+    const hydroInterval = setInterval(refreshHydrologyStatus, 15000);
+
     // Fetch initial maritime vessels
     api.getMaritimeVessels(300).then((data) => {
       if (data?.vessels) setVessels(data.vessels);
@@ -298,6 +365,11 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
       if (data?.aircraft) setAircraftList(data.aircraft);
     }).catch(console.error);
 
+    // Fetch initial hydrology stations
+    api.getHydrologyStations().then((data) => {
+      if (data?.stations) setHydrologyStations(data.stations);
+    }).catch(console.error);
+
     // Fetch detected patterns
     api.getMaritimePatterns().then((data) => {
       if (data?.patterns) setPatterns(data.patterns);
@@ -305,6 +377,7 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
 
     return () => {
       clearInterval(aviationInterval);
+      clearInterval(hydroInterval);
     };
   }, [propLocations]);
 
@@ -313,6 +386,21 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     let eventSource: EventSource | null = null;
     try {
       eventSource = new EventSource('/api/maritime/events/stream');
+
+      eventSource.addEventListener('hydro_observation_update', (event) => {
+        try {
+          const update = JSON.parse(event.data);
+          setHydrologyStations((prev) => {
+            const index = prev.findIndex((s) => s.id === update.id);
+            if (index !== -1) {
+              const updated = [...prev];
+              updated[index] = { ...updated[index], ...update };
+              return updated;
+            }
+            return [update, ...prev];
+          });
+        } catch (_) { }
+      });
 
       eventSource.addEventListener('entity_position_update', (event) => {
         try {
@@ -502,6 +590,50 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
               </span>
             );
           })()}
+          {showHydrology && (() => {
+            const opState = hydrologyStatus?.operationalState || 'STANDBY';
+            const totalCount = hydrologyStatus?.totalStationsInDb ?? hydrologyStations.length;
+            const freshCount = totalCount;
+
+            let badgeStyle = 'text-slate-400 bg-slate-900/60 border-slate-800/40';
+            let iconStyle = 'text-slate-400';
+            let label = `${totalCount} Reservoirs (Standby)`;
+            let title = 'CWC Hydrology feed standby / waiting for poll';
+
+            if (opState === 'CONNECTED_FRESH') {
+              badgeStyle = 'text-cyan-300 bg-cyan-950/60 border-cyan-800/40';
+              iconStyle = 'text-cyan-400';
+              label = `${freshCount} Live Reservoirs`;
+              title = `CWC / India-WRIS connected & fresh: ${freshCount} reservoirs updated (<3d)`;
+            } else if (opState === 'CONNECTED_STALE' || opState === 'CONNECTED_HISTORICAL') {
+              badgeStyle = 'text-teal-300 bg-teal-950/60 border-teal-800/40';
+              iconStyle = 'text-teal-400';
+              label = `${totalCount} CWC Reservoirs (Daily Rep)`;
+              title = 'CWC / India-WRIS connected; official daily bulletin data loaded';
+            } else if (opState === 'CONNECTED_EMPTY') {
+              badgeStyle = 'text-sky-300 bg-sky-950/60 border-sky-800/40';
+              iconStyle = 'text-sky-400';
+              label = `0 Reservoirs (Empty)`;
+              title = 'CWC feed connected; 0 records returned';
+            } else if (opState === 'RATE_LIMITED') {
+              badgeStyle = 'text-amber-400 bg-amber-950/60 border-amber-800/40';
+              iconStyle = 'text-amber-400';
+              label = `Hydrology: Rate Limited`;
+              title = 'CWC provider cooldown active';
+            } else if (opState === 'DISCONNECTED') {
+              badgeStyle = 'text-rose-400 bg-rose-950/60 border-rose-800/40';
+              iconStyle = 'text-rose-400';
+              label = `Hydrology: Disconnected`;
+              title = 'CWC provider connection failed or network offline';
+            }
+
+            return (
+              <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${badgeStyle}`} title={title}>
+                <Droplets className={`w-3 h-3 ${iconStyle}`} />
+                {label}
+              </span>
+            );
+          })()}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -605,6 +737,20 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
           >
             <Plane className="w-3 h-3" />
             Aircraft: {showAviation ? 'ON' : 'OFF'}
+          </button>
+
+          {/* Hydrology CWC Reservoir Monitoring Layer Toggle */}
+          <button
+            onClick={() => setShowHydrology(!showHydrology)}
+            className={`px-2 py-1 rounded text-[10px] font-mono border transition flex items-center gap-1.5 ${
+              showHydrology
+                ? 'bg-teal-950/70 border-teal-500/50 text-teal-300 shadow-[0_0_8px_rgba(20,184,166,0.2)]'
+                : 'bg-[#090d16] border-[#1e293b] text-slate-500 hover:text-slate-300'
+            }`}
+            title="Toggle Official CWC Water-Level & Reservoir Monitoring Layer"
+          >
+            <Droplets className="w-3 h-3" />
+            Water: {showHydrology ? 'ON' : 'OFF'}
           </button>
 
           {/* Historical Trails Toggle */}
@@ -1037,6 +1183,157 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
               </Marker>
             );
           })}
+
+          {/* ================================================================= */}
+          {/* OFFICIAL WATER-LEVEL & RESERVOIR MONITORING LAYER (CWC INDIA-WRIS) */}
+          {/* ================================================================= */}
+          {showHydrology && hydrologyStations.map((station) => {
+            if (!station.latitude || !station.longitude) return null;
+            const isSelected = selectedStationId === station.id;
+            const props = station.properties || {};
+            const liveStorageBmc = props.live_storage_bmc ?? station.latest_observation?.live_storage_bmc ?? props.live_storage;
+            const liveStorageTmc = props.live_storage_tmc ?? station.latest_observation?.live_storage_tmc;
+            const capacityBmc = props.capacity_bmc ?? station.latest_observation?.capacity_bmc;
+            const capacityTmc = props.capacity_tmc ?? station.latest_observation?.capacity_tmc;
+            const capacityPercent = props.capacity_percent ?? station.latest_observation?.capacity_percent;
+            const obsTime = station.last_observed_at || station.latest_observation?.observed_at || station.last_updated_at;
+
+            return (
+              <Marker
+                key={station.id}
+                position={[station.latitude, station.longitude]}
+                icon={createReservoirIcon(station, isSelected)}
+                eventHandlers={{
+                  click: () => {
+                    setSelectedStationId(station.id);
+                    zoomToLocation(station.latitude, station.longitude, 12);
+                  },
+                }}
+              >
+                {showPinNames && (
+                  <Tooltip
+                    direction="top"
+                    offset={[0, -16]}
+                    className="tactical-marker-tooltip"
+                  >
+                    <span>{station.name}</span>
+                  </Tooltip>
+                )}
+
+                <Popup className="tactical-popup">
+                  <div className="p-1 font-mono text-xs text-slate-200 min-w-[260px]">
+                    {(() => {
+                      const obsAgeHours = obsTime ? Math.max(0, Math.floor((Date.now() - new Date(obsTime).getTime()) / (1000 * 3600))) : null;
+                      const isFresh = obsAgeHours != null && obsAgeHours <= 24;
+
+                      let statusBadge = 'bg-teal-950 text-teal-300';
+                      let statusText = isFresh ? 'DAILY BULLETIN (LIVE)' : `RECORDED (${obsAgeHours ?? 'N/A'}h AGO)`;
+
+                      return (
+                        <>
+                          <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-950 text-teal-300 flex items-center gap-1">
+                              <Droplets className="w-3 h-3 text-teal-400" />
+                              CWC / RESERVOIR
+                            </span>
+                            <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${statusBadge}`}>
+                              {statusText}
+                            </span>
+                          </div>
+
+                          <div className="font-bold text-white text-sm mb-0.5 flex items-center justify-between">
+                            <span>{station.name}</span>
+                            <span className="text-[10px] font-mono text-cyan-400">
+                              {capacityPercent != null ? `${capacityPercent}% FULL` : ''}
+                            </span>
+                          </div>
+
+                          <div className="text-[10px] text-slate-400 mb-2">
+                            {props.district ? `${props.district}, Karnataka` : 'Karnataka, India'}
+                            {props.river ? ` • River ${props.river}` : ''}
+                          </div>
+
+                          {/* Storage Capacity Gauge Bar */}
+                          {capacityPercent != null && (
+                            <div className="my-2 bg-slate-900/90 p-2 rounded border border-slate-800">
+                              <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                                <span>LIVE STORAGE CAPACITY:</span>
+                                <span className="font-bold text-cyan-300">{capacityPercent}%</span>
+                              </div>
+                              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    capacityPercent >= 70 ? 'bg-cyan-400' : capacityPercent >= 40 ? 'bg-emerald-400' : 'bg-amber-400'
+                                  }`}
+                                  style={{ width: `${Math.min(100, Math.max(0, capacityPercent))}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-1.5 my-2 text-[10px] bg-slate-900/90 p-2 rounded border border-slate-800">
+                            <div>
+                              <span className="text-slate-500">LIVE STORAGE:</span>{' '}
+                              <span className="text-cyan-400 font-bold">
+                                {liveStorageBmc != null ? `${liveStorageBmc} BMC` : 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">STORAGE (TMC):</span>{' '}
+                              <span className="text-teal-300 font-bold">
+                                {liveStorageTmc != null ? `${liveStorageTmc} TMC` : 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">DESIGN CAPACITY:</span>{' '}
+                              <span className="text-slate-300 font-bold">
+                                {capacityBmc != null ? `${capacityBmc} BMC` : 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">CAPACITY (TMC):</span>{' '}
+                              <span className="text-slate-300 font-bold">
+                                {capacityTmc != null ? `${capacityTmc} TMC` : 'N/A'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Source Provenance Banner */}
+                          <div className="p-2 rounded bg-teal-950/30 border border-teal-900/40 text-[11px] mb-2">
+                            <div className="text-[9px] text-slate-400 uppercase font-bold mb-0.5">SOURCE PROVENANCE:</div>
+                            <div className="text-teal-300 text-[10px] font-bold flex items-center gap-1">
+                              <span>Central Water Commission (CWC)</span>
+                            </div>
+                            <div className="text-[10px] text-slate-400 mt-0.5">
+                              Portal: <span className="text-slate-200">National Water Informatics Centre / India-WRIS</span>
+                            </div>
+                            <div className="text-[9px] text-slate-500 mt-0.5">
+                              License: Open Government Data (OGD) India
+                            </div>
+                          </div>
+
+                          <div className="text-[10px] text-slate-400 mb-2">
+                            Observed: {obsTime ? new Date(obsTime).toLocaleString() : 'N/A'}
+                          </div>
+
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => zoomToLocation(station.latitude, station.longitude, 14)}
+                              className="w-full py-1.5 px-2 bg-teal-600/30 hover:bg-teal-600/50 border border-teal-500/50 text-teal-200 text-[10px] font-bold rounded transition flex items-center justify-center gap-1"
+                              title="Zoom into reservoir dam site"
+                            >
+                              <Navigation className="w-3 h-3" />
+                              FOCUS RESERVOIR
+                            </button>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
 
@@ -1057,6 +1354,9 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
           </span>
           <span className="flex items-center gap-1 text-slate-400">
             | Aircraft: <span className="w-2 h-2 rounded-full bg-[#06b6d4] inline-block"></span> FL250+ <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block"></span> FL100-250 <span className="w-2 h-2 rounded-full bg-[#f59e0b] inline-block"></span> &lt;FL100
+          </span>
+          <span className="flex items-center gap-1 text-slate-400">
+            | Water: <span className="w-2 h-2 rounded-full bg-[#06b6d4] inline-block"></span> &gt;70% <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block"></span> 40-70% <span className="w-2 h-2 rounded-full bg-[#f59e0b] inline-block"></span> &lt;40%
           </span>
           <span className="flex items-center gap-1 text-slate-500">
             | Land: <span className="w-2 h-2 rounded-full bg-[#38bdf8] inline-block"></span> Facility

@@ -23,6 +23,8 @@ import { simulationRouter } from './routes/simulation.routes.js';
 import { providersRouter } from './routes/providers.routes.js';
 import { aviationRouter } from './routes/aviation.routes.js';
 import { aviationService } from './services/aviation/aviation.service.js';
+import { hydrologyRouter } from './routes/hydrology.routes.js';
+import { hydrologyService } from './services/hydrology/hydrology.service.js';
 
 dotenv.config();
 
@@ -58,6 +60,7 @@ app.use('/api/investigations', investigationsRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/maritime', maritimeRouter);
 app.use('/api/aviation', aviationRouter);
+app.use('/api/hydrology', hydrologyRouter);
 
 // World Model & Connector Layer Routes (accessible via /world, /simulation, /providers and /api/*)
 app.use('/world', worldRouter);
@@ -84,10 +87,15 @@ MaritimeService.initialize().catch((err) => console.error('Failed to init Mariti
 const pollIntervalMs = Number(process.env.OPENSKY_POLL_INTERVAL_MS || 60000);
 aviationService.startPolling(pollIntervalMs);
 
+// Start background hydrological ingestion (hourly CWC reservoir sync)
+const hydroIntervalMs = Number(process.env.CWC_POLL_INTERVAL_MS || 3600000);
+hydrologyService.startPolling(hydroIntervalMs);
+
 // Graceful shutdown
 const gracefulShutdown = () => {
   console.log('[Revana Server] Shutting down background schedulers...');
   aviationService.stopPolling();
+  hydrologyService.stopPolling();
 };
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);

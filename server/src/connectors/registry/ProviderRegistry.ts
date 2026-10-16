@@ -11,6 +11,7 @@ import { GTFSRealtimeProvider } from '../providers/transit/GTFSRealtimeProvider.
 import { GBFSProvider } from '../providers/mobility/GBFSProvider.js';
 import { DataGovInProvider } from '../providers/government/DataGovInProvider.js';
 import { PublicWaterLevelProvider } from '../providers/water/PublicWaterLevelProvider.js';
+import { CwcHydrologyProvider } from '../providers/water/CwcHydrologyProvider.js';
 import { NationalGridEnergyProvider } from '../providers/energy/NationalGridEnergyProvider.js';
 import { ExchangeRateProvider } from '../providers/finance/ExchangeRateProvider.js';
 import { PublicFeedProvider } from '../providers/news/PublicFeedProvider.js';
@@ -56,6 +57,7 @@ export class ProviderRegistry {
     this.register(new GBFSProvider());
     this.register(new DataGovInProvider());
     this.register(new PublicWaterLevelProvider());
+    this.register(new CwcHydrologyProvider());
     this.register(new NationalGridEnergyProvider());
     this.register(new ExchangeRateProvider());
     this.register(new PublicFeedProvider());
