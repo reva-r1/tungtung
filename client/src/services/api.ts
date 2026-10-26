@@ -797,7 +797,7 @@ export const api = {
 
   // =========================================================================
   // OMNI-SENSOR AI REASONING SPACE & CHAT MEMORY
-  async sendChatMessage(message: string, sessionId?: string): Promise<{
+  async sendChatMessage(message: string, sessionId?: string, entityId?: string): Promise<{
     sessionId: string;
     reply: string;
     reasoning?: string;
@@ -811,7 +811,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/ai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, sessionId }),
+      body: JSON.stringify({ message, sessionId, entityId }),
     });
     if (!res.ok) throw new Error('Failed to send message to AI reasoning space');
     return res.json();
