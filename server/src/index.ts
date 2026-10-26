@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { initDatabase } from './db/database.js';
-import { seedDatabase } from './db/seedData.js';
+import { validateEnvironment } from './config/environment.js';
 import { entitiesRouter } from './routes/entities.routes.js';
 import { graphRouter } from './routes/graph.routes.js';
 import { eventsRouter } from './routes/events.routes.js';
@@ -14,7 +14,22 @@ import { aiRouter } from './routes/ai.routes.js';
 import { investigationsRouter } from './routes/investigations.routes.js';
 import { dashboardRouter } from './routes/dashboard.routes.js';
 import { sourcesRouter } from './routes/sources.routes.js';
+import { maritimeRouter } from './routes/maritime.routes.js';
+import { MaritimeService } from './services/maritime/maritime.service.js';
 import { SourceService } from './services/source.service.js';
+
+import { worldRouter } from './routes/world.routes.js';
+import { simulationRouter } from './routes/simulation.routes.js';
+import { providersRouter } from './routes/providers.routes.js';
+import { aviationRouter } from './routes/aviation.routes.js';
+import { aviationService } from './services/aviation/aviation.service.js';
+import { hydrologyRouter } from './routes/hydrology.routes.js';
+import { hydrologyService } from './services/hydrology/hydrology.service.js';
+import { earthquakeRouter } from './routes/earthquake.routes.js';
+import { earthquakeService } from './services/earthquake/earthquake.service.js';
+import { environmentRouter } from './routes/environment.routes.js';
+import { environmentService } from './services/environment/environment.service.js';
+import { kgRouter } from './routes/kg.routes.js';
 
 dotenv.config();
 
@@ -30,13 +45,13 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'OPERATIONAL',
-    system: 'AEGIS INTEL PLATFORM',
+    system: 'REVANA TECHNOLOGIES PLATFORM',
     version: '2.0.0-MULTI-SOURCE',
     timestamp: new Date().toISOString(),
   });
 });
 
-// Mount Routes
+// Mount Routes (Legacy & Core Revana)
 app.use('/api/sources', sourcesRouter);
 app.use('/api/entities', entitiesRouter);
 app.use('/api/graph', graphRouter);
@@ -48,6 +63,20 @@ app.use('/api/ingestion', ingestionRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/investigations', investigationsRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/maritime', maritimeRouter);
+app.use('/api/aviation', aviationRouter);
+app.use('/api/hydrology', hydrologyRouter);
+app.use('/api/earthquakes', earthquakeRouter);
+app.use('/api/environment', environmentRouter);
+app.use('/api/kg', kgRouter);
+
+// World Model & Connector Layer Routes (accessible via /world, /simulation, /providers and /api/*)
+app.use('/world', worldRouter);
+app.use('/api/world', worldRouter);
+app.use('/simulation', simulationRouter);
+app.use('/api/simulation', simulationRouter);
+app.use('/providers', providersRouter);
+app.use('/api/providers', providersRouter);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -58,13 +87,44 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // Bootstrapping
+validateEnvironment();
 initDatabase();
+MaritimeService.initialize().catch((err) => console.error('Failed to init Maritime Service:', err));
+
+// Start background aviation ingestion with single scheduler
+const pollIntervalMs = Number(process.env.OPENSKY_POLL_INTERVAL_MS || 60000);
+aviationService.startPolling(pollIntervalMs);
+
+// Start background hydrological ingestion (hourly CWC reservoir sync)
+const hydroIntervalMs = Number(process.env.CWC_POLL_INTERVAL_MS || 3600000);
+hydrologyService.startPolling(hydroIntervalMs);
+
+// Start background USGS earthquake ingestion (5-minute seismic feed sync)
+const usgsIntervalMs = Number(process.env.USGS_POLL_INTERVAL_MS || 300000);
+earthquakeService.startPolling(usgsIntervalMs);
+
+// Start background Open-Meteo environmental ingestion (15-minute weather/AQI sync)
+const envIntervalMs = Number(process.env.OPEN_METEO_POLL_INTERVAL_MS || 900000);
+environmentService.startPolling(envIntervalMs);
+
+// Graceful shutdown
+const gracefulShutdown = () => {
+  console.log('[Revana Server] Shutting down background schedulers...');
+  aviationService.stopPolling();
+  hydrologyService.stopPolling();
+  earthquakeService.stopPolling();
+  environmentService.stopPolling();
+};
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 app.listen(PORT, () => {
+  const hasGroq = Boolean(process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes('your_'));
   console.log(`=======================================================`);
-  console.log(`  AEGIS INTEL // INTELLIGENCE PLATFORM`);
+  console.log(`  REVANA TECHNOLOGIES // INTELLIGENCE PLATFORM`);
   console.log(`  Port: http://localhost:${PORT}`);
-  console.log(`  AI Engine: Groq Tool-Calling Agent / Local Grounded`);
+  console.log(`  AI Engine: Groq (${hasGroq ? '✔ API Key Verified & Active' : 'Offline Grounded Mode'})`);
+  console.log(`  Digital Mirror: http://localhost:${PORT}/world/state`);
   console.log(`=======================================================`);
 });
 

@@ -70,16 +70,37 @@ ingestionRouter.get('/datasets/:id/records', (req: Request, res: Response) => {
   }
 });
 
-// Upload and inspect dataset file (CSV, JSON, Excel)
-ingestionRouter.post('/inspect', upload.single('file'), (req: Request, res: Response) => {
+import path from 'path';
+import { OcrService } from '../services/ocr.service.js';
+
+// Upload and inspect dataset file (CSV, JSON, Excel, PDF, Images via OCR)
+ingestionRouter.post('/inspect', upload.single('file'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     const fileName = req.file.originalname;
-    let format: 'CSV' | 'JSON' | 'EXCEL' = 'CSV';
+    const ext = path.extname(fileName).toLowerCase();
+    const isDoc = ext === '.pdf' || ext === '.docx' || ext === '.doc' || ['.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.webp'].includes(ext);
 
+    // If PDF or image, run through Revana Python OCR pipeline
+    if (isDoc) {
+      const ocrResult = await OcrService.processDocument(req.file.buffer, fileName);
+      const preview = OcrService.convertOcrToIngestionPreview(ocrResult, fileName);
+      return res.json({
+        ...preview,
+        ocrMetadata: {
+          totalPages: ocrResult.total_pages,
+          documentConfidence: ocrResult.document_confidence,
+          engineUsed: ocrResult.engine_used,
+          fullTextLength: ocrResult.full_text.length,
+          previewSnippet: ocrResult.full_text.slice(0, 500),
+        },
+      });
+    }
+
+    let format: 'CSV' | 'JSON' | 'EXCEL' = 'CSV';
     if (fileName.endsWith('.json')) format = 'JSON';
     else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) format = 'EXCEL';
 
@@ -90,7 +111,22 @@ ingestionRouter.post('/inspect', upload.single('file'), (req: Request, res: Resp
   }
 });
 
-// Commit ingestion of rows
+// Dedicated OCR inspection endpoint returning raw block layout & confidence
+ingestionRouter.post('/ocr', upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const strategy = (req.query.strategy as any) || 'AUTO';
+    const result = await OcrService.processDocument(req.file.buffer, req.file.originalname, { strategy });
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'OCR processing failed' });
+  }
+});
+
+// Commit ingestion of rows (tabular or OCR extracted rows)
 ingestionRouter.post('/commit', (req: Request, res: Response) => {
   try {
     const { datasetName, format = 'CSV', rows } = req.body;
@@ -125,8 +161,14 @@ ingestionRouter.delete('/datasets', (req: Request, res: Response) => {
   }
 });
 
-// Reset / reload demo logistics dataset
+// Reset / reload demo logistics dataset (Guarded by REVANA_DEMO_MODE)
 ingestionRouter.post('/demo/reload', (req: Request, res: Response) => {
+  if (process.env.REVANA_DEMO_MODE !== 'true') {
+    return res.status(403).json({
+      error: 'Demo dataset reload is disabled in production. Set REVANA_DEMO_MODE=true in environment to enable benchmark reload.',
+    });
+  }
+
   try {
     seedDatabase(true);
     res.json({ success: true, message: 'Karnataka-South logistics benchmark dataset reloaded successfully.' });

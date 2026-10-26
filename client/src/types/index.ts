@@ -29,6 +29,7 @@ export type RelationshipType =
   | 'CONSIGNED_TO';
 
 export type RiskLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFORMATIONAL';
+export type DataMode = 'LIVE' | 'REPLAY' | 'SIMULATED';
 
 export interface DataSource {
   id: string;
@@ -110,6 +111,7 @@ export interface Entity {
   sourceRecordId?: string;
   source_record_id?: string;
   provenance?: EntityProvenance;
+  data_mode?: DataMode;
   created_at?: string;
   updated_at?: string;
 }
@@ -141,6 +143,7 @@ export interface LocationRecord {
   latitude: number;
   longitude: number;
   type: 'WAREHOUSE' | 'CHECKPOINT' | 'PORT' | 'TOLL_PLAZA' | 'INCIDENT_SITE' | 'OFFICE' | 'TRANSIT_POINT';
+  data_mode?: DataMode;
   properties: Record<string, any>;
 }
 
@@ -267,6 +270,51 @@ export interface GraphData {
   edges: GraphEdge[];
 }
 
+export interface FactClaim {
+  text: string;
+  evidenceIds: string[];
+  verified?: boolean;
+  verificationNote?: string;
+}
+
+export interface InferenceClaim {
+  text: string;
+  basedOnFactIndexes: number[];
+  reasoning: string;
+}
+
+export interface HypothesisClaim {
+  text: string;
+  whyPlausible: string;
+  plausibility: 'low' | 'medium' | 'high';
+  confirmWith: string;
+  refuteWith: string;
+  suggestedTool?: string;
+  unverifiedNote?: string;
+}
+
+export interface BackgroundClaim {
+  text: string;
+}
+
+export interface NextStepClaim {
+  text: string;
+}
+
+export interface ProposedRelationshipItem {
+  source_id: string;
+  target_id: string;
+  type: string;
+  rationale: string;
+  status: 'PROPOSED';
+}
+
+export interface TraceStep {
+  step: string;
+  detail?: any;
+  timestamp: string;
+}
+
 export interface AiInvestigationResponse {
   investigationId?: string;
   entitySummary?: string;
@@ -280,5 +328,98 @@ export interface AiInvestigationResponse {
   suggestedHopExpansions: string[];
   confidenceScore: number;
   rawGrokResponse?: string;
+  // Pipeline Engine & Claim Tiers
+  engine?: 'llm' | 'deterministic-fallback';
+  fallbackReason?: string;
+  trace?: TraceStep[];
+  facts?: FactClaim[];
+  inferences?: InferenceClaim[];
+  hypotheses?: HypothesisClaim[];
+  background?: BackgroundClaim[];
+  nextSteps?: NextStepClaim[];
+  groundingSummary?: string;
+  dataGaps?: string[];
+  proposedRelationships?: ProposedRelationshipItem[];
+  diagnostics?: {
+    provider?: string;
+    model?: string;
+    statusCode?: number;
+    errorType?: string;
+    rawError?: string;
+    retryAfterSec?: number;
+  };
+  suggestedFollowUps?: string[];
+  narrative?: {
+    whatIFound: string;
+    howRecordsConnect: string;
+    whatThisCouldMean: string;
+    whatWeShouldExamineNext: string;
+  };
 }
+
+// Revana Moving Entity & Maritime Types
+export interface MovingEntity {
+  id: string; // e.g. SHIP_419001234
+  type: 'ship' | 'aircraft' | 'truck' | 'train' | 'shipment' | 'vehicle';
+  mmsi?: string;
+  imo?: string;
+  name: string;
+  vessel_type?: string;
+  latitude: number;
+  longitude: number;
+  speed?: number; // Knots
+  course?: number; // Degrees
+  heading?: number; // Degrees
+  destination?: string;
+  eta?: string;
+  status?: string; // in_transit, at_anchor, moored, etc.
+  last_updated_at: string;
+  data_mode?: DataMode;
+  properties?: Record<string, any>;
+}
+
+export interface EntityPositionHistory {
+  id: string;
+  entity_id: string;
+  latitude: number;
+  longitude: number;
+  speed?: number;
+  course?: number;
+  timestamp: string;
+  epoch_sec: number;
+}
+
+export interface MaritimePatternHypothesis {
+  id: string;
+  description: string;
+  supporting_evidence: string[];
+  confidence: number | null;
+  status: 'supported' | 'weakly_supported' | 'unsupported' | 'unresolved' | 'investigating';
+}
+
+export interface MaritimePattern {
+  pattern_id: string;
+  type: string; // traffic_concentration, corridor_convergence, route_divergence
+  region: string;
+  time_window: string;
+  entities_observed: number;
+  baseline: number;
+  deviation_percent: number;
+  observation: string;
+  hypotheses: MaritimePatternHypothesis[];
+  status: 'detected' | 'investigating' | 'supported' | 'weakly_supported' | 'unsupported' | 'unresolved';
+  detected_at: string;
+  updated_at: string;
+  ai_reasoning?: string;
+}
+
+export interface AisProviderStatus {
+  connected: boolean;
+  source: string;
+  mode: 'LIVE_STREAM' | 'REPLAY_FEED';
+  messageCount: number;
+  lastMessageAt?: string;
+  error?: string;
+}
+
 

@@ -1,0 +1,23 @@
+asset_id,asset_name,asset_type,owner_identity_id,network_zone,sensitivity,expected_role,inventory_updated_at_utc
+AST-GW-01,edge-vpn-gw01.northstar.internal,VPN_GATEWAY,USR_0331_SLOPEZ,DMZ_INGRESS,HIGH,External Access VPN Concentrator,2026-09-15T08:00:00Z
+AST-SRV-01,dc01-ad.northstar.internal,DOMAIN_CONTROLLER,USR_0331_SLOPEZ,CORE_INFRA,CRITICAL,Active Directory & Kerberos KDC,2026-08-20T10:00:00Z
+AST-SRV-02,dns01.northstar.internal,DNS_SERVER,USR_0733_MZIMMER,CORE_INFRA,MEDIUM,Internal Resolving DNS,2026-07-12T14:30:00Z
+AST-SRV-03,auth-mfa01.northstar.internal,AUTH_SERVER,USR_0103_JHALL,CORE_INFRA,CRITICAL,MFA Push & Radius Authentication Server,2026-09-01T09:15:00Z
+AST-SRV-04,apollo-core-db01.northstar.internal,DATABASE_SERVER,USR_0264_PVARMA,RESTRICTED_DATA_VAULT,CRITICAL,Apollo Genomic Sequence & Clinical Store,2026-10-01T11:00:00Z
+AST-SRV-05,portal-app01.northstar.internal,APPLICATION_SERVER,USR_0055_RJAIN,APP_TIER,HIGH,Bioinformatics Internal Web Portal,2026-09-28T16:00:00Z
+AST-SRV-06,nfs-storage01.northstar.internal,STORAGE_ARRAY,USR_0955_YPETROV,RESTRICTED_DATA_VAULT,HIGH,Raw Sequencing FastQ Storage Array,2026-09-10T12:00:00Z
+AST-SRV-07,doc-archive01.northstar.internal,FILE_SERVER,USR_0621_CHASHIM,APP_TIER,MEDIUM,Compliance & Audit Document Store,2026-06-15T08:30:00Z
+AST-SRV-08,siem-collector01.northstar.internal,LOG_COLLECTOR,USR_0411_KBERG,OPS_MGMT,HIGH,Enterprise SIEM & Telemetry Ingestion Hub,2026-10-05T13:45:00Z
+AST-SRV-09,backup-vault01.northstar.internal,BACKUP_SERVER,USR_0955_YPETROV,OPS_MGMT,HIGH,Enterprise Nightly Backup Target Repository,2026-08-30T17:00:00Z
+AST-WRK-088,wrk-bio-stage088.northstar.internal,COMPUTE_NODE,USR_0055_RJAIN,RESEARCH_LAB_LAN,HIGH,High-Performance Staging & Script Worker Node,2026-10-02T10:15:00Z
+AST-WRK-012,wrk-eng-rjain.northstar.internal,WORKSTATION,USR_0055_RJAIN,CORP_OFFICE_LAN,MEDIUM,Engineering Desktop,2026-09-12T11:20:00Z
+AST-WRK-014,wrk-it-twright.northstar.internal,WORKSTATION,USR_0118_TWRIGHT,CORP_OFFICE_LAN,MEDIUM,IT Helpdesk Desktop,2026-09-18T09:00:00Z
+AST-WRK-015,wrk-eng-osmith.northstar.internal,WORKSTATION,USR_0844_OSMITH,CORP_OFFICE_LAN,MEDIUM,Pipeline Developer Workstation,2026-08-01T15:00:00Z
+AST-WRK-016,wrk-it-wmorris.northstar.internal,WORKSTATION,USR_0520_WMORRIS,CORP_OFFICE_LAN,MEDIUM,IT Helpdesk Supervisor Station,2026-07-25T14:10:00Z
+AST-WRK-022,wrk-qa-chashim.northstar.internal,WORKSTATION,USR_0621_CHASHIM,CORP_OFFICE_LAN,LOW,Compliance Desktop,2026-05-19T10:00:00Z
+AST-WRK-033,wrk-net-mzimmer.northstar.internal,WORKSTATION,USR_0733_MZIMMER,CORP_OFFICE_LAN,MEDIUM,Network Admin Station,2026-09-03T11:45:00Z
+AST-WRK-044,wrk-db-pvarma.northstar.internal,WORKSTATION,USR_0264_PVARMA,CORP_OFFICE_LAN,HIGH,Database Engineer Workstation,2026-09-22T08:30:00Z
+AST-WRK-077,wrk-sec-kberg.northstar.internal,WORKSTATION,USR_0411_KBERG,SEC_OPS_LAN,HIGH,SOC Analyst Console,2026-10-01T08:00:00Z
+AST-WRK-101,wrk-res-mchen.northstar.internal,WORKSTATION,USR_0142_MCHEN,RESEARCH_LAB_LAN,HIGH,Senior Computational Biologist Workstation,2026-09-20T13:30:00Z
+AST-WRK-102,wrk-res-ekim.northstar.internal,WORKSTATION,USR_0209_EKIM,RESEARCH_LAB_LAN,HIGH,Principal Geneticist Workstation,2026-09-14T15:20:00Z
+AST-WRK-103,wrk-res-anwosu.northstar.internal,WORKSTATION,USR_0088_ANWOSU,RESEARCH_LAB_LAN,MEDIUM,Clinical Biomarker Lab Desktop,2026-08-11T16:00:00Z

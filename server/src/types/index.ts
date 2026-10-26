@@ -1,4 +1,4 @@
-// AEGIS Intel Domain Types
+// Revana Technologies Domain Types
 
 export type EntityType = 
   | 'COMPANY'
@@ -279,6 +279,51 @@ export interface GraphData {
   edges: GraphEdge[];
 }
 
+export interface FactClaim {
+  text: string;
+  evidenceIds: string[];
+  verified?: boolean;
+  verificationNote?: string;
+}
+
+export interface InferenceClaim {
+  text: string;
+  basedOnFactIndexes: number[];
+  reasoning: string;
+}
+
+export interface HypothesisClaim {
+  text: string;
+  whyPlausible: string;
+  plausibility: 'low' | 'medium' | 'high';
+  confirmWith: string;
+  refuteWith: string;
+  suggestedTool?: string;
+  unverifiedNote?: string;
+}
+
+export interface BackgroundClaim {
+  text: string;
+}
+
+export interface NextStepClaim {
+  text: string;
+}
+
+export interface ProposedRelationshipItem {
+  source_id: string;
+  target_id: string;
+  type: string;
+  rationale: string;
+  status: 'PROPOSED';
+}
+
+export interface TraceStep {
+  step: string;
+  detail?: any;
+  timestamp: string;
+}
+
 export interface AiInvestigationResponse {
   investigationId?: string;
   entitySummary?: string;
@@ -292,5 +337,106 @@ export interface AiInvestigationResponse {
   suggestedHopExpansions: string[];
   confidenceScore: number;
   rawGrokResponse?: string;
+  // Pipeline Engine & Claim Tiers
+  engine?: 'llm' | 'deterministic-fallback';
+  fallbackReason?: string;
+  trace?: TraceStep[];
+  facts?: FactClaim[];
+  inferences?: InferenceClaim[];
+  hypotheses?: HypothesisClaim[];
+  background?: BackgroundClaim[];
+  nextSteps?: NextStepClaim[];
+  groundingSummary?: string;
+  dataGaps?: string[];
+  proposedRelationships?: ProposedRelationshipItem[];
+  diagnostics?: {
+    provider?: string;
+    model?: string;
+    statusCode?: number;
+    errorType?: string;
+    rawError?: string;
+    retryAfterSec?: number;
+  };
+  suggestedFollowUps?: string[];
+  narrative?: {
+    whatIFound: string;
+    howRecordsConnect: string;
+    whatThisCouldMean: string;
+    whatWeShouldExamineNext: string;
+  };
 }
+
+// Revana Moving Entity & Maritime Types
+export interface MovingEntity {
+  id: string; // e.g. SHIP_419001234
+  type: 'ship' | 'aircraft' | 'truck' | 'train' | 'shipment' | 'vehicle';
+  mmsi?: string;
+  imo?: string;
+  name: string;
+  vessel_type?: string;
+  latitude: number;
+  longitude: number;
+  speed?: number; // Knots
+  course?: number; // Degrees
+  heading?: number; // Degrees
+  destination?: string;
+  eta?: string;
+  status?: string; // in_transit, at_anchor, moored, etc.
+  last_updated_at: string;
+  properties?: Record<string, any>;
+}
+
+export interface EntityPosition {
+  id: string;
+  entity_id: string;
+  latitude: number;
+  longitude: number;
+  speed?: number;
+  course?: number;
+  timestamp: string;
+  epoch_sec: number;
+}
+
+export interface MaritimePatternHypothesis {
+  id: string;
+  description: string;
+  supporting_evidence: string[];
+  confidence: number | null;
+  status: 'supported' | 'weakly_supported' | 'unsupported' | 'unresolved' | 'investigating';
+}
+
+export interface MaritimePattern {
+  pattern_id: string;
+  type: string; // traffic_concentration, corridor_convergence, route_divergence
+  region: string;
+  time_window: string;
+  entities_observed: number;
+  baseline: number;
+  deviation_percent: number;
+  observation: string;
+  hypotheses: MaritimePatternHypothesis[];
+  status: 'detected' | 'investigating' | 'supported' | 'weakly_supported' | 'unsupported' | 'unresolved';
+  detected_at: string;
+  updated_at: string;
+  ai_reasoning?: string;
+}
+
+export interface AisVesselRawUpdate {
+  mmsi: string;
+  imo?: string;
+  name?: string;
+  type?: string;
+  latitude: number;
+  longitude: number;
+  speed?: number;
+  course?: number;
+  heading?: number;
+  destination?: string;
+  eta?: string;
+  status?: string;
+  timestamp?: string;
+}
+
+export * from './kg.types.js';
+
 

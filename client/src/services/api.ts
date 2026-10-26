@@ -11,6 +11,10 @@ import {
   DataSource,
   SourceInspection,
   SourceRecord,
+  MovingEntity,
+  EntityPositionHistory,
+  MaritimePattern,
+  AisProviderStatus,
 } from '../types';
 
 const API_BASE = '/api';
@@ -121,6 +125,18 @@ export const api = {
   async findShortestPath(sourceId: string, targetId: string) {
     const res = await fetch(`${API_BASE}/graph/path?sourceId=${sourceId}&targetId=${targetId}`);
     if (!res.ok) throw new Error('Failed to calculate shortest path');
+    return res.json();
+  },
+
+  async searchGraphInquiry(query: string): Promise<{
+    nodes: any[];
+    edges: any[];
+    primaryId: string | null;
+    matchedEntities: any[];
+    summary: string;
+  }> {
+    const res = await fetch(`${API_BASE}/graph/inquiry?q=${encodeURIComponent(query)}`);
+    if (!res.ok) throw new Error('Failed to query graph inquiry');
     return res.json();
   },
 
@@ -277,11 +293,11 @@ export const api = {
 
 
   // AI & Natural Language
-  async investigateAi(prompt: string, entityId?: string, investigationId?: string): Promise<AiInvestigationResponse> {
+  async investigateAi(prompt: string, entityId?: string, investigationId?: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<AiInvestigationResponse> {
     const res = await fetch(`${API_BASE}/ai/investigate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, entityId, investigationId }),
+      body: JSON.stringify({ prompt, entityId, investigationId, history }),
     });
     if (!res.ok) throw new Error('AI investigation request failed');
     return res.json();
@@ -335,4 +351,482 @@ export const api = {
     if (!res.ok) throw new Error('Failed to add note');
     return res.json();
   },
+
+  // Maritime AIS Tracking & Pattern Discovery
+  async getMaritimeVessels(limit: number = 300): Promise<{ total: number; vessels: MovingEntity[] }> {
+    const res = await fetch(`${API_BASE}/maritime/vessels?limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to fetch maritime vessels');
+    return res.json();
+  },
+
+  async getMaritimeVessel(id: string): Promise<MovingEntity> {
+    const res = await fetch(`${API_BASE}/maritime/vessels/${id}`);
+    if (!res.ok) throw new Error(`Failed to fetch vessel ${id}`);
+    return res.json();
+  },
+
+  async getMaritimeVesselTrack(id: string, limit: number = 64): Promise<{ entity_id: string; point_count: number; track: EntityPositionHistory[] }> {
+    const res = await fetch(`${API_BASE}/maritime/vessels/${id}/track?limit=${limit}`);
+    if (!res.ok) throw new Error(`Failed to fetch historical track for vessel ${id}`);
+    return res.json();
+  },
+
+  async getMaritimePatterns(): Promise<{ total: number; patterns: MaritimePattern[] }> {
+    const res = await fetch(`${API_BASE}/maritime/patterns`);
+    if (!res.ok) throw new Error('Failed to fetch maritime patterns');
+    return res.json();
+  },
+
+  async investigateMaritimePattern(patternId: string): Promise<{ pattern: MaritimePattern; analysis: any }> {
+    const res = await fetch(`${API_BASE}/maritime/patterns/${patternId}/investigate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error(`Failed to investigate pattern ${patternId}`);
+    return res.json();
+  },
+
+  async getMaritimeStatus(): Promise<AisProviderStatus> {
+    const res = await fetch(`${API_BASE}/maritime/status`);
+    if (!res.ok) throw new Error('Failed to fetch maritime AIS status');
+    return res.json();
+  },
+
+  // Aviation OpenSky Live Tracking
+  async getAviationStatus(): Promise<{
+    providerId: string;
+    providerName: string;
+    status: string;
+    connectionState: 'CONNECTED' | 'DEGRADED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    dataFreshness: 'FRESH' | 'STALE' | 'HISTORICAL' | 'EMPTY' | 'UNKNOWN';
+    operationalState: 'CONNECTED_FRESH' | 'CONNECTED_STALE' | 'CONNECTED_EMPTY' | 'CONNECTED_HISTORICAL' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    isPollingActive: boolean;
+    pollIntervalMs: number;
+    lastPollAt: string | null;
+    lastSuccessfulPollAt: string | null;
+    newestObservationAt: string | null;
+    newestObservationAgeSec: number | null;
+    freshAircraftCount: number;
+    staleAircraftCount: number;
+    historicalCount: number;
+    totalAircraftInDb: number;
+    airborneCount: number;
+    onGroundCount: number;
+    lastError: string | null;
+    rateLimitRemaining: number;
+  }> {
+    const res = await fetch(`${API_BASE}/aviation/status`);
+    if (!res.ok) throw new Error('Failed to fetch aviation status');
+    return res.json();
+  },
+
+  async getAviationAircraft(limit: number = 300): Promise<{ total: number; aircraft: MovingEntity[]; status: any }> {
+    const res = await fetch(`${API_BASE}/aviation/aircraft?limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to fetch aviation aircraft');
+    return res.json();
+  },
+
+  async getAviationAircraftById(id: string): Promise<MovingEntity> {
+    const res = await fetch(`${API_BASE}/aviation/aircraft/${id}`);
+    if (!res.ok) throw new Error(`Failed to fetch aircraft ${id}`);
+    return res.json();
+  },
+
+  async getAviationAircraftTrack(id: string, limit: number = 64): Promise<{ entity_id: string; point_count: number; track: EntityPositionHistory[] }> {
+    const res = await fetch(`${API_BASE}/aviation/aircraft/${id}/track?limit=${limit}`);
+    if (!res.ok) throw new Error(`Failed to fetch aircraft track for ${id}`);
+    return res.json();
+  },
+
+  async pollAviation(): Promise<any> {
+    const res = await fetch(`${API_BASE}/aviation/poll`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to poll aviation');
+    return res.json();
+  },
+
+  // Hydrological Central Water Commission (India-WRIS) Telemetry
+  async getHydrologyStatus(): Promise<{
+    providerId: string;
+    providerName: string;
+    status: string;
+    connectionState: 'CONNECTED' | 'DEGRADED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    dataFreshness: 'FRESH' | 'STALE' | 'HISTORICAL' | 'EMPTY' | 'UNKNOWN';
+    operationalState: 'CONNECTED_FRESH' | 'CONNECTED_STALE' | 'CONNECTED_EMPTY' | 'CONNECTED_HISTORICAL' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    isPollingActive: boolean;
+    lastPollAt: string | null;
+    lastSuccessfulPollAt: string | null;
+    newestObservationAt: string | null;
+    newestObservationAgeDays: number | null;
+    totalStationsInDb: number;
+    totalLiveStorageBmc: number;
+    totalFullCapacityBmc: number;
+    overallCapacityPct: number | null;
+    lastError: string | null;
+    rateLimitRemaining: number;
+  }> {
+    const res = await fetch(`${API_BASE}/hydrology/status`);
+    if (!res.ok) throw new Error('Failed to fetch hydrology status');
+    return res.json();
+  },
+
+  async getHydrologyStations(): Promise<{
+    total: number;
+    stations: Array<{
+      id: string;
+      name: string;
+      type: string;
+      category: string;
+      latitude: number;
+      longitude: number;
+      district?: string;
+      state?: string;
+      river?: string;
+      basin?: string;
+      current_live_storage_bmc: number;
+      current_live_storage_tmc: number;
+      full_capacity_bmc: number;
+      capacity_pct: number | null;
+      observation_date: string;
+      observed_at: string;
+      last_updated_at: string;
+      provider: string;
+      provenance: any;
+    }>;
+    status: any;
+  }> {
+    const res = await fetch(`${API_BASE}/hydrology/stations`);
+    if (!res.ok) throw new Error('Failed to fetch hydrology stations');
+    return res.json();
+  },
+
+  async getHydrologyStationById(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/hydrology/stations/${id}`);
+    if (!res.ok) throw new Error(`Failed to fetch hydrology station ${id}`);
+    return res.json();
+  },
+
+  async getHydrologyStationHistory(id: string, limit: number = 50): Promise<{ entity_id: string; count: number; history: any[] }> {
+    const res = await fetch(`${API_BASE}/hydrology/stations/${id}/history?limit=${limit}`);
+    if (!res.ok) throw new Error(`Failed to fetch hydrology station history for ${id}`);
+    return res.json();
+  },
+
+  async pollHydrology(params: any = {}): Promise<any> {
+    const res = await fetch(`${API_BASE}/hydrology/poll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) throw new Error('Failed to poll hydrology');
+    return res.json();
+  },
+
+  // =========================================================================
+  // USGS EARTHQUAKE HAZARDS PROGRAM (SEISMIC FEEDS)
+  // =========================================================================
+  async getEarthquakeStatus(): Promise<{
+    providerId: string;
+    providerName: string;
+    status: string;
+    connectionState: 'CONNECTED' | 'DEGRADED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    dataFreshness: 'FRESH' | 'STALE' | 'HISTORICAL' | 'EMPTY' | 'UNKNOWN';
+    operationalState: 'CONNECTED_FRESH' | 'CONNECTED_STALE' | 'CONNECTED_EMPTY' | 'CONNECTED_HISTORICAL' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    isPollingActive: boolean;
+    lastPollAt: string | null;
+    lastSuccessfulPollAt: string | null;
+    newestObservationAt: string | null;
+    newestObservationAgeMinutes: number | null;
+    totalEventsInDb: number;
+    maxMagnitude: number | null;
+    lastError: string | null;
+    rateLimitRemaining: number;
+  }> {
+    const res = await fetch(`${API_BASE}/earthquakes/status`);
+    if (!res.ok) throw new Error('Failed to fetch earthquake status');
+    return res.json();
+  },
+
+  async getEarthquakeEvents(limit: number = 100): Promise<{
+    meta: any;
+    events: Array<{
+      id: string;
+      name: string;
+      type: string;
+      category: string;
+      latitude: number;
+      longitude: number;
+      depth_km: number;
+      magnitude: number | null;
+      magType: string;
+      place: string;
+      status: string;
+      tsunami_alert: number;
+      significance: number;
+      felt_reports: number | null;
+      origin_time: string;
+      updated_at: string;
+      observed_at: string;
+      last_updated_at: string;
+      provider: string;
+      source_network: string;
+      data_kind: string;
+      is_direct_instrument_sensor: boolean;
+      provenance: any;
+    }>;
+  }> {
+    const res = await fetch(`${API_BASE}/earthquakes/events?limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to fetch earthquake events');
+    return res.json();
+  },
+
+  async pollEarthquakes(params: any = {}): Promise<any> {
+    const res = await fetch(`${API_BASE}/earthquakes/poll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) throw new Error('Failed to poll earthquakes');
+    return res.json();
+  },
+
+  // =========================================================================
+  // OPEN-METEO WEATHER & AIR QUALITY (ENVIRONMENTAL NODES)
+  // =========================================================================
+  async getEnvironmentStatus(): Promise<{
+    weatherProviderId: string;
+    weatherConnectionState: 'CONNECTED' | 'DEGRADED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    weatherFreshness: 'FRESH' | 'STALE' | 'HISTORICAL' | 'EMPTY' | 'UNKNOWN';
+    weatherOperationalState: string;
+    airQualityProviderId: string;
+    airQualityConnectionState: 'CONNECTED' | 'DEGRADED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
+    airQualityFreshness: 'FRESH' | 'STALE' | 'HISTORICAL' | 'EMPTY' | 'UNKNOWN';
+    airQualityOperationalState: string;
+    configuredNodesCount: number;
+    totalWeatherNodesInDb: number;
+    totalAirQualityNodesInDb: number;
+    lastPollAt: string | null;
+    lastSuccessfulPollAt: string | null;
+    newestWeatherObservationAt: string | null;
+    newestAirQualityObservationAt: string | null;
+    isPollingActive: boolean;
+    lastErrors: string[];
+  }> {
+    const res = await fetch(`${API_BASE}/environment/status`);
+    if (!res.ok) throw new Error('Failed to fetch environment status');
+    return res.json();
+  },
+
+  async getWeatherNodes(): Promise<{
+    meta: any;
+    nodes: Array<{
+      id: string;
+      name: string;
+      type: string;
+      category: string;
+      latitude: number;
+      longitude: number;
+      temperature_c: number | null;
+      relative_humidity_pct: number | null;
+      precipitation_mm: number;
+      rain_mm: number;
+      surface_pressure_hpa: number | null;
+      wind_speed_kmh: number | null;
+      wind_direction_deg: number | null;
+      weather_code: number | null;
+      elevation_m: number | null;
+      model_source: string;
+      data_kind: string;
+      is_direct_instrument_sensor: boolean;
+      observed_at: string;
+      last_updated_at: string;
+      provider: string;
+      provenance: any;
+    }>;
+  }> {
+    const res = await fetch(`${API_BASE}/environment/weather`);
+    if (!res.ok) throw new Error('Failed to fetch weather nodes');
+    return res.json();
+  },
+
+  async getAirQualityNodes(): Promise<{
+    meta: any;
+    nodes: Array<{
+      id: string;
+      name: string;
+      type: string;
+      category: string;
+      latitude: number;
+      longitude: number;
+      us_aqi: number | null;
+      european_aqi: number | null;
+      pm2_5_ugm3: number | null;
+      pm10_ugm3: number | null;
+      nitrogen_dioxide_ugm3: number | null;
+      sulphur_dioxide_ugm3: number | null;
+      ozone_ugm3: number | null;
+      carbon_monoxide_ugm3: number | null;
+      model_source: string;
+      data_kind: string;
+      is_direct_instrument_sensor: boolean;
+      observed_at: string;
+      last_updated_at: string;
+      provider: string;
+      provenance: any;
+    }>;
+  }> {
+    const res = await fetch(`${API_BASE}/environment/air-quality`);
+    if (!res.ok) throw new Error('Failed to fetch air quality nodes');
+    return res.json();
+  },
+
+  async pollEnvironment(params: any = {}): Promise<any> {
+    const res = await fetch(`${API_BASE}/environment/poll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) throw new Error('Failed to poll environment');
+    return res.json();
+  },
+
+  // =========================================================================
+  // LIVE WORLD MODEL & DATA CONNECTOR LAYER
+  // =========================================================================
+  async getWorldState(): Promise<any> {
+    const res = await fetch(`${API_BASE}/world/state`);
+    if (!res.ok) throw new Error('Failed to fetch world state');
+    return res.json();
+  },
+
+  async getWorldEntities(type?: string, category?: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    if (category) params.append('category', category);
+    const res = await fetch(`${API_BASE}/world/entities?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch world entities');
+    return res.json();
+  },
+
+  async getWorldEntity(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/world/entities/${id}`);
+    if (!res.ok) throw new Error(`Failed to fetch world entity ${id}`);
+    return res.json();
+  },
+
+  async getWorldChanges(minutes: number = 60, since?: string): Promise<any> {
+    const params = new URLSearchParams();
+    if (minutes) params.append('minutes', String(minutes));
+    if (since) params.append('since', since);
+    const res = await fetch(`${API_BASE}/world/changes?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch temporal changes');
+    return res.json();
+  },
+
+  async getWorldEvents(severity?: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (severity) params.append('severity', severity);
+    const res = await fetch(`${API_BASE}/world/events?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch world events');
+    return res.json();
+  },
+
+  async getWorldRelationships(): Promise<any[]> {
+    const res = await fetch(`${API_BASE}/world/relationships`);
+    if (!res.ok) throw new Error('Failed to fetch world relationships');
+    return res.json();
+  },
+
+  async getProviderStatus(): Promise<any> {
+    const res = await fetch(`${API_BASE}/providers/status`);
+    if (!res.ok) throw new Error('Failed to fetch provider status');
+    return res.json();
+  },
+
+  async syncAllProviders(): Promise<any> {
+    const res = await fetch(`${API_BASE}/providers/sync-all`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to sync all providers');
+    return res.json();
+  },
+
+  // =========================================================================
+  // SIMULATION / DIGITAL TWIN SANDBOX
+  // =========================================================================
+  async listSimulations(): Promise<any[]> {
+    const res = await fetch(`${API_BASE}/simulation`);
+    if (!res.ok) throw new Error('Failed to list simulations');
+    return res.json();
+  },
+
+  async createSimulation(name: string, description: string = ''): Promise<any> {
+    const res = await fetch(`${API_BASE}/simulation/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description }),
+    });
+    if (!res.ok) throw new Error('Failed to create simulation');
+    return res.json();
+  },
+
+  async modifySimulation(id: string, modifications: { entity_id: string; properties: Record<string, any> }[]): Promise<any> {
+    const res = await fetch(`${API_BASE}/simulation/${id}/modify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modifications }),
+    });
+    if (!res.ok) throw new Error(`Failed to modify simulation ${id}`);
+    return res.json();
+  },
+
+  async getSimulationState(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/simulation/${id}/state`);
+    if (!res.ok) throw new Error(`Failed to fetch simulation state ${id}`);
+    return res.json();
+  },
+
+  async resetSimulation(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/simulation/${id}/reset`, { method: 'POST' });
+    if (!res.ok) throw new Error(`Failed to reset simulation ${id}`);
+    return res.json();
+  },
+
+  async deleteSimulation(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/simulation/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`Failed to delete simulation ${id}`);
+    return res.json();
+  },
+
+  // =========================================================================
+  // OMNI-SENSOR AI REASONING SPACE & CHAT MEMORY
+  async sendChatMessage(message: string, sessionId?: string): Promise<{
+    sessionId: string;
+    reply: string;
+    reasoning?: string;
+    sources: string[];
+    timestamp: string;
+    matchedEntities?: any[];
+    mappedEntityIds?: string[];
+    primaryEntityId?: string | null;
+    edges?: any[];
+  }> {
+    const res = await fetch(`${API_BASE}/ai/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, sessionId }),
+    });
+    if (!res.ok) throw new Error('Failed to send message to AI reasoning space');
+    return res.json();
+  },
+
+  async getChatHistory(sessionId: string): Promise<{ sessionId: string; history: any[] }> {
+    const res = await fetch(`${API_BASE}/ai/chat/history/${sessionId}`);
+    if (!res.ok) throw new Error('Failed to load chat history');
+    return res.json();
+  },
+
+  async clearChatHistory(sessionId: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/ai/chat/history/${sessionId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to clear chat history');
+    return res.json();
+  },
 };
+

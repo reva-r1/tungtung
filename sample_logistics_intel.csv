@@ -1,0 +1,10 @@
+id,name,type,company_name,plate,driver_name,phone,gstin,city,latitude,longitude,amount
+CMP-001,Alpha Cargo Logistics Pvt Ltd,COMPANY,Alpha Cargo Logistics Pvt Ltd,,Rajesh Verma,9845012345,29AABCA1234A1Z5,Bangalore,12.9716,77.5946,
+CMP-002,Alpha Cargo Logistics Limited,COMPANY,Alpha Cargo Logistics Limited,,Rajesh V,9845012345,29AABCA1234A1Z5,Bengaluru,12.9722,77.5952,
+TRK-101,Freightliner Prime KA01EA1234,VEHICLE,,KA-01-EA-1234,Suresh Naik,9845099881,,Bangalore,12.9352,77.6245,
+TRK-102,Freightliner Prime KA-01-EA-1234,VEHICLE,,KA01EA1234,Suresh Naik,9845099881,,Bangalore,12.9350,77.6240,
+DRV-201,Rajesh Verma,PERSON,Alpha Cargo Logistics Pvt Ltd,,,9845012345,,Bangalore,12.9716,77.5946,
+DRV-202,Suresh Naik,PERSON,,,9845099881,,Bangalore,12.9352,77.6245,
+SHP-901,Consignment Tech Hardware,SHIPMENT,Alpha Cargo Logistics Pvt Ltd,KA-01-EA-1234,,,29AABCA1234A1Z5,Bangalore,12.9716,77.5946,850000
+SHP-902,Consignment Electronic Sensors,SHIPMENT,Alpha Cargo Logistics Limited,KA01EA1234,,,29AABCA1234A1Z5,Bengaluru,12.9722,77.5952,620000
+WH-301,Whitefield Cargo Depot,WAREHOUSE,Alpha Cargo Logistics Pvt Ltd,,,,29AABCA1234A1Z5,Bangalore,12.9698,77.7499,

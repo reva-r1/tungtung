@@ -10,12 +10,12 @@ export const aiRouter = Router();
 // AI investigation assistant query
 aiRouter.post('/investigate', async (req: Request, res: Response) => {
   try {
-    const { prompt, entityId, investigationId } = req.body;
+    const { prompt, entityId, investigationId, history } = req.body;
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    const response = await AiService.investigate(prompt, { entityId, investigationId });
+    const response = await AiService.investigate(prompt, { entityId, investigationId, history });
     res.json(response);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -38,30 +38,67 @@ aiRouter.post('/nl-query', async (req: Request, res: Response) => {
 });
 
 // Execute controlled backend tool on behalf of AI
-aiRouter.post('/tool', (req: Request, res: Response) => {
+aiRouter.post('/tool', async (req: Request, res: Response) => {
   try {
     const { toolName, args } = req.body;
-    const output = AiService.executeTool(toolName, args || {});
+    const output = await AiService.executeTool(toolName, args || {});
     res.json({ toolName, output });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// Omni-Sensor AI Reasoning Space Chat Endpoint (With Perpetual SQLite Memory)
+aiRouter.post('/chat', async (req: Request, res: Response) => {
+  try {
+    const { message, sessionId } = req.body;
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({ error: 'Message string is required' });
+    }
+
+    const result = await AiService.chatReasoning(message, sessionId);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get Chat History for Session
+aiRouter.get('/chat/history/:sessionId', (req: Request, res: Response) => {
+  try {
+    const history = AiService.getChatHistory(req.params.sessionId);
+    res.json({ sessionId: req.params.sessionId, history });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Clear Chat History for Session
+aiRouter.delete('/chat/history/:sessionId', (req: Request, res: Response) => {
+  try {
+    const cleared = AiService.clearChatHistory(req.params.sessionId);
+    res.json({ sessionId: req.params.sessionId, cleared });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Check AI status & configuration
-aiRouter.get('/status', (req: Request, res: Response) => {
-  const hasKey = !!(process.env.XAI_API_KEY && process.env.XAI_API_KEY.trim() !== '' && !process.env.XAI_API_KEY.includes('your_xai_api_key'));
+aiRouter.get('/status', async (req: Request, res: Response) => {
+  const model = process.env.OLLAMA_MODEL || 'llama3.2:3b';
   res.json({
-    provider: 'Grok / xAI API',
-    model: process.env.XAI_MODEL || 'grok-2-latest',
-    isLiveKeyConfigured: hasKey,
-    mode: hasKey ? 'LIVE_GROK_API' : 'DETERMINISTIC_LOCAL_ENGINE',
+    provider: `Revana Technologies AI Engine (Ollama ${model} / Grounded Sensors)`,
+    model,
+    isLiveKeyConfigured: true,
+    mode: 'LOCAL_OLLAMA_LLAMA',
     capabilities: [
-      'Grounded Entity Graph Analysis',
-      'Telemetry Speed Physics Verification',
-      'Multi-Hop Path Traversal',
-      'Anomaly Correlation',
-      'Tactical Next-Step Generation',
+      'Real-Time Multi-Sensor Telemetry Reasoning',
+      'Open-Meteo Weather & Air Quality Live Analysis',
+      'USGS Earthquakes & GDACS Alerts Synthesis',
+      'Hydro Basin Gauges & Reservoir Monitoring',
+      'Grid Power & Substation Load Traversal',
+      'Digital Twin Simulation Cascading Reasoning',
+      'Perpetual Multi-Turn Chat Memory',
     ],
   });
 });

@@ -62,22 +62,22 @@ export const DataSourcesPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-[#090d16] p-6 overflow-y-auto">
+    <div className="flex-1 bg-[#0E0F11] p-6 overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <Database className="w-5 h-5 text-blue-400" />
-            Source Databases
+          <h1 className="text-sm font-semibold text-[#E6E7E9] flex items-center gap-2">
+            <Database className="w-4 h-4 text-[#4C90F0]" />
+            Source Database Connections
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Independent SQLite source databases containing fragmented operational records.
+          <p className="text-xs text-[#8B9097] mt-1">
+            Independent SQLite source databases and extraction connectors.
           </p>
         </div>
         <button
           onClick={syncAllSources}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded text-xs font-semibold transition shadow"
+          className="flex items-center gap-2 px-3 py-1.5 bg-[#4C90F0] hover:bg-[#3A7FE0] disabled:opacity-40 text-white rounded text-xs font-medium transition"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Sync All Sources
@@ -85,49 +85,49 @@ export const DataSourcesPage: React.FC = () => {
       </div>
 
       {/* Sources Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {sources.map((src) => {
           const isConnected = src.status === 'CONNECTED';
           return (
             <div
               key={src.id}
-              className="bg-[#0b1120] border border-[#1e293b] rounded-lg p-5 flex flex-col justify-between hover:border-slate-700 transition"
+              className="bg-[#151618] border border-[#26292D] rounded p-4 flex flex-col justify-between hover:border-[#4C90F0]/50 transition"
             >
               <div>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded bg-slate-800 border border-slate-700 flex items-center justify-center">
-                      <Database className="w-4 h-4 text-blue-400" />
+                    <div className="w-7 h-7 rounded bg-[#1C1E21] border border-[#26292D] flex items-center justify-center">
+                      <Database className="w-3.5 h-3.5 text-[#4C90F0]" />
                     </div>
                     <div>
-                      <h2 className="text-sm font-bold text-slate-200">{src.name}</h2>
-                      <span className="font-mono text-[11px] text-slate-400">{src.id}</span>
+                      <h2 className="text-xs font-semibold text-[#E6E7E9]">{src.name}</h2>
+                      <span className="font-mono text-[10px] text-[#8B9097]">{src.id}</span>
                     </div>
                   </div>
                   <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium ${
                       isConnected
-                        ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40'
-                        : 'bg-rose-950/60 text-rose-400 border border-rose-800/40'
+                        ? 'bg-[#1C1E21] text-[#3DB46D] border border-[#3DB46D]/40'
+                        : 'bg-[#1C1E21] text-[#8B9097] border border-[#26292D]'
                     }`}
                   >
                     {isConnected ? (
                       <>
-                        <CheckCircle2 className="w-3 h-3" /> Connected
+                        <CheckCircle2 className="w-3 h-3 text-[#3DB46D]" /> Connected
                       </>
                     ) : (
                       <>
-                        <AlertCircle className="w-3 h-3" /> Disconnected
+                        <AlertCircle className="w-3 h-3 text-[#8B9097]" /> Standby
                       </>
                     )}
                   </span>
                 </div>
 
                 {/* Metadata */}
-                <div className="grid grid-cols-3 gap-2 my-4 py-3 px-3 bg-[#090d16] rounded border border-[#1e293b] text-xs">
+                <div className="grid grid-cols-3 gap-2 my-3 py-2 px-3 bg-[#1C1E21] rounded border border-[#26292D] text-xs">
                   <div>
-                    <div className="text-[10px] text-slate-500 uppercase">Engine</div>
-                    <div className="font-mono text-slate-300 font-semibold uppercase">{src.dbType}</div>
+                    <div className="text-[10px] text-[#8B9097] uppercase">Engine</div>
+                    <div className="font-mono text-[#E6E7E9] font-medium uppercase">{src.dbType}</div>
                   </div>
                   <div>
                     <div className="text-[10px] text-slate-500 uppercase">Tables</div>

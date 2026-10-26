@@ -4,18 +4,14 @@ import { api } from '../services/api';
 
 export type ActiveView = 
   | 'overview'
+  | 'mirror'
   | 'sources'
   | 'entities'
   | 'investigation'
   | 'graph'
   | 'map'
   | 'resolution'
-  | 'dashboard'
-  | 'anomalies'
-  | 'explorer'
-  | 'ingestion'
-  | 'ai-analyst'
-  | 'entity-profile';
+  | 'ingestion';
 
 interface InvestigationContextType {
   activeView: ActiveView;
@@ -44,12 +40,22 @@ interface InvestigationContextType {
   activeDataset: Dataset | null;
   refreshActiveDataset: () => Promise<void>;
   switchActiveDataset: (id: string) => Promise<void>;
+  isAiPanelOpen: boolean;
+  setIsAiPanelOpen: (open: boolean) => void;
+  toggleAiPanel: () => void;
+  isMapEnabled: boolean;
+  setIsMapEnabled: (enabled: boolean) => void;
+  toggleMap: () => void;
+  inquiryTarget: { entityIds: string[]; primaryId?: string; timestamp: number } | null;
+  mapInquiryToGraph: (entityIds: string[], primaryId?: string) => void;
 }
 
 const InvestigationContext = createContext<InvestigationContextType | undefined>(undefined);
 
 export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeView, setActiveView] = useState<ActiveView>('overview');
+  const [activeView, setActiveView] = useState<ActiveView>('investigation');
+  const [isMapEnabled, setIsMapEnabled] = useState<boolean>(true); // Map canvas is ON by default
+  const toggleMap = () => setIsMapEnabled(prev => !prev);
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
   const [activeInvestigationId, setActiveInvestigationId] = useState<string | null>(null);
@@ -60,6 +66,19 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
   const [sourceFilter, setSourceFilter] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [activeDataset, setActiveDatasetState] = useState<Dataset | null>(null);
+  const [isAiPanelOpen, setIsAiPanelOpen] = useState<boolean>(false);
+  const [inquiryTarget, setInquiryTarget] = useState<{ entityIds: string[]; primaryId?: string; timestamp: number } | null>(null);
+
+  const toggleAiPanel = () => setIsAiPanelOpen(prev => !prev);
+
+  const mapInquiryToGraph = (entityIds: string[], primaryId?: string) => {
+    if (!entityIds || entityIds.length === 0) return;
+    setInquiryTarget({ entityIds, primaryId, timestamp: Date.now() });
+    if (primaryId) {
+      setSelectedEntityId(primaryId);
+    }
+    setActiveView('investigation');
+  };
 
   const refreshActiveDataset = async () => {
     try {
@@ -205,6 +224,14 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
         activeDataset,
         refreshActiveDataset,
         switchActiveDataset,
+        isAiPanelOpen,
+        setIsAiPanelOpen,
+        toggleAiPanel,
+        isMapEnabled,
+        setIsMapEnabled,
+        toggleMap,
+        inquiryTarget,
+        mapInquiryToGraph,
       }}
     >
       {children}

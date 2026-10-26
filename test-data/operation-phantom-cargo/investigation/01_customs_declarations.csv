@@ -1,0 +1,4 @@
+bill_of_lading,vessel_name,imo,mmsi,shipper,consignee,declared_cargo,cargo_weight_mt,declared_route,estimated_hours,departure_port,arrival_port,declaration_date
+BL-2024-AE-9821,BHARAT GAURAV,9435678,419001248,Apex Petrochem FZE,Pacific Horizon Storage Pvt Ltd,Refined Lubricant Base Oil,4500,Fujairah -> Mumbai JNPT Direct,96,Fujairah,Mumbai JNPT,2024-10-12T06:00:00Z
+BL-2024-DE-1102,SWARNA KAMAL,9381023,419002341,Kandla Port Trust,Essar Oil Terminal,Industrial Heavy Fuel Oil,8200,Kandla -> Sikka Coastal,24,Kandla,Sikka,2024-10-13T04:00:00Z
+BL-2024-SG-5509,MSC INES,9708681,352001190,Singapore Port Logistics,JNPT Terminal 1,Consumer Electronics & Spares,6200,Singapore -> Mumbai JNPT,120,Singapore,Mumbai JNPT,2024-10-10T12:00:00Z

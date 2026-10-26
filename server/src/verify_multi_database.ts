@@ -5,12 +5,14 @@ import { IngestionService } from './services/ingestion.service.js';
 import { GraphService } from './services/graph.service.js';
 import { ResolutionService } from './services/resolution.service.js';
 import { AiService } from './services/ai.service.js';
+import { assertNotProduction } from './config/environment.js';
 import fs from 'fs';
 import path from 'path';
 
 async function runVerification() {
+  assertNotProduction('Multi-database verification test harness');
   console.log('\n===============================================================');
-  console.log('  AEGIS INTEL // MULTI-DATABASE INTELLIGENCE VERIFICATION TEST');
+  console.log('  REVANA TECHNOLOGIES // MULTI-DATABASE INTELLIGENCE VERIFICATION TEST');
   console.log('===============================================================\n');
 
   // STEP 0: Reset unified database to prove zero hardcoded relationships from seedData

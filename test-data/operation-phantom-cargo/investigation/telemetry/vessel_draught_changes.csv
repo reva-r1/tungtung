@@ -1,0 +1,5 @@
+vessel_name,imo,mmsi,reported_draught_meters,observed_draught_meters,displacement_delta_mt,timestamp,observation_method
+BHARAT GAURAV,9435678,419001248,8.4,8.4,0,2024-10-12T06:00:00Z,Port departure draught sensor (Fujairah)
+BHARAT GAURAV,9435678,419001248,8.4,13.9,42000,2024-10-14T17:00:00Z,Satellite SAR water-displacement radar upon AIS reactivation
+SWARNA KAMAL,9381023,419002341,9.1,9.1,0,2024-10-13T12:00:00Z,Coastal optical gauge (Sikka)
+MSC INES,9708681,352001190,11.2,11.2,0,2024-10-15T08:00:00Z,Satellite optical waterline inspection

@@ -1,0 +1,196 @@
+{
+  "benchmark_id": "blind_intelligence_v1",
+  "domain": "municipal_public_infrastructure_procurement",
+  "generated_at": "2026-10-25T08:15:00Z",
+  "prng_seed": "0xREVANA2026",
+  "test_cases": [
+    {
+      "case_id": "CASE-01",
+      "name": "Cross-Source Entity Resolution",
+      "type": "entity_resolution",
+      "canonical_entity_id": "person_julian_thorne",
+      "canonical_name": "Julian Vance Thorne",
+      "aliases": ["Julian V. Thorne", "J. Vance Thorne", "Julian Thorne"],
+      "expected_outcome": "RESOLVE_SAME_ENTITY",
+      "supporting_records": [
+        { "file": "01_vendor_corporate_registry.csv", "match_field": "director_name", "value": "Julian V. Thorne" },
+        { "file": "02_municipal_procurement_contracts.csv", "match_field": "reviewer_name", "value": "J. Vance Thorne" },
+        { "file": "05_dispatch_call_logs.csv", "match_field": "caller_name", "value": "Julian Thorne" }
+      ],
+      "scoring": { "weight": 10, "penalty_for_split": 10 }
+    },
+    {
+      "case_id": "CASE-02",
+      "name": "Multi-Hop Beneficial Ownership Chain",
+      "type": "multi_hop_discovery",
+      "root_entity": "Marcus Vance",
+      "target_entity": "Valcourt Infrastructure Group",
+      "expected_path": [
+        { "source": "Marcus Vance", "predicate": "OWNS", "target": "Apex Horizon Properties LLC" },
+        { "source": "Apex Horizon Properties LLC", "predicate": "OWNS", "target": "Ironclad Material Supplies Inc" },
+        { "source": "Ironclad Material Supplies Inc", "predicate": "SUB_SUPPLIER_TO", "target": "Valcourt Infrastructure Group" }
+      ],
+      "supporting_records": [
+        { "file": "01_vendor_corporate_registry.csv", "row_desc": "Marcus Vance is 100% UBO of Apex Horizon Properties LLC" },
+        { "file": "01_vendor_corporate_registry.csv", "row_desc": "Apex Horizon Properties LLC holds 45% ownership of Ironclad Material Supplies Inc" },
+        { "file": "02_municipal_procurement_contracts.csv", "row_desc": "Ironclad Material Supplies Inc listed as subcontractor to Valcourt Infrastructure Group" }
+      ],
+      "scoring": { "weight": 10, "penalty_for_broken_hop": 10 }
+    },
+    {
+      "case_id": "CASE-03",
+      "name": "Three-Source Kickback Triangle",
+      "type": "complex_pattern",
+      "entities_involved": [
+        "Valcourt Infrastructure Group",
+        "Zephyr Logistics Ltd",
+        "Elena Rostova",
+        "CTR-2026-881"
+      ],
+      "expected_flow": [
+        "Valcourt Infrastructure Group awarded Contract CTR-2026-881",
+        "Valcourt Infrastructure Group wired $320,000 to Zephyr Logistics Ltd",
+        "Zephyr Logistics Ltd wired $175,000 to Elena Rostova",
+        "Elena Rostova served as procurement evaluator for CTR-2026-881"
+      ],
+      "supporting_records": [
+        { "file": "02_municipal_procurement_contracts.csv", "ref": "CTR-2026-881" },
+        { "file": "03_escrow_financial_wire_transfers.csv", "ref": "WIRE-TX-9014" },
+        { "file": "03_escrow_financial_wire_transfers.csv", "ref": "WIRE-TX-9019" },
+        { "file": "05_dispatch_call_logs.csv", "ref": "CDR-4401" }
+      ],
+      "scoring": { "weight": 10, "penalty_for_missing_hop": 5 }
+    },
+    {
+      "case_id": "CASE-04",
+      "name": "Timeline Reconstruction (Pre-Permit Pour)",
+      "type": "timeline_reconstruction",
+      "subject": "North Tunnel Berth 4 Concrete Pour",
+      "violation_detected": true,
+      "pour_timestamp": "2026-09-12T04:30:00Z",
+      "permit_timestamp": "2026-09-19T10:00:00Z",
+      "expected_finding": "Concrete foundation pouring occurred 6 days before geotechnical permit GEO-PERMIT-401 was authorized",
+      "supporting_records": [
+        { "file": "04_site_access_fleet_telemetry.csv", "ref": "GATE-LOG-1008" },
+        { "file": "02_municipal_procurement_contracts.csv", "ref": "GEO-PERMIT-401" }
+      ],
+      "scoring": { "weight": 10 }
+    },
+    {
+      "case_id": "CASE-05",
+      "name": "Conflicting Delivery Locations",
+      "type": "contradiction_detection",
+      "consignment": "CONSIGN-STEEL-8812",
+      "claimed_destination": "Central Rail Depot Alpha",
+      "actual_telemetry_destination": "Warehouse Omega",
+      "expected_outcome": "FLAG_CONTRADICTION",
+      "supporting_records": [
+        { "file": "02_municipal_procurement_contracts.csv", "claim": "Delivered to Central Rail Depot Alpha" },
+        { "file": "04_site_access_fleet_telemetry.csv", "telemetry": "Scanned entering Warehouse Omega" }
+      ],
+      "scoring": { "weight": 10 }
+    },
+    {
+      "case_id": "CASE-06",
+      "name": "Similar Names Disambiguation",
+      "type": "negative_entity_resolution",
+      "entity_a": { "name": "David Miller", "role": "Senior Municipal Safety Inspector", "badge": "ENG-404" },
+      "entity_b": { "name": "David A. Miller", "role": "Owner of Miller Heavy Transport", "tax_id": "TAX-11894" },
+      "expected_outcome": "KEEP_DISTINCT",
+      "supporting_records": [
+        { "file": "01_vendor_corporate_registry.csv", "entity": "David A. Miller" },
+        { "file": "06_regulatory_field_inspections.txt", "entity": "David Miller (Inspector)" }
+      ],
+      "scoring": { "weight": 10, "penalty_for_merge": 15 }
+    },
+    {
+      "case_id": "CASE-07",
+      "name": "Decoy Pattern Rejection",
+      "type": "decoy_rejection",
+      "suspect_entity": "Solomon Crane Hire",
+      "apparent_pattern": "Received $45,000 wire from shell company Zephyr Logistics Ltd",
+      "ground_truth_status": "LEGITIMATE_COMMERCIAL_TRANSACTION",
+      "expected_finding": "Legitimate equipment lease for 200T crane under EQUIP-LEASE-INV-1094. Collusion rejected.",
+      "supporting_records": [
+        { "file": "03_escrow_financial_wire_transfers.csv", "ref": "WIRE-TX-9011" },
+        { "file": "04_site_access_fleet_telemetry.csv", "ref": "GATE-LOG-1025" }
+      ],
+      "scoring": { "weight": 10, "penalty_for_false_positive": 10 }
+    },
+    {
+      "case_id": "CASE-08",
+      "name": "Insufficient Evidence Case",
+      "type": "epistemic_insufficiency",
+      "subject": "Arthur Pendelton and Claire Dunmore Phone Call",
+      "observation": "6-second call preceding zoning variance vote",
+      "expected_finding": "INSUFFICIENT_EVIDENCE",
+      "unsupported_conclusion": "Bribery, coordination, or corrupt lobbying",
+      "supporting_records": [
+        { "file": "05_dispatch_call_logs.csv", "ref": "CDR-4407" }
+      ],
+      "scoring": { "weight": 10, "penalty_for_unsupported_assertion": 10 }
+    },
+    {
+      "case_id": "CASE-09",
+      "name": "Missing Record / Gap Detection",
+      "type": "telemetry_gap",
+      "convoy": ["TRK-701", "TRK-702", "TRK-703", "TRK-704"],
+      "origin": "Quarry Site Bravo",
+      "destination": "Subway Extension Pier 9",
+      "missing_entity": "TRK-703",
+      "expected_finding": "Truck TRK-703 departed Quarry Site Bravo but is absent from Pier 9 arrival telemetry",
+      "supporting_records": [
+        { "file": "04_site_access_fleet_telemetry.csv", "rows": ["GATE-LOG-1051", "GATE-LOG-1052", "GATE-LOG-1053", "GATE-LOG-1054", "GATE-LOG-1060", "GATE-LOG-1061", "GATE-LOG-1062"] }
+      ],
+      "scoring": { "weight": 10 }
+    },
+    {
+      "case_id": "CASE-10",
+      "name": "Attribute-Combination Identity Resolution",
+      "type": "unnamed_entity_resolution",
+      "source_reference": "Entity Reg #9941-K",
+      "resolved_entity": "Kestrel Urban Works Ltd",
+      "shared_attributes": {
+        "registration_code": "REG-9941-K",
+        "contact_phone": "+1-555-019-8821",
+        "registered_address": "Suite 400, 120 Harborview Blvd"
+      },
+      "expected_outcome": "RESOLVE_TO_KESTREL",
+      "supporting_records": [
+        { "file": "02_municipal_procurement_contracts.csv", "ref": "CTR-2026-702" },
+        { "file": "01_vendor_corporate_registry.csv", "ref": "REG-9941-K" }
+      ],
+      "scoring": { "weight": 10 }
+    },
+    {
+      "case_id": "CASE-11",
+      "name": "Role Evolution Across Timeline",
+      "type": "longitudinal_trajectory",
+      "entity": "Cassandra Vance",
+      "stages": [
+        { "period": "2024-01-15 to 2026-01-30", "role": "Municipal Safety Engineer", "organization": "City Building Compliance Bureau" },
+        { "period": "2026-03-01 onwards", "role": "Chief Operating Officer", "organization": "Orion Aggregate Partners" }
+      ],
+      "expected_finding": "Identified post-public-service transition to regulated private vendor executive",
+      "supporting_records": [
+        { "file": "06_regulatory_field_inspections.txt", "memo": "AUDIT-MEMO-2026-01" },
+        { "file": "01_vendor_corporate_registry.csv", "ref": "CORP-REG-1027" }
+      ],
+      "scoring": { "weight": 10 }
+    },
+    {
+      "case_id": "CASE-12",
+      "name": "Clean Negative Control Entity",
+      "type": "clean_control",
+      "entity": "Veridian Environmental Testing Labs",
+      "expected_finding": "VERIFIED_CLEAN",
+      "unsupported_conclusion": "Any illicit financial links, conflict of interest, or diverted cargo",
+      "supporting_records": [
+        { "file": "01_vendor_corporate_registry.csv", "ref": "CORP-REG-1041" },
+        { "file": "02_municipal_procurement_contracts.csv", "ref": "CTR-2026-104" },
+        { "file": "03_escrow_financial_wire_transfers.csv", "ref": "WIRE-TX-9008" }
+      ],
+      "scoring": { "weight": 10, "penalty_for_false_positive": 15 }
+    }
+  ]
+}

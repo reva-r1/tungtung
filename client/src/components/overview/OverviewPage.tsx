@@ -59,7 +59,7 @@ export const OverviewPage: React.FC = () => {
             Multi-Dataset Graph & Cross-Reference Intelligence Engine
           </h1>
           <p className="text-xs text-slate-300 leading-relaxed mb-5 font-normal">
-            Upload and correlate disparate CSV datasets into a unified semantic intelligence graph. Discover cross-dataset connections, shared identifiers, and investigate multi-hop relationships with the autonomous AI reasoning analyst.
+            Upload and correlate disparate CSV datasets, PDF reports, Word memos, and scanned manifests into a unified semantic intelligence graph. Discover cross-dataset connections, shared identifiers, and investigate multi-hop relationships with the autonomous AI reasoning analyst.
           </p>
 
           <div className="flex items-center gap-3">
@@ -68,7 +68,7 @@ export const OverviewPage: React.FC = () => {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold transition shadow-md"
             >
               <UploadCloud className="w-4 h-4" />
-              Upload Dataset (CSV)
+              Upload Document / Dataset
             </button>
             <button
               onClick={() => setActiveView('investigation')}
@@ -156,14 +156,14 @@ export const OverviewPage: React.FC = () => {
             </div>
             <h3 className="text-sm font-bold text-slate-200 mb-1">No Datasets Uploaded Yet</h3>
             <p className="text-xs text-slate-400 max-w-md mb-4 leading-relaxed">
-              The intelligence ledger is empty. Upload one or more CSV files (e.g. customers, transactions, shipments, companies) to begin automated entity resolution and cross-dataset graph discovery.
+              The intelligence ledger is empty. Upload CSV tables, PDF reports, Word .docx memos, or scanned images to begin automated entity resolution and cross-dataset graph discovery.
             </p>
             <button
               onClick={() => setActiveView('ingestion')}
               className="px-4 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 rounded text-xs font-mono font-bold transition flex items-center gap-2"
             >
-              <FileSpreadsheet className="w-4 h-4" />
-              UPLOAD CSV NOW
+              <UploadCloud className="w-4 h-4" />
+              UPLOAD DOCUMENT OR DATASET
             </button>
           </div>
         ) : (

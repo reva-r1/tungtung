@@ -1,0 +1,88 @@
+================================================================================
+METRO NORTH CIVIL WORKS REGULATORY FIELD AUDIT ARCHIVE
+CLASSIFICATION: OFFICIAL CIVIL LOGS
+================================================================================
+
+--- RECORD ID: AUDIT-MEMO-2026-01 ---
+DATE: 2026-01-30T16:00:00Z
+INSPECTOR: Senior Compliance Officer Thomas Vane
+SUBJECT: Personnel Transition Review - City Building Compliance Bureau
+MEMO DETAILS:
+This memorandum records the official departure of Municipal Safety Engineer Cassandra Vance
+from the City Building Compliance Bureau effective 2026-01-30. Officer Vance completed all
+project handover files relating to North Tunnel structural safety guidelines. Official municipal
+credentials and site security clearance badges were surrendered in full compliance with public
+service regulations. Handover received and countersigned.
+
+--- RECORD ID: AUDIT-MEMO-2026-04 ---
+DATE: 2026-08-14T09:30:00Z
+INSPECTOR: David Miller (Senior Municipal Safety Inspector, Badge ENG-404)
+SUBJECT: Routine Perimeter & Scaffolding Check - Pier 9 Subway Extension
+MEMO DETAILS:
+Conducted quarterly compliance walk-through at the Pier 9 Subway Extension site. Inspected
+perimeter hoarding, temporary electrical feeds, and scaffolding staging erected by Summit Roadways.
+All physical barricades adhere to Municipal Safety Code Chapter 14. No safety infractions noted.
+Site supervisor notified of scheduled crane mobilization planned for mid-September.
+
+--- RECORD ID: AUDIT-MEMO-2026-07 ---
+DATE: 2026-08-25T11:00:00Z
+INSPECTOR: Dr. Simon Cole (Veridian Environmental Testing Labs)
+SUBJECT: Environmental Catchment Baseline Assay - Outfall Basin
+MEMO DETAILS:
+Field sampling conducted under contract CTR-2026-104 for ambient water and soil contamination.
+Samples collected from Riverfront Outfall Basin showed dissolved particulate concentrations of 14 ppm,
+well below the statutory threshold of 45 ppm. Heavy metal traces non-detectable. Full chain of custody
+maintained. Samples logged into Veridian Lab LIMS under assay batch EV-8812.
+
+--- RECORD ID: AUDIT-MEMO-2026-09 ---
+DATE: 2026-09-02T13:45:00Z
+INSPECTOR: David Miller (Senior Municipal Safety Inspector, Badge ENG-404)
+SUBJECT: Material Shoring Verification - Harbor Causeway Bridge
+MEMO DETAILS:
+Conducted on-site inspection of hydraulic shoring systems at Harbor Causeway Bridge. Contractor
+Boreal Timber & Shoring has deployed rated 40-ton trench shields. Deflection measurements confirmed
+within allowable tolerance of 3mm. Approved for continued excavation of southern abutment footings.
+
+--- RECORD ID: AUDIT-MEMO-2026-12 ---
+DATE: 2026-09-10T15:15:00Z
+INSPECTOR: Senior Auditor Patricia Hayes
+SUBJECT: Equipment Certification - Pier 9 Rigging
+MEMO DETAILS:
+Inspected heavy rigging documentation presented by Solomon Crane Hire for mobile crane unit CRN-200.
+Manufacturer load certification current through November 2027 under equipment lease agreement
+EQUIP-LEASE-INV-1094. Operators hold valid Class A heavy machinery endorsements. Cleared for site entry.
+
+--- RECORD ID: AUDIT-MEMO-2026-15 ---
+DATE: 2026-09-16T10:30:00Z
+INSPECTOR: Field Compliance Officer Arthur Pendelton
+SUBJECT: Drainage Culvert Grade Survey - West Drainage Canal
+MEMO DETAILS:
+Verified laser leveling of precast concrete storm culverts supplied by Delta Fleet Services.
+Invert elevation matches civil engineering specifications Drawing C-102. Backfill compaction
+tests scheduled following joint sealing.
+
+--- RECORD ID: AUDIT-MEMO-2026-18 ---
+DATE: 2026-09-21T14:00:00Z
+INSPECTOR: Environmental Specialist Sarah Jenkins
+SUBJECT: Soil Silt Barrier Audit - Waterfront Esplanade Pier
+MEMO DETAILS:
+Inspected silt curtains deployed along the waterfront bulkhead. Minor tear noted on the eastern
+anchor line; contractor instructed to repair within 24 hours. Turbidity levels upstream and
+downstream remain identical.
+
+--- RECORD ID: AUDIT-MEMO-2026-20 ---
+DATE: 2026-09-24T08:45:00Z
+INSPECTOR: Safety Officer Dominic Cross
+SUBJECT: Electrical Switchgear Pre-Commissioning - Avenue C Overpass
+MEMO DETAILS:
+Performed insulation resistance testing on primary feeders installed by Quantum Electrical.
+All phases tested above 100 Megaohms at 1000V DC. Lockout/tagout protocol established pending
+final utility grid tie-in.
+
+--- RECORD ID: AUDIT-MEMO-2026-22 ---
+DATE: 2026-09-26T16:20:00Z
+INSPECTOR: David Miller (Senior Municipal Safety Inspector, Badge ENG-404)
+SUBJECT: Post-Excavation Bedrock Check - Central Rail Depot Alpha
+MEMO DETAILS:
+Site visit following foundation trenching. Core samples indicate competent gneiss bedrock at 4.2m
+depth. No unexpected subterranean water infiltration observed. Excavation signed off for slab formation.

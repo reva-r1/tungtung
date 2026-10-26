@@ -1,0 +1,90 @@
+{
+  "benchmark_id": "blind_intelligence_v1",
+  "generated_at": "2026-10-25T08:30:00Z",
+  "questions": [
+    {
+      "question_id": "Q-01",
+      "target_case_id": "CASE-01",
+      "query": "What is the corporate background, advisory role, and communication activity associated with Julian Vance Thorne?",
+      "primary_entity": "Julian Vance Thorne",
+      "domain_category": "advisory_and_governance"
+    },
+    {
+      "question_id": "Q-02",
+      "target_case_id": "CASE-02",
+      "query": "Trace the commercial relationships, subsidiary holdings, and supply chain links originating from Marcus Vance.",
+      "primary_entity": "Marcus Vance",
+      "domain_category": "beneficial_ownership"
+    },
+    {
+      "question_id": "Q-03",
+      "target_case_id": "CASE-03",
+      "query": "Examine the financial flows, subcontract payments, and personnel interactions connected to Valcourt Infrastructure Group following the award of contract CTR-2026-881.",
+      "primary_entity": "Valcourt Infrastructure Group",
+      "domain_category": "procurement_integrity"
+    },
+    {
+      "question_id": "Q-04",
+      "target_case_id": "CASE-04",
+      "query": "What is the timeline of physical engineering operations and statutory regulatory clearances at North Tunnel Berth 4?",
+      "primary_entity": "North Tunnel Berth 4",
+      "domain_category": "regulatory_compliance"
+    },
+    {
+      "question_id": "Q-05",
+      "target_case_id": "CASE-05",
+      "query": "Where was consignment CONSIGN-STEEL-8812 officially assigned to be delivered, and where does site telemetry confirm it was unloaded?",
+      "primary_entity": "CONSIGN-STEEL-8812",
+      "domain_category": "chain_of_custody"
+    },
+    {
+      "question_id": "Q-06",
+      "target_case_id": "CASE-06",
+      "query": "Identify the background, organizational affiliations, and official roles of individuals named David Miller in the records.",
+      "primary_entity": "David Miller",
+      "domain_category": "entity_disambiguation"
+    },
+    {
+      "question_id": "Q-07",
+      "target_case_id": "CASE-07",
+      "query": "Investigate the transactions and site mobilizations involving Solomon Crane Hire to determine if there is evidence of collusive or fraudulent behavior.",
+      "primary_entity": "Solomon Crane Hire",
+      "domain_category": "decoy_verification"
+    },
+    {
+      "question_id": "Q-08",
+      "target_case_id": "CASE-08",
+      "query": "What evidence exists regarding contact between Arthur Pendelton and Claire Dunmore, and what conclusions can be drawn about their communication?",
+      "primary_entity": "Arthur Pendelton",
+      "domain_category": "epistemic_sufficiency"
+    },
+    {
+      "question_id": "Q-09",
+      "target_case_id": "CASE-09",
+      "query": "Track the vehicle convoy that departed Quarry Site Bravo on 2026-09-25 destined for Pier 9 Subway Extension. Did all vehicles arrive as scheduled?",
+      "primary_entity": "Pier 9 Subway Extension",
+      "domain_category": "telemetry_reconciliation"
+    },
+    {
+      "question_id": "Q-10",
+      "target_case_id": "CASE-10",
+      "query": "Which corporate entity corresponds to registration identifier Entity Reg #9941-K associated with contract CTR-2026-702?",
+      "primary_entity": "Entity Reg #9941-K",
+      "domain_category": "unnamed_entity_resolution"
+    },
+    {
+      "question_id": "Q-11",
+      "target_case_id": "CASE-11",
+      "query": "Document the professional career history, public positions, and subsequent corporate appointments of Cassandra Vance.",
+      "primary_entity": "Cassandra Vance",
+      "domain_category": "longitudinal_trajectory"
+    },
+    {
+      "question_id": "Q-12",
+      "target_case_id": "CASE-12",
+      "query": "Review the public contract awards, financial disbursements, and inspection findings related to Veridian Environmental Testing Labs.",
+      "primary_entity": "Veridian Environmental Testing Labs",
+      "domain_category": "clean_negative_control"
+    }
+  ]
+}

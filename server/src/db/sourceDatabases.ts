@@ -46,6 +46,10 @@ export const REGISTERED_SOURCE_CONFIGS: SourceDbConfig[] = [
  * Initialize and populate the 4 independent source SQLite databases
  */
 export function initSourceDatabases(forceRecreate: boolean = false): void {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('[Security Violation] initSourceDatabases is strictly prohibited in production environments.');
+  }
+
   if (!fs.existsSync(SOURCES_DIR)) {
     fs.mkdirSync(SOURCES_DIR, { recursive: true });
   }

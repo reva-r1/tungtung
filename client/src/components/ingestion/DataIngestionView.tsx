@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Trash2
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 
 import { useInvestigation } from '../../context/InvestigationContext';
@@ -28,9 +29,10 @@ export const DataIngestionView: React.FC = () => {
   const [preview, setPreview] = useState<any | null>(null);
   const [committing, setCommitting] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [deleteConfirmTarget, setDeleteConfirmTarget] = useState<{ id: string; name: string; isAll?: boolean } | null>(null);
   const [ingestSuccess, setIngestSuccess] = useState<string | null>(null);
   const [ingestError, setIngestError] = useState<string | null>(null);
-
+  const [isDragging, setIsDragging] = useState<boolean>(false);
 
   // Selected Dataset for viewing actual records
   const [viewingDataset, setViewingDataset] = useState<Dataset | null>(null);
@@ -58,8 +60,7 @@ export const DataIngestionView: React.FC = () => {
     loadDatasets();
   }, []);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleProcessFile = async (file: File) => {
     if (!file) return;
 
     setSelectedFile(file);
@@ -79,6 +80,14 @@ export const DataIngestionView: React.FC = () => {
     } finally {
       setInspecting(false);
     }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await handleProcessFile(file);
+    }
+    e.target.value = '';
   };
 
   const handleCommitIngestion = async () => {
@@ -105,47 +114,53 @@ export const DataIngestionView: React.FC = () => {
     }
   };
 
-  const handleDeleteDataset = async (datasetId: string, datasetName: string) => {
-    if (!window.confirm(`Are you sure you want to permanently delete dataset "${datasetName}" and purge all correlated entities and records?`)) {
-      return;
-    }
-    setIsDeleting(datasetId);
-    setIngestSuccess(null);
-    setIngestError(null);
-    try {
-      await api.deleteDataset(datasetId);
-      setIngestSuccess(`Dataset "${datasetName}" and its extracted graph nodes were permanently deleted.`);
-      if (viewingDataset?.id === datasetId) {
-        setViewingDataset(null);
-      }
-      await loadDatasets();
-      await refreshActiveDataset();
-    } catch (err: any) {
-      console.error('Delete dataset error:', err);
-      setIngestError(err.message || 'Failed to delete dataset.');
-    } finally {
-      setIsDeleting(null);
-    }
+  const promptDeleteDataset = (datasetId: string, datasetName: string) => {
+    setDeleteConfirmTarget({ id: datasetId, name: datasetName, isAll: false });
   };
 
-  const handleDeleteAllDatasets = async () => {
-    if (!window.confirm('WARNING: This will permanently delete ALL uploaded datasets and purge all extracted graph data from the database. Proceed?')) {
-      return;
-    }
-    setIsDeleting('ALL');
-    setIngestSuccess(null);
-    setIngestError(null);
-    try {
-      await api.deleteAllDatasets();
-      setIngestSuccess('All uploaded datasets and intelligence graph data purged successfully.');
-      setViewingDataset(null);
-      await loadDatasets();
-      await refreshActiveDataset();
-    } catch (err: any) {
-      console.error('Purge all datasets error:', err);
-      setIngestError(err.message || 'Failed to purge datasets.');
-    } finally {
-      setIsDeleting(null);
+  const promptDeleteAll = () => {
+    setDeleteConfirmTarget({ id: 'ALL', name: 'ALL DATASETS', isAll: true });
+  };
+
+  const handleExecuteDelete = async () => {
+    if (!deleteConfirmTarget) return;
+    const { id, name, isAll } = deleteConfirmTarget;
+    setDeleteConfirmTarget(null);
+
+    if (isAll) {
+      setIsDeleting('ALL');
+      setIngestSuccess(null);
+      setIngestError(null);
+      try {
+        await api.deleteAllDatasets();
+        setIngestSuccess('All uploaded datasets and intelligence graph data purged successfully.');
+        setViewingDataset(null);
+        await loadDatasets();
+        await refreshActiveDataset();
+      } catch (err: any) {
+        console.error('Purge all datasets error:', err);
+        setIngestError(err.message || 'Failed to purge datasets.');
+      } finally {
+        setIsDeleting(null);
+      }
+    } else {
+      setIsDeleting(id);
+      setIngestSuccess(null);
+      setIngestError(null);
+      try {
+        await api.deleteDataset(id);
+        setIngestSuccess(`Dataset "${name}" and its correlated graph nodes were permanently deleted.`);
+        if (viewingDataset?.id === id) {
+          setViewingDataset(null);
+        }
+        await loadDatasets();
+        await refreshActiveDataset();
+      } catch (err: any) {
+        console.error('Delete dataset error:', err);
+        setIngestError(err.message || 'Failed to delete dataset.');
+      } finally {
+        setIsDeleting(null);
+      }
     }
   };
 
@@ -182,46 +197,46 @@ export const DataIngestionView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col bg-[#090d16] font-mono text-xs text-slate-300">
+    <div className="flex-1 overflow-hidden flex flex-col bg-[#0E0F11] font-sans text-xs text-[#E6E7E9]">
       {/* Top Banner */}
-      <div className="p-4 bg-[#0b1120] border-b border-[#1e293b] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+      <div className="p-4 bg-[#151618] border-b border-[#26292D] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
           <div className="flex items-center gap-2">
-            <UploadCloud className="w-5 h-5 text-cyan-400" />
-            <h1 className="text-sm font-bold text-white tracking-wide uppercase">
-              Datasets Ledger & Ingest Gateway
+            <Layers className="w-4 h-4 text-[#4C90F0]" />
+            <h1 className="text-sm font-semibold text-[#E6E7E9] tracking-tight">
+              Datasets Ledger & Ingestion
             </h1>
           </div>
-          <p className="text-slate-400 text-[11px] mt-0.5">
-            Verify and load CSV data inputs securely into the unified intelligence environment.
+          <p className="text-[#8B9097] text-xs mt-0.5">
+            Ingest and verify multi-format datasets, documents, and scanned manifests into the unified intelligence store.
           </p>
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left/Center Main Section */}
-        <div className="flex-1 flex flex-col overflow-y-auto p-6 space-y-5">
+        <div className="flex-1 flex flex-col overflow-y-auto p-6 space-y-4">
           {/* Notification Alerts */}
           {ingestSuccess && (
-            <div className="p-3.5 rounded bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 flex items-center justify-between animate-fade-in shrink-0">
+            <div className="p-3 rounded bg-[#151618] border border-[#3DB46D]/40 text-[#3DB46D] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                <CheckCircle className="w-4 h-4 text-[#3DB46D]" />
                 <span>{ingestSuccess}</span>
               </div>
-              <button onClick={() => setIngestSuccess(null)} className="text-emerald-400 hover:text-white font-bold">✕</button>
+              <button onClick={() => setIngestSuccess(null)} className="text-[#8B9097] hover:text-[#E6E7E9]">✕</button>
             </div>
           )}
 
           {ingestError && (
-            <div className="p-3.5 rounded bg-rose-950/40 border border-rose-500/50 text-rose-300 flex flex-col gap-1 animate-fade-in shrink-0">
+            <div className="p-3 rounded bg-[#151618] border border-[#E5484D]/40 text-[#E5484D] flex flex-col gap-1 shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-400" />
-                  <span className="font-bold">Import Incomplete</span>
+                  <AlertCircle className="w-4 h-4 text-[#E5484D]" />
+                  <span className="font-semibold">Import Notice</span>
                 </div>
-                <button onClick={() => setIngestError(null)} className="text-rose-400 hover:text-white font-bold">✕</button>
+                <button onClick={() => setIngestError(null)} className="text-[#8B9097] hover:text-[#E6E7E9]">✕</button>
               </div>
-              <pre className="text-[10px] bg-rose-950/20 p-2 rounded border border-rose-900/30 text-rose-200 mt-1 whitespace-pre-wrap">
+              <pre className="text-[10px] bg-[#0E0F11] p-2 rounded border border-[#26292D] text-[#E5484D] mt-1 whitespace-pre-wrap font-mono">
                 {ingestError}
               </pre>
             </div>
@@ -229,27 +244,50 @@ export const DataIngestionView: React.FC = () => {
 
           {/* Initial File Upload Interface */}
           {!preview && !viewingDataset && (
-            <div className="flex-1 flex flex-col justify-center items-center min-h-[350px] p-8 rounded-lg border-2 border-dashed border-[#1e293b] bg-[#0f172a]/20 text-center">
-              <div className="w-14 h-14 rounded-full bg-[#0b1120] border border-[#1e293b] flex items-center justify-center mb-4">
-                <UploadCloud className="w-6 h-6 text-cyan-400" />
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) {
+                  handleProcessFile(file);
+                }
+              }}
+              className={`flex-1 flex flex-col justify-center items-center min-h-[320px] p-8 rounded border-2 border-dashed transition text-center ${
+                isDragging ? 'border-[#4C90F0] bg-[#1a2333]' : 'border-[#26292D] bg-[#151618]'
+              }`}
+            >
+              <div className="w-12 h-12 rounded bg-[#1C1E21] border border-[#26292D] flex items-center justify-center mb-3 text-[#4C90F0]">
+                <UploadCloud className="w-5 h-5" />
               </div>
-              <h2 className="text-sm font-bold text-slate-200 uppercase tracking-wide">
-                Upload Target CSV Dataset
+              <h2 className="text-sm font-semibold text-[#E6E7E9]">
+                Upload Document or Dataset (CSV, PDF, DOCX, Image, Excel)
               </h2>
-              <p className="text-slate-400 text-[11px] max-w-md mt-1.5 mb-6 leading-relaxed">
-                Import custom intelligence manifests, telemetry spreadsheets, or external feeds. Previews let you audit data types before committing records.
+              <p className="text-[#8B9097] text-xs max-w-md mt-1 mb-5 leading-relaxed">
+                Drag and drop or select your files: analytical spreadsheets (.csv), PDF documents, Word field memos (.docx), or scanned stencils (.png, .jpg) to run through the OCR and entity correlation engine.
               </p>
 
               <div>
-                <label htmlFor="csv-file-upload" className="cursor-pointer">
-                  <span className="px-5 py-2.5 rounded bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/40 text-cyan-300 font-bold transition inline-flex items-center gap-2 shadow-lg">
-                    <FileSpreadsheet className="w-4 h-4" />
-                    SELECT CSV FILE
+                <label htmlFor="document-file-upload" className="cursor-pointer">
+                  <span className="px-4 py-2 rounded bg-[#4C90F0] hover:bg-[#3A7FE0] text-white text-xs font-medium transition inline-flex items-center gap-2">
+                    <UploadCloud className="w-4 h-4" />
+                    Select Document or Dataset
                   </span>
                   <input
-                    id="csv-file-upload"
+                    id="document-file-upload"
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.xlsx,.xls,.json,.pdf,.docx,.doc,.png,.jpg,.jpeg,.tiff,.tif,.bmp,.webp,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/pdf,text/csv,image/*,*/*"
                     onChange={handleFileChange}
                     className="hidden"
                   />
@@ -257,9 +295,9 @@ export const DataIngestionView: React.FC = () => {
               </div>
 
               {inspecting && (
-                <div className="mt-8 flex items-center gap-2 text-cyan-400 animate-pulse">
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>PARSING DATASET & DETECTING SCHEMA TYPE INDEXES...</span>
+                <div className="mt-6 flex items-center gap-2 text-[#4C90F0] text-xs font-mono">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Parsing dataset schema and indexing fields...</span>
                 </div>
               )}
             </div>
@@ -282,6 +320,19 @@ export const DataIngestionView: React.FC = () => {
                     <span>Total Rows: <strong className="text-cyan-300">{preview.totalRows.toLocaleString()}</strong></span>
                     <span>Format: <strong className="text-cyan-300">{preview.format}</strong></span>
                   </div>
+                  {preview.ocrMetadata && (
+                    <div className="mt-2.5 flex flex-wrap gap-2 text-[10px]">
+                      <span className="px-2 py-0.5 rounded bg-purple-950/80 border border-purple-500/40 text-purple-300 font-mono">
+                        Engine: {preview.ocrMetadata.engineUsed?.toUpperCase()}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-mono">
+                        Document Confidence: {Math.round(preview.ocrMetadata.documentConfidence * 100)}%
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-mono">
+                        Pages: {preview.ocrMetadata.totalPages}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -413,11 +464,12 @@ export const DataIngestionView: React.FC = () => {
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleDeleteDataset(viewingDataset.id, viewingDataset.name)}
+                    type="button"
+                    onClick={() => promptDeleteDataset(viewingDataset.id, viewingDataset.name)}
                     disabled={isDeleting === viewingDataset.id}
-                    className="px-3 py-1.5 rounded bg-rose-950/60 hover:bg-rose-900/60 border border-rose-500/40 text-rose-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded bg-rose-950/60 hover:bg-rose-900/60 border border-rose-500/40 text-rose-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    <Trash2 className="w-3.5 h-3.5 text-rose-400 pointer-events-none" />
                     <span>{isDeleting === viewingDataset.id ? 'DELETING...' : 'DELETE DATASET'}</span>
                   </button>
 
@@ -530,12 +582,13 @@ export const DataIngestionView: React.FC = () => {
 
             {datasets.length > 0 && (
               <button
-                onClick={handleDeleteAllDatasets}
+                type="button"
+                onClick={promptDeleteAll}
                 disabled={isDeleting === 'ALL'}
-                className="text-[10px] text-rose-400 hover:text-rose-300 px-1.5 py-0.5 rounded bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/40 transition flex items-center gap-1"
+                className="text-[10px] text-rose-400 hover:text-rose-300 px-1.5 py-0.5 rounded bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/40 transition flex items-center gap-1 cursor-pointer"
                 title="Purge all uploaded datasets"
               >
-                <Trash2 className="w-3 h-3 text-rose-400" />
+                <Trash2 className="w-3 h-3 text-rose-400 pointer-events-none" />
                 <span>PURGE ALL</span>
               </button>
             )}
@@ -582,15 +635,18 @@ export const DataIngestionView: React.FC = () => {
                           {isDemo ? 'DEMO' : 'USER'}
                         </span>
                         <button
+                          type="button"
+                          data-testid={`delete-dataset-${ds.id}`}
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
-                            handleDeleteDataset(ds.id, ds.name);
+                            promptDeleteDataset(ds.id, ds.name);
                           }}
                           disabled={isItemDeleting}
-                          className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-950/50 transition opacity-80 group-hover:opacity-100"
-                          title="Delete dataset"
+                          className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 transition cursor-pointer"
+                          title={`Delete ${ds.name}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5 pointer-events-none" />
                         </button>
                       </div>
                     </div>
@@ -619,6 +675,56 @@ export const DataIngestionView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {deleteConfirmTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-[#151618] border border-[#26292D] rounded max-w-md w-full p-5 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-[#E5484D]">
+              <div className="p-2 rounded bg-[#1C1E21] border border-[#26292D]">
+                <AlertTriangle className="w-5 h-5 text-[#E5484D]" />
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-[#E6E7E9] uppercase tracking-wide">
+                  {deleteConfirmTarget.isAll ? 'Purge All Datasets' : 'Delete Dataset'}
+                </h3>
+                <p className="text-[11px] text-[#8B9097]">Irreversible Action</p>
+              </div>
+            </div>
+
+            <div className="text-xs text-[#E6E7E9] leading-relaxed bg-[#1C1E21] border border-[#26292D] p-3 rounded">
+              {deleteConfirmTarget.isAll ? (
+                <span>
+                  Are you sure you want to permanently delete <strong className="text-[#E5484D]">ALL uploaded datasets</strong>? This will purge all associated raw records and extracted graph entities.
+                </span>
+              ) : (
+                <span>
+                  Are you sure you want to permanently delete dataset <strong className="text-[#4C90F0]">"{deleteConfirmTarget.name}"</strong>? All correlated raw records will be purged.
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmTarget(null)}
+                className="px-3 py-1.5 rounded bg-[#1C1E21] hover:bg-[#26292D] text-[#8B9097] hover:text-[#E6E7E9] text-xs font-medium border border-[#26292D] transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                data-testid="confirm-delete-action-btn"
+                onClick={handleExecuteDelete}
+                className="px-3 py-1.5 rounded bg-[#E5484D] hover:bg-[#d43d42] text-white text-xs font-medium transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Confirm & Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

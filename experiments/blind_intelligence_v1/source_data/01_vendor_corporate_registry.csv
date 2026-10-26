@@ -1,0 +1,75 @@
+company_name,director_name,beneficial_owner,registration_number,contact_phone,registered_address,shareholder_notes,formation_date
+Thorne Civil Consulting Ltd,Julian V. Thorne,Julian V. Thorne,REG-1049-T,+1-555-019-4401,"Suite 310, 88 Civic Center Lane",Registered engineering consulting advisory,2021-04-12
+Apex Horizon Properties LLC,Gareth Holbrook,Marcus Vance,REG-2018-A,+1-555-014-9920,"Floor 12, 100 Exchange Square",100% owned by ultimate beneficial owner Marcus Vance,2019-06-15
+Ironclad Material Supplies Inc,Nathan Drake,Apex Horizon Properties LLC,REG-3312-I,+1-555-012-7711,"Foundry Row Shed 4B",45% equity held by corporate shareholder Apex Horizon Properties LLC,2020-09-01
+Valcourt Infrastructure Group,Lucian Valcourt,Lucian Valcourt,REG-8810-V,+1-555-018-3300,"Executive Tower Suite 900, Merchants Court",Prime civil construction general contractor,2017-02-20
+Zephyr Logistics Ltd,Tariq Mansour,Tariq Mansour,REG-5519-Z,+1-555-017-8899,"Unit 12, Dockside Ave",Subcontracted freight logistics and freight forwarding,2022-01-10
+Miller Heavy Transport,David A. Miller,David A. Miller,TAX-11894,+1-555-011-2244,"Depot Yard 2, Industrial Parkway",Bulk machinery haulage and flatbed transport,2018-11-05
+Solomon Crane Hire,Elias Solomon,Elias Solomon,REG-4402-S,+1-555-016-5511,"Crane Yard 1, Terminal Way",Heavy lifting crane hire and rigging equipment leasing,2016-08-14
+Kestrel Urban Works Ltd,Miriam Al-Hassan,Miriam Al-Hassan,REG-9941-K,+1-555-019-8821,"Suite 400, 120 Harborview Blvd",Specialized urban masonry and structural refurbishment,2023-03-18
+Orion Aggregate Partners,Hector Vance,Cassandra Vance,CORP-REG-1027,+1-555-015-3388,"Terminal Way Silo 3",Quarry and aggregate supply. Cassandra Vance appointed Chief Operating Officer in March 2026,2019-10-22
+Veridian Environmental Testing Labs,Dr. Simon Cole,Dr. Simon Cole,CORP-REG-1041,+1-555-013-6644,"Science Park Building C",Certified environmental soil and hydrological testing laboratory,2015-05-30
+Atlas Precast Works Group,Yvonne Bexley,Yvonne Bexley,REG-1540-M,+1-555-0163-5682,"Suite 433, 331 Harborview Blvd",General municipal supplier for electrical,2016-04-21
+Beacon Paving Solutions Corp,Yvonne Radcliffe,Yvonne Radcliffe,REG-9806-S,+1-555-0155-8016,"Suite 128, 269 Exchange Square",General municipal supplier for fencing,2012-05-22
+Crestview Engineering Enterprises,Kenneth Northwood,Kenneth Northwood,REG-2072-Y,+1-555-0124-7216,"Suite 200, 393 Terminal Way",General municipal supplier for drainage,2013-06-12
+Delta Fleet Services Inc,Rachel Underwood,Rachel Underwood,REG-4942-P,+1-555-0132-7401,"Suite 609, 254 Civic Center Lane",General municipal supplier for electrical,2019-07-12
+Echo Ridge Geotechnical LLC,Alexander Waverly,Alexander Waverly,REG-6239-K,+1-555-0190-3280,"Suite 102, 236 Dockside Ave",General municipal supplier for fencing,2017-01-12
+Frontier Demolition Ltd LLC,Victor Ellsworth,Victor Ellsworth,REG-6987-N,+1-555-0188-3209,"Suite 600, 147 Exchange Square",General municipal supplier for aggregates,2017-01-11
+Granite Rock Quarries Corp,Edward Ashford,Edward Ashford,REG-8545-Q,+1-555-0156-6086,"Suite 721, 219 Dockside Ave",General municipal supplier for drainage,2014-06-26
+Harbor Dredging Corp Group,Henry Greystone,Henry Greystone,REG-9473-T,+1-555-0128-6250,"Suite 300, 211 Terminal Way",General municipal supplier for fencing,2014-06-16
+Imperial Cable Supplies Services,Oscar Quinn,Julia Radcliffe,REG-9886-Z,+1-555-0132-6331,"Suite 504, 293 Civic Center Lane",General municipal supplier for aggregates,2014-08-17
+Jupiter Structural Steel Holdings,Laura Ashford,Laura Ashford,REG-9819-E,+1-555-0184-8954,"Suite 603, 55 Terminal Way",General municipal supplier for paving,2016-04-17
+Keystone Architectural Brass Ltd,Catherine Blackwood,Catherine Blackwood,REG-5033-X,+1-555-0170-3250,"Suite 497, 251 Exchange Square",General municipal supplier for aggregates,2012-04-27
+Lakeside Pipeline Corp Ltd,Yvonne Thornton,Yvonne Thornton,REG-7124-T,+1-555-0155-3843,"Suite 487, 382 Commercial Way",General municipal supplier for aggregates,2013-05-28
+Maritime Crane Operators Enterprises,Gloria Montague,Gloria Montague,REG-7996-U,+1-555-0152-1267,"Suite 446, 164 Harborview Blvd",General municipal supplier for drainage,2018-08-10
+Nexus Power Grids Enterprises,Daphne Vanderbilt,Daphne Vanderbilt,REG-2544-Q,+1-555-0135-9850,"Suite 860, 189 Exchange Square",General municipal supplier for geotechnical,2012-06-15
+Omega Concrete Batching Services,Iris Lancaster,Iris Lancaster,REG-9864-S,+1-555-0131-4023,"Suite 623, 301 Terminal Way",General municipal supplier for aggregates,2016-07-10
+Pinnacle Scaffolding Inc Corp,Penelope Ellsworth,Penelope Ellsworth,REG-6979-R,+1-555-0150-1836,"Suite 624, 323 Civic Center Lane",General municipal supplier for geotechnical,2016-06-17
+Quantum Electrical Contracting Holdings,Gloria Jenkins,Gloria Jenkins,REG-8392-C,+1-555-0137-3324,"Suite 300, 384 Merchants Court",General municipal supplier for electrical,2016-09-22
+Redline Haulage Ltd Corp,Dominic Radcliffe,Dominic Radcliffe,REG-4076-L,+1-555-0130-6747,"Suite 739, 107 Dockside Ave",General municipal supplier for drainage,2013-04-12
+Summit Roadways LLC,Quentin Greystone,Quentin Greystone,REG-3530-V,+1-555-0123-5003,"Suite 703, 159 Exchange Square",General municipal supplier for paving,2015-09-21
+Titan Heavy Foundations Group,Dominic Underwood,Dominic Underwood,REG-3852-M,+1-555-0144-3498,"Suite 495, 191 Dockside Ave",General municipal supplier for paving,2014-05-24
+Universal Asphalt Supply Enterprises,Gloria Greystone,Gloria Greystone,REG-5320-X,+1-555-0124-2298,"Suite 473, 186 Exchange Square",General municipal supplier for fencing,2012-02-18
+Vanguard Safety Barriers Holdings,Penelope Quinn,Penelope Quinn,REG-7277-P,+1-555-0198-4736,"Suite 181, 375 Harborview Blvd",General municipal supplier for aggregates,2014-03-21
+Westside Drainage Ltd Holdings,Rachel Vanderbilt,Stephen Dunbar,REG-3439-F,+1-555-0143-2044,"Suite 590, 213 Civic Center Lane",General municipal supplier for drainage,2015-03-17
+Zenith Surveying Services Holdings,Beatrice Zimmerman,Penelope Dunbar,REG-6483-Q,+1-555-0138-6499,"Suite 189, 73 Foundry Row",General municipal supplier for drainage,2018-05-10
+Alpine Soil Mechanics Group,Iris Ellsworth,Iris Ellsworth,REG-9095-L,+1-555-0139-4837,"Suite 860, 374 Dockside Ave",General municipal supplier for fencing,2018-02-21
+Boreal Timber & Shoring Services,Malcolm Ingram,Malcolm Ingram,REG-3486-M,+1-555-0137-6435,"Suite 119, 319 Terminal Way",General municipal supplier for geotechnical,2013-01-24
+Canyon Aggregates LLC Ltd,Felix Northwood,Felix Kensington,REG-2948-Q,+1-555-0176-6761,"Suite 392, 330 Dockside Ave",General municipal supplier for paving,2012-06-28
+Dover Maritime Logistics Services,Gloria Dunbar,Iris Northwood,REG-9055-C,+1-555-0185-1297,"Suite 567, 279 Foundry Row",General municipal supplier for fencing,2013-07-25
+Eagle Eye Site Security Services,Ian Kensington,Ian Kensington,REG-7476-G,+1-555-0116-2442,"Suite 374, 227 Industrial Parkway",General municipal supplier for paving,2014-01-18
+Fathom Underwater Surveying Holdings,Yvonne Radcliffe,Rachel Dalton,REG-5122-M,+1-555-0146-9802,"Suite 165, 97 Foundry Row",General municipal supplier for paving,2014-02-14
+Garrison Security Fencing Enterprises,Teresa Waverly,Laura Pendleton,REG-5814-J,+1-555-0172-2574,"Suite 456, 329 Commercial Way",General municipal supplier for electrical,2015-02-27
+Haven Port Logistics Holdings,Julia Radcliffe,Julia Radcliffe,REG-4862-C,+1-555-0186-1050,"Suite 188, 369 Commercial Way",General municipal supplier for paving,2013-05-11
+Island Sound Marine Works Group,Quentin Dunbar,Quentin Dunbar,REG-7453-N,+1-555-0142-8719,"Suite 743, 293 Industrial Parkway",General municipal supplier for paving,2015-02-27
+Javelin Equipment Lease Group,Hannah Bexley,Hannah Bexley,REG-7654-Z,+1-555-0187-7680,"Suite 121, 151 Dockside Ave",General municipal supplier for fencing,2018-06-19
+Kodiak Earthmoving Inc Enterprises,Oscar Fairchild,Rachel Ingram,REG-4361-D,+1-555-0124-8438,"Suite 871, 261 Industrial Parkway",General municipal supplier for fencing,2018-04-28
+Lyceum Environmental Services Services,Fiona Bexley,Fiona Bexley,REG-2730-U,+1-555-0147-3056,"Suite 742, 227 Merchants Court",General municipal supplier for drainage,2018-09-25
+Monarch Structural Glazing Enterprises,Stephen Quinn,Stephen Quinn,REG-7508-D,+1-555-0168-7109,"Suite 863, 210 Commercial Way",General municipal supplier for fencing,2016-01-23
+Northgate Freightways Ltd,Yvonne Greystone,Yvonne Greystone,REG-2942-Q,+1-555-0132-5161,"Suite 236, 347 Foundry Row",General municipal supplier for fencing,2013-06-16
+Olympic Water Proofing Holdings,Laura Radcliffe,Laura Radcliffe,REG-8583-U,+1-555-0182-4196,"Suite 143, 187 Foundry Row",General municipal supplier for electrical,2016-02-10
+Paramount Pier Solutions Ltd,Felix Blackwood,Henry Vanderbilt,REG-4675-P,+1-555-0170-1588,"Suite 521, 263 Industrial Parkway",General municipal supplier for drainage,2018-06-17
+Quest Geodetic Services LLC,Xavier Lancaster,Xavier Lancaster,REG-2880-V,+1-555-0154-9113,"Suite 111, 197 Merchants Court",General municipal supplier for paving,2015-03-19
+Ridgeline Excavation Group,Daphne Oakley,Dominic Yardley,REG-8770-F,+1-555-0117-9416,"Suite 306, 301 Merchants Court",General municipal supplier for electrical,2015-04-23
+Sapphire Coating Systems Partners,Oscar Yardley,Oscar Yardley,REG-3670-A,+1-555-0128-4469,"Suite 248, 14 Harborview Blvd",General municipal supplier for drainage,2013-02-24
+Trident Rigging & Towing Group,Victor Hawthorne,Victor Hawthorne,REG-1499-J,+1-555-0177-6199,"Suite 521, 259 Commercial Way",General municipal supplier for drainage,2017-06-25
+Unity Mechanical Services Group,Iris Northwood,Brendan Pendleton,REG-4174-D,+1-555-0184-9405,"Suite 521, 168 Merchants Court",General municipal supplier for drainage,2015-05-11
+Vertex Structural Surveys Services,Oscar Cromwell,Oscar Cromwell,REG-6254-X,+1-555-0177-1001,"Suite 275, 14 Industrial Parkway",General municipal supplier for fencing,2012-01-27
+Waypoint Traffic Systems Inc,Gloria Lancaster,Teresa Ashford,REG-3588-N,+1-555-0160-8853,"Suite 548, 16 Civic Center Lane",General municipal supplier for electrical,2012-05-26
+Yorkshire Steel Erectors Holdings,Victor Blackwood,Victor Blackwood,REG-3053-V,+1-555-0150-9070,"Suite 372, 394 Foundry Row",General municipal supplier for aggregates,2017-04-17
+AeroFleet Courier Cargo Inc,Wendy Kensington,Wendy Kensington,REG-5190-G,+1-555-0179-4426,"Suite 606, 83 Civic Center Lane",General municipal supplier for paving,2018-06-14
+Bayside Tug & Barge Enterprises,Oscar Ellsworth,Oscar Ellsworth,REG-8087-E,+1-555-0116-5403,"Suite 561, 248 Civic Center Lane",General municipal supplier for electrical,2014-07-11
+Century Civil Systems Group,Yvonne Northwood,Yvonne Northwood,REG-3064-Z,+1-555-0155-2853,"Suite 366, 101 Harborview Blvd",General municipal supplier for aggregates,2014-03-25
+Drakestone Quarry Corp Partners,Zachary Ellsworth,Zachary Ellsworth,REG-1762-W,+1-555-0178-1979,"Suite 662, 372 Dockside Ave",General municipal supplier for paving,2013-06-28
+East Coast Pipework Ltd Holdings,Oscar Montague,Oscar Montague,REG-8815-R,+1-555-0159-6151,"Suite 348, 25 Exchange Square",General municipal supplier for aggregates,2012-04-17
+Falcon Crane & Hoist Enterprises,Victor Quinn,Victor Quinn,REG-4080-B,+1-555-0149-5313,"Suite 125, 317 Terminal Way",General municipal supplier for paving,2016-03-10
+Grandview Land Surveyors Holdings,Kenneth Radcliffe,Kenneth Radcliffe,REG-6374-O,+1-555-0149-4967,"Suite 197, 246 Terminal Way",General municipal supplier for geotechnical,2013-09-19
+Highland Earthworks Group,Brendan Radcliffe,Brendan Radcliffe,REG-8876-N,+1-555-0151-6734,"Suite 712, 174 Civic Center Lane",General municipal supplier for electrical,2018-04-28
+Inland River Barging Holdings,Hannah Lancaster,Hannah Lancaster,REG-3430-S,+1-555-0126-3622,"Suite 586, 281 Harborview Blvd",General municipal supplier for geotechnical,2013-02-27
+Junction Railway Logistics Inc,Quentin Lancaster,Quentin Lancaster,REG-3262-U,+1-555-0117-7798,"Suite 542, 272 Terminal Way",General municipal supplier for paving,2014-08-22
+Kensington Cableworks Inc,Wendy Oakley,Wendy Oakley,REG-8796-Q,+1-555-0195-2197,"Suite 377, 48 Harborview Blvd",General municipal supplier for paving,2019-01-26
+Liberty Marine Transport LLC,Teresa Bexley,Charles Kensington,REG-4487-K,+1-555-0171-4013,"Suite 580, 268 Industrial Parkway",General municipal supplier for paving,2018-03-27
+Metropolitan Core Drilling Enterprises,Alexander Oakley,Alexander Oakley,REG-3142-L,+1-555-0113-3823,"Suite 245, 177 Industrial Parkway",General municipal supplier for aggregates,2016-08-11
+Noble Metal Fabricators Enterprises,Brendan Ashford,Brendan Ashford,REG-7929-Z,+1-555-0125-8468,"Suite 828, 364 Foundry Row",General municipal supplier for aggregates,2015-08-27
+Outpost Security Solutions Services,Catherine Waverly,Catherine Waverly,REG-9513-A,+1-555-0197-5024,"Suite 805, 156 Industrial Parkway",General municipal supplier for paving,2015-03-19
+Pacific Dredge Partners Services,Wendy Vanderbilt,Wendy Vanderbilt,REG-9085-H,+1-555-0126-3243,"Suite 100, 128 Exchange Square",General municipal supplier for drainage,2016-08-19
