@@ -412,10 +412,11 @@ export const GraphInvestigationDashboard: React.FC = () => {
             )}
           </div>
 
-          {/* Collapsible Bottom Investigation Chat */}
+          {/* Draggable Bottom Investigation Copilot Chat */}
           <InvestigationChatDrawer
-            isOpen={isChatOpen}
-            onToggle={() => setIsChatOpen(!isChatOpen)}
+            selectedEntity={selectedNodeId ? entities[selectedNodeId] || null : null}
+            selectedEntityId={selectedNodeId}
+            onClearTarget={() => setSelectedNodeId(null)}
             onExecuteAction={handleExecuteChatAction}
             onFocusEntity={handleSelectNode}
           />

@@ -685,12 +685,14 @@ export class DeterministicCsvParser {
         }
 
         // If site location present with vehicle or driver (Telemetry / Checkpoint)
-        if (colSite && row[colSite] && (colPlate || colDriver)) {
+        const plateVal = colPlate && row[colPlate] ? row[colPlate] : undefined;
+        const driverVal = colDriver && row[colDriver] ? row[colDriver] : undefined;
+        if (colSite && row[colSite] && (plateVal || driverVal)) {
           const site = row[colSite];
           const siteId = this.makeEntityId('location', site);
-          const subjName = (colPlate && row[colPlate]) || (colDriver && row[colDriver]);
-          const subjId = colPlate && row[colPlate] ? this.makeEntityId('vehicle', row[colPlate]) : this.makeEntityId('person', row[colDriver]);
-          const subType = colPlate && row[colPlate] ? 'Vehicle' : 'Person';
+          const subjName = plateVal || driverVal || 'Unknown';
+          const subjId = plateVal ? this.makeEntityId('vehicle', plateVal) : this.makeEntityId('person', driverVal!);
+          const subType = plateVal ? 'Vehicle' : 'Person';
           const act = colAction && row[colAction] ? row[colAction] : 'CHECKPOINT';
           const cargoRef = colCargoRef && row[colCargoRef] ? ` [Cargo: ${row[colCargoRef]}]` : '';
 
