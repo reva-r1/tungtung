@@ -51,12 +51,12 @@ aiRouter.post('/tool', async (req: Request, res: Response) => {
 // Omni-Sensor AI Reasoning Space Chat Endpoint (With Perpetual SQLite Memory)
 aiRouter.post('/chat', async (req: Request, res: Response) => {
   try {
-    const { message, sessionId } = req.body;
+    const { message, sessionId, entityId } = req.body;
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: 'Message string is required' });
     }
 
-    const result = await AiService.chatReasoning(message, sessionId);
+    const result = await AiService.chatReasoning(message, sessionId, entityId);
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
