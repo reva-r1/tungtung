@@ -55,3 +55,14 @@ graphRouter.get('/path', (req: Request, res: Response) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Graph Inquiry Search: returns matched entities and their connected subgraph for instant canvas mapping
+graphRouter.get('/inquiry', (req: Request, res: Response) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    const result = GraphService.searchGraphInquiry(q);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});

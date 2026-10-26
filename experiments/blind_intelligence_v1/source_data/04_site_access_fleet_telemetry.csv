@@ -1,0 +1,99 @@
+gate_log_id,timestamp,driver_name,plate,company_name,site_location,action,cargo_manifest_ref,draught_weight_mt
+GATE-LOG-1008,2026-09-12T04:30:00Z,Carlos Ruiz,TRK-410,Valcourt Infrastructure Group,North Tunnel Berth 4,CONCRETE_POUR_DISCHARGE,Batch #441 Foundation Core,48.5
+GATE-LOG-1033,2026-09-22T14:15:00Z,Stanislaw Novak,TRK-992,Zephyr Logistics Ltd,Warehouse Omega,CARGO_UNLOAD,CONSIGN-STEEL-8812 - High Tensile Rebar,32.0
+GATE-LOG-1025,2026-09-11T08:00:00Z,Liam Henderson,CRN-200,Solomon Crane Hire,Pier 9 Subway Extension,CRANE_MOBILIZATION,EQUIP-LEASE-INV-1094 200T Liebherr,65.0
+GATE-LOG-1051,2026-09-25T08:00:00Z,Viktor Orlov,TRK-701,Orion Aggregate Partners,Quarry Site Bravo,DEPARTURE,Convoy Aggregate Alpha,40.0
+GATE-LOG-1052,2026-09-25T08:05:00Z,Marco Rossi,TRK-702,Orion Aggregate Partners,Quarry Site Bravo,DEPARTURE,Convoy Aggregate Alpha,41.2
+GATE-LOG-1053,2026-09-25T08:10:00Z,Raymond Brooks,TRK-703,Orion Aggregate Partners,Quarry Site Bravo,DEPARTURE,Convoy Aggregate Alpha,39.8
+GATE-LOG-1054,2026-09-25T08:15:00Z,Stefan Kowalski,TRK-704,Orion Aggregate Partners,Quarry Site Bravo,DEPARTURE,Convoy Aggregate Alpha,40.5
+GATE-LOG-1060,2026-09-25T10:15:00Z,Viktor Orlov,TRK-701,Orion Aggregate Partners,Pier 9 Subway Extension,ARRIVAL,Convoy Aggregate Alpha,40.0
+GATE-LOG-1061,2026-09-25T10:22:00Z,Marco Rossi,TRK-702,Orion Aggregate Partners,Pier 9 Subway Extension,ARRIVAL,Convoy Aggregate Alpha,41.2
+GATE-LOG-1062,2026-09-25T10:35:00Z,Stefan Kowalski,TRK-704,Orion Aggregate Partners,Pier 9 Subway Extension,ARRIVAL,Convoy Aggregate Alpha,40.5
+GATE-LOG-2000,2026-08-28T09:44:00Z,Lars Lindqvist,TRK-167,"Atlas Precast Works","South Channel Dredging",GATE_EXIT,MANIFEST-1792,42.5
+GATE-LOG-2001,2026-08-10T15:56:00Z,Chen Wei,TRK-818,"Omega Concrete Batching","South Channel Dredging",CONTAINER_STAGING,MANIFEST-8761,21.4
+GATE-LOG-2002,2026-07-20T13:31:00Z,Dmitri Volkov,TRK-626,"Vertex Structural Surveys","Pier 9 Subway Extension",GATE_EXIT,MANIFEST-2466,37.3
+GATE-LOG-2003,2026-07-13T18:39:00Z,Andre Dupont,TRK-183,"Drakestone Quarry Corp","South Channel Dredging",DISCHARGE,MANIFEST-2593,44.9
+GATE-LOG-2004,2026-07-10T06:20:00Z,Dmitri Volkov,TRK-128,"Noble Metal Fabricators","Harbor Causeway Bridge",GATE_EXIT,MANIFEST-1610,42.0
+GATE-LOG-2005,2026-07-11T18:38:00Z,Boris Petrov,TRK-837,"Vertex Structural Surveys","Harbor Causeway Bridge",INSPECTION_HOLD,MANIFEST-9463,39.6
+GATE-LOG-2006,2026-08-01T14:10:00Z,Andre Dupont,TRK-214,"AeroFleet Courier Cargo","Waterfront Esplanade Pier",GATE_EXIT,MANIFEST-7310,24.1
+GATE-LOG-2007,2026-08-01T16:11:00Z,Boris Petrov,TRK-381,"Metropolitan Core Drilling","Municipal Basin 2",GATE_EXIT,MANIFEST-8125,32.4
+GATE-LOG-2008,2026-07-07T09:44:00Z,Dmitri Volkov,TRK-772,"Bayside Tug & Barge","Depot Alpha Expansion",GATE_EXIT,MANIFEST-9650,25.5
+GATE-LOG-2009,2026-08-01T20:39:00Z,Andre Dupont,TRK-896,"Noble Metal Fabricators","Central Rail Depot Alpha",GATE_ENTRY,MANIFEST-1700,41.4
+GATE-LOG-2010,2026-07-04T12:26:00Z,Samir Patel,TRK-591,"Unity Mechanical Services","Terminal Gate 3 Widening",DISCHARGE,MANIFEST-4087,44.4
+GATE-LOG-2011,2026-09-26T16:45:00Z,Chen Wei,TRK-352,"Bayside Tug & Barge","Harbor Causeway Bridge",GATE_EXIT,MANIFEST-3317,15.4
+GATE-LOG-2012,2026-09-18T10:49:00Z,Lars Lindqvist,TRK-385,"Yorkshire Steel Erectors","Waterfront Esplanade Pier",INSPECTION_HOLD,MANIFEST-5547,27.9
+GATE-LOG-2013,2026-08-22T07:26:00Z,Boris Petrov,TRK-653,"Jupiter Structural Steel","West Drainage Canal",GATE_ENTRY,MANIFEST-4210,25.2
+GATE-LOG-2014,2026-08-12T06:12:00Z,Boris Petrov,TRK-156,"AeroFleet Courier Cargo","Avenue C Overpass",CONTAINER_STAGING,MANIFEST-4296,33.0
+GATE-LOG-2015,2026-08-08T17:53:00Z,Sean O’Connor,TRK-466,"Crestview Engineering","West Drainage Canal",DISCHARGE,MANIFEST-1612,36.0
+GATE-LOG-2016,2026-08-26T09:22:00Z,Mateo Gomez,TRK-134,"Lakeside Pipeline Corp","Avenue C Overpass",CONTAINER_STAGING,MANIFEST-5451,37.7
+GATE-LOG-2017,2026-07-13T16:17:00Z,Mateo Gomez,TRK-297,"Grandview Land Surveyors","Depot Alpha Expansion",GATE_EXIT,MANIFEST-7141,16.6
+GATE-LOG-2018,2026-09-19T20:24:00Z,Sean O’Connor,TRK-775,"Yorkshire Steel Erectors","Central Rail Depot Alpha",GATE_EXIT,MANIFEST-3152,40.2
+GATE-LOG-2019,2026-07-02T16:31:00Z,Lars Lindqvist,TRK-478,"AeroFleet Courier Cargo","Central Rail Depot Alpha",GATE_ENTRY,MANIFEST-7032,35.3
+GATE-LOG-2020,2026-09-11T18:38:00Z,Jack Larson,TRK-182,"Waypoint Traffic Systems","West Drainage Canal",DISCHARGE,MANIFEST-8205,23.8
+GATE-LOG-2021,2026-07-27T14:29:00Z,Sean O’Connor,TRK-116,"Monarch Structural Glazing","Pier 9 Subway Extension",GATE_ENTRY,MANIFEST-4298,19.1
+GATE-LOG-2022,2026-07-05T11:47:00Z,Mateo Gomez,TRK-161,"Waypoint Traffic Systems","Harbor Causeway Bridge",GATE_EXIT,MANIFEST-7444,40.9
+GATE-LOG-2023,2026-07-06T13:49:00Z,Mateo Gomez,TRK-425,"Redline Haulage Ltd","Avenue C Overpass",CONTAINER_STAGING,MANIFEST-8658,43.0
+GATE-LOG-2024,2026-09-01T10:40:00Z,Mateo Gomez,TRK-228,"Redline Haulage Ltd","Harbor Causeway Bridge",CONTAINER_STAGING,MANIFEST-8264,39.5
+GATE-LOG-2025,2026-08-07T09:25:00Z,Samir Patel,TRK-867,"Boreal Timber & Shoring","Harbor Causeway Bridge",GATE_ENTRY,MANIFEST-7304,39.3
+GATE-LOG-2026,2026-08-11T20:19:00Z,Dmitri Volkov,TRK-604,"Yorkshire Steel Erectors","Avenue C Overpass",DISCHARGE,MANIFEST-6924,24.9
+GATE-LOG-2027,2026-08-10T06:15:00Z,Chen Wei,TRK-193,"Nexus Power Grids","Terminal Gate 3 Widening",GATE_EXIT,MANIFEST-9346,36.5
+GATE-LOG-2028,2026-08-03T16:33:00Z,Chen Wei,TRK-718,"Lyceum Environmental Services","South Channel Dredging",INSPECTION_HOLD,MANIFEST-2102,23.6
+GATE-LOG-2029,2026-08-09T07:16:00Z,Tariq Al-Mansoor,TRK-304,"Drakestone Quarry Corp","Terminal Gate 3 Widening",GATE_EXIT,MANIFEST-5468,39.5
+GATE-LOG-2030,2026-07-20T18:44:00Z,Dmitri Volkov,TRK-600,"Echo Ridge Geotechnical","Depot Alpha Expansion",DISCHARGE,MANIFEST-4995,32.2
+GATE-LOG-2031,2026-08-05T20:23:00Z,Jack Larson,TRK-239,"Highland Earthworks","Municipal Basin 2",GATE_EXIT,MANIFEST-6389,30.5
+GATE-LOG-2032,2026-09-15T09:19:00Z,Sean O’Connor,TRK-467,"Garrison Security Fencing","West Drainage Canal",INSPECTION_HOLD,MANIFEST-3216,16.5
+GATE-LOG-2033,2026-07-08T09:33:00Z,Lars Lindqvist,TRK-866,"Nexus Power Grids","Pier 9 Subway Extension",DISCHARGE,MANIFEST-9534,17.3
+GATE-LOG-2034,2026-08-04T09:23:00Z,Samir Patel,TRK-242,"Bayside Tug & Barge","Waterfront Esplanade Pier",INSPECTION_HOLD,MANIFEST-8780,22.8
+GATE-LOG-2035,2026-09-09T06:46:00Z,Andre Dupont,TRK-320,"Kensington Cableworks","Depot Alpha Expansion",GATE_ENTRY,MANIFEST-4386,25.1
+GATE-LOG-2036,2026-08-16T06:50:00Z,Mateo Gomez,TRK-260,"Granite Rock Quarries","Avenue C Overpass",CONTAINER_STAGING,MANIFEST-7475,21.3
+GATE-LOG-2037,2026-09-09T15:45:00Z,Jack Larson,TRK-363,"Monarch Structural Glazing","Depot Alpha Expansion",INSPECTION_HOLD,MANIFEST-7907,22.3
+GATE-LOG-2038,2026-08-15T08:37:00Z,Dmitri Volkov,TRK-452,"Noble Metal Fabricators","Avenue C Overpass",CONTAINER_STAGING,MANIFEST-9081,23.0
+GATE-LOG-2039,2026-09-06T06:46:00Z,Boris Petrov,TRK-658,"Highland Earthworks","West Drainage Canal",CONTAINER_STAGING,MANIFEST-7409,30.5
+GATE-LOG-2040,2026-07-06T09:47:00Z,Boris Petrov,TRK-405,"Monarch Structural Glazing","South Channel Dredging",GATE_ENTRY,MANIFEST-7565,15.6
+GATE-LOG-2041,2026-09-05T20:59:00Z,Sean O’Connor,TRK-136,"Yorkshire Steel Erectors","Central Rail Depot Alpha",GATE_ENTRY,MANIFEST-8625,27.4
+GATE-LOG-2042,2026-09-17T18:14:00Z,Sean O’Connor,TRK-498,"Outpost Security Solutions","Municipal Basin 2",GATE_EXIT,MANIFEST-3052,33.5
+GATE-LOG-2043,2026-08-07T20:44:00Z,Chen Wei,TRK-101,"Northgate Freightways","Waterfront Esplanade Pier",DISCHARGE,MANIFEST-6187,22.5
+GATE-LOG-2044,2026-09-16T16:15:00Z,Lars Lindqvist,TRK-260,"Junction Railway Logistics","Pier 9 Subway Extension",CONTAINER_STAGING,MANIFEST-1673,41.2
+GATE-LOG-2045,2026-09-03T19:58:00Z,Mateo Gomez,TRK-872,"Pacific Dredge Partners","Depot Alpha Expansion",GATE_ENTRY,MANIFEST-3747,29.7
+GATE-LOG-2046,2026-07-26T12:52:00Z,Samir Patel,TRK-227,"AeroFleet Courier Cargo","South Channel Dredging",DISCHARGE,MANIFEST-6815,32.5
+GATE-LOG-2047,2026-07-23T10:37:00Z,Andre Dupont,TRK-334,"Atlas Precast Works","Harbor Causeway Bridge",GATE_EXIT,MANIFEST-3798,39.5
+GATE-LOG-2048,2026-08-08T13:24:00Z,Samir Patel,TRK-564,"Universal Asphalt Supply","Harbor Causeway Bridge",INSPECTION_HOLD,MANIFEST-6879,18.9
+GATE-LOG-2049,2026-07-28T11:18:00Z,Lars Lindqvist,TRK-888,"Canyon Aggregates LLC","Central Rail Depot Alpha",CONTAINER_STAGING,MANIFEST-6063,27.0
+GATE-LOG-2050,2026-07-25T10:57:00Z,Mateo Gomez,TRK-653,"Yorkshire Steel Erectors","Harbor Causeway Bridge",GATE_EXIT,MANIFEST-7753,15.0
+GATE-LOG-2051,2026-08-16T13:11:00Z,Samir Patel,TRK-123,"Harbor Dredging Corp","Municipal Basin 2",GATE_ENTRY,MANIFEST-1337,16.3
+GATE-LOG-2052,2026-07-27T12:35:00Z,Tariq Al-Mansoor,TRK-364,"Alpine Soil Mechanics","South Channel Dredging",CONTAINER_STAGING,MANIFEST-6328,18.7
+GATE-LOG-2053,2026-09-19T10:13:00Z,Andre Dupont,TRK-141,"Quest Geodetic Services","South Channel Dredging",GATE_ENTRY,MANIFEST-3727,37.3
+GATE-LOG-2054,2026-07-21T15:27:00Z,Dmitri Volkov,TRK-724,"Javelin Equipment Lease","Avenue C Overpass",INSPECTION_HOLD,MANIFEST-9177,26.2
+GATE-LOG-2055,2026-09-09T09:49:00Z,Mateo Gomez,TRK-378,"Olympic Water Proofing","South Channel Dredging",CONTAINER_STAGING,MANIFEST-2899,42.1
+GATE-LOG-2056,2026-09-13T07:12:00Z,Jack Larson,TRK-710,"Javelin Equipment Lease","Pier 9 Subway Extension",GATE_EXIT,MANIFEST-9381,23.6
+GATE-LOG-2057,2026-07-24T18:48:00Z,Dmitri Volkov,TRK-108,"Highland Earthworks","South Channel Dredging",INSPECTION_HOLD,MANIFEST-7922,20.2
+GATE-LOG-2058,2026-07-26T13:17:00Z,Lars Lindqvist,TRK-280,"Ridgeline Excavation","West Drainage Canal",INSPECTION_HOLD,MANIFEST-1363,41.2
+GATE-LOG-2059,2026-09-03T16:24:00Z,Mateo Gomez,TRK-318,"Granite Rock Quarries","Central Rail Depot Alpha",GATE_ENTRY,MANIFEST-6101,32.1
+GATE-LOG-2060,2026-09-05T09:45:00Z,Tariq Al-Mansoor,TRK-733,"Kodiak Earthmoving Inc","South Channel Dredging",INSPECTION_HOLD,MANIFEST-1371,35.7
+GATE-LOG-2061,2026-09-13T17:24:00Z,Jack Larson,TRK-360,"Vanguard Safety Barriers","Terminal Gate 3 Widening",GATE_EXIT,MANIFEST-9224,25.0
+GATE-LOG-2062,2026-08-20T11:39:00Z,Andre Dupont,TRK-538,"Imperial Cable Supplies","South Channel Dredging",GATE_EXIT,MANIFEST-2282,28.3
+GATE-LOG-2063,2026-09-13T13:48:00Z,Boris Petrov,TRK-763,"Dover Maritime Logistics","Pier 9 Subway Extension",CONTAINER_STAGING,MANIFEST-7807,22.4
+GATE-LOG-2064,2026-08-24T08:18:00Z,Boris Petrov,TRK-402,"Boreal Timber & Shoring","Waterfront Esplanade Pier",GATE_ENTRY,MANIFEST-7339,36.1
+GATE-LOG-2065,2026-07-06T09:42:00Z,Chen Wei,TRK-337,"Lyceum Environmental Services","Central Rail Depot Alpha",DISCHARGE,MANIFEST-5473,25.9
+GATE-LOG-2066,2026-09-24T10:33:00Z,Dmitri Volkov,TRK-662,"Island Sound Marine Works","Depot Alpha Expansion",CONTAINER_STAGING,MANIFEST-4430,18.2
+GATE-LOG-2067,2026-07-22T12:12:00Z,Samir Patel,TRK-653,"Unity Mechanical Services","Waterfront Esplanade Pier",GATE_ENTRY,MANIFEST-1865,35.2
+GATE-LOG-2068,2026-08-27T10:58:00Z,Tariq Al-Mansoor,TRK-352,"AeroFleet Courier Cargo","Municipal Basin 2",GATE_ENTRY,MANIFEST-7773,28.2
+GATE-LOG-2069,2026-07-16T16:50:00Z,Mateo Gomez,TRK-701,"Crestview Engineering","Central Rail Depot Alpha",DISCHARGE,MANIFEST-9349,19.3
+GATE-LOG-2070,2026-07-25T18:44:00Z,Tariq Al-Mansoor,TRK-324,"Olympic Water Proofing","Pier 9 Subway Extension",GATE_EXIT,MANIFEST-4177,29.3
+GATE-LOG-2071,2026-09-23T09:15:00Z,Dmitri Volkov,TRK-444,"Bayside Tug & Barge","Harbor Causeway Bridge",GATE_ENTRY,MANIFEST-1903,34.9
+GATE-LOG-2072,2026-09-03T06:11:00Z,Andre Dupont,TRK-466,"Sapphire Coating Systems","Harbor Causeway Bridge",CONTAINER_STAGING,MANIFEST-7913,24.1
+GATE-LOG-2073,2026-08-06T10:29:00Z,Mateo Gomez,TRK-590,"Pacific Dredge Partners","Depot Alpha Expansion",CONTAINER_STAGING,MANIFEST-3242,16.6
+GATE-LOG-2074,2026-07-12T11:38:00Z,Sean O’Connor,TRK-757,"Maritime Crane Operators","West Drainage Canal",DISCHARGE,MANIFEST-5228,28.9
+GATE-LOG-2075,2026-09-12T13:41:00Z,Jack Larson,TRK-749,"Trident Rigging & Towing","Terminal Gate 3 Widening",CONTAINER_STAGING,MANIFEST-5641,25.7
+GATE-LOG-2076,2026-09-23T09:10:00Z,Sean O’Connor,TRK-439,"Eagle Eye Site Security","Waterfront Esplanade Pier",GATE_ENTRY,MANIFEST-2008,21.7
+GATE-LOG-2077,2026-09-05T13:52:00Z,Lars Lindqvist,TRK-683,"Imperial Cable Supplies","Depot Alpha Expansion",GATE_ENTRY,MANIFEST-4576,34.9
+GATE-LOG-2078,2026-08-26T13:26:00Z,Chen Wei,TRK-841,"Sapphire Coating Systems","Harbor Causeway Bridge",INSPECTION_HOLD,MANIFEST-5798,39.9
+GATE-LOG-2079,2026-08-11T08:50:00Z,Lars Lindqvist,TRK-629,"Dover Maritime Logistics","Harbor Causeway Bridge",GATE_EXIT,MANIFEST-4204,20.6
+GATE-LOG-2080,2026-09-24T10:47:00Z,Boris Petrov,TRK-700,"Inland River Barging","South Channel Dredging",GATE_ENTRY,MANIFEST-9344,16.0
+GATE-LOG-2081,2026-07-18T07:36:00Z,Jack Larson,TRK-664,"Junction Railway Logistics","Harbor Causeway Bridge",GATE_ENTRY,MANIFEST-9295,43.6
+GATE-LOG-2082,2026-08-12T17:13:00Z,Lars Lindqvist,TRK-557,"Redline Haulage Ltd","West Drainage Canal",GATE_EXIT,MANIFEST-9265,36.2
+GATE-LOG-2083,2026-09-07T06:39:00Z,Lars Lindqvist,TRK-188,"Monarch Structural Glazing","Pier 9 Subway Extension",DISCHARGE,MANIFEST-8290,44.0
+GATE-LOG-2084,2026-08-27T08:58:00Z,Samir Patel,TRK-801,"Beacon Paving Solutions","Depot Alpha Expansion",CONTAINER_STAGING,MANIFEST-5962,24.4
+GATE-LOG-2085,2026-08-28T15:45:00Z,Lars Lindqvist,TRK-275,"Nexus Power Grids","Avenue C Overpass",INSPECTION_HOLD,MANIFEST-4950,16.0
+GATE-LOG-2086,2026-07-25T16:32:00Z,Dmitri Volkov,TRK-803,"Granite Rock Quarries","South Channel Dredging",GATE_EXIT,MANIFEST-6261,39.8
+GATE-LOG-2087,2026-07-21T15:52:00Z,Andre Dupont,TRK-528,"Metropolitan Core Drilling","Pier 9 Subway Extension",CONTAINER_STAGING,MANIFEST-9335,23.3

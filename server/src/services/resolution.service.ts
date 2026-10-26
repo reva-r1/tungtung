@@ -131,9 +131,22 @@ export class ResolutionService {
 
         const lev = levenshtein(normName1, normName2);
         const maxLen = Math.max(normName1.length, normName2.length);
-        if (lev <= 3 && maxLen >= 5) {
-          matchReasons.push(`Minor String Variance (Levenshtein distance: ${lev})`);
-          score += 0.35;
+        const num1 = normName1.replace(/\D/g, '');
+        const num2 = normName2.replace(/\D/g, '');
+        const hasConflictingDigits = Boolean(num1 && num2 && num1 !== num2);
+
+        if (!hasConflictingDigits && maxLen >= 5) {
+          const charSimilarity = 1 - (lev / maxLen);
+          if (lev === 1 && maxLen >= 6) {
+            matchReasons.push(`High String Proximity (Single edit variance, ${(charSimilarity * 100).toFixed(0)}% match)`);
+            score += Math.max(0.78, Number((charSimilarity * 0.88).toFixed(2)));
+          } else if (lev <= 2 && charSimilarity >= 0.75) {
+            matchReasons.push(`Minor String Variance (Levenshtein distance: ${lev})`);
+            score += Number((charSimilarity * 0.55).toFixed(2));
+          } else if (lev <= 3 && maxLen >= 8) {
+            matchReasons.push(`String Variance (Levenshtein distance: ${lev})`);
+            score += 0.35;
+          }
         }
       }
     }

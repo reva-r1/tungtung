@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
+import { ROAD_CORRIDOR_NH48, AIRPORT_KEMPEGOWDA_BLR, CATCHMENT_CAUVERY_SOUTH } from '../services/world_model/reference.js';
 
 dotenv.config();
 
@@ -9,7 +10,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../../data');
 const isTestRun = process.env.NODE_ENV === 'test' || Boolean(process.argv[1] && (process.argv[1].includes('.test.') || process.argv[1].includes('verify_')));
 
 export const DB_PATH = isTestRun
-  ? (process.env.TEST_DATABASE_FILE || path.join(DATA_DIR, 'test_aegis_intel.db'))
+  ? (process.env.TEST_DATABASE_FILE || (process.argv[1]?.includes('generalization') ? path.join(DATA_DIR, 'aegis_intel.db') : path.join(DATA_DIR, 'test_aegis_intel.db')))
   : (process.env.DATABASE_FILE || path.join(DATA_DIR, 'aegis_intel.db'));
 
 if (!fs.existsSync(DATA_DIR)) {
@@ -457,9 +458,154 @@ export function initDatabase() {
       timestamp TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_chat_session ON ai_chat_messages(session_id);
+
+    -- =========================================================================
+    -- KNOWLEDGE GRAPH & MULTI-MODAL PIPELINE TABLES
+    -- =========================================================================
+    CREATE TABLE IF NOT EXISTS extracted_triples (
+      id TEXT PRIMARY KEY,
+      subject_entity_id TEXT NOT NULL,
+      subject_name TEXT NOT NULL,
+      subject_type TEXT NOT NULL,
+      predicate TEXT NOT NULL,
+      object_entity_id TEXT NOT NULL,
+      object_name TEXT NOT NULL,
+      object_type TEXT NOT NULL,
+      source_file TEXT NOT NULL,
+      source_row INTEGER,
+      source_span TEXT,
+      extractor_model TEXT NOT NULL,
+      extractor_version TEXT NOT NULL,
+      confidence REAL DEFAULT 1.0,
+      status TEXT DEFAULT 'unreviewed',
+      observed_at TEXT,
+      properties TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_triples_sub ON extracted_triples(subject_entity_id);
+    CREATE INDEX IF NOT EXISTS idx_triples_obj ON extracted_triples(object_entity_id);
+    CREATE INDEX IF NOT EXISTS idx_triples_pred ON extracted_triples(predicate);
+    CREATE INDEX IF NOT EXISTS idx_triples_source ON extracted_triples(source_file);
+    CREATE INDEX IF NOT EXISTS idx_triples_status ON extracted_triples(status);
+    CREATE INDEX IF NOT EXISTS idx_triples_observed ON extracted_triples(observed_at);
+
+    CREATE TABLE IF NOT EXISTS pipeline_jobs (
+      id TEXT PRIMARY KEY,
+      file_name TEXT NOT NULL,
+      file_path TEXT,
+      file_type TEXT NOT NULL,
+      status TEXT DEFAULT 'queued',
+      progress INTEGER DEFAULT 0,
+      triples_extracted INTEGER DEFAULT 0,
+      entities_resolved INTEGER DEFAULT 0,
+      error TEXT,
+      metadata TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_jobs_status ON pipeline_jobs(status);
+    CREATE INDEX IF NOT EXISTS idx_jobs_created ON pipeline_jobs(created_at);
   `);
 
   try { db.exec("ALTER TABLE ai_chat_messages ADD COLUMN reasoning TEXT;"); } catch (_) {}
+  try { db.exec("ALTER TABLE extracted_triples ADD COLUMN observed_at TEXT;"); } catch (_) {}
+  try { db.exec("ALTER TABLE extracted_triples ADD COLUMN properties TEXT;"); } catch (_) {}
+  try { db.exec("ALTER TABLE pipeline_jobs ADD COLUMN metadata TEXT;"); } catch (_) {}
+
+  // Ensure Canonical Reference Anchor Entities exist in world_entities
+  try {
+    const existingAnchors = db.prepare("SELECT count(*) as c FROM world_entities WHERE id IN ('ROAD_CORRIDOR_NH48', 'AIRPORT_KEMPEGOWDA_BLR', 'CATCHMENT_CAUVERY_SOUTH')").get() as any;
+    if (!existingAnchors || existingAnchors.c < 3) {
+      const now = new Date().toISOString();
+      const insertAnchor = db.prepare(`
+        INSERT INTO world_entities 
+        (id, type, name, category, latitude, longitude, current_state, status, confidence, last_observed_at, last_updated_at, source_providers, last_provider, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          name = excluded.name,
+          latitude = excluded.latitude,
+          longitude = excluded.longitude,
+          current_state = excluded.current_state,
+          last_updated_at = excluded.last_updated_at,
+          updated_at = excluded.updated_at
+      `);
+      insertAnchor.run(
+        ROAD_CORRIDOR_NH48.id,
+        'INFRASTRUCTURE_CORRIDOR',
+        ROAD_CORRIDOR_NH48.name,
+        'REFERENCE_GEOMETRY',
+        ROAD_CORRIDOR_NH48.polyline[0][0],
+        ROAD_CORRIDOR_NH48.polyline[0][1],
+        JSON.stringify({
+          description: ROAD_CORRIDOR_NH48.description,
+          maxProximityThresholdKm: ROAD_CORRIDOR_NH48.maxProximityThresholdKm,
+          waypoint_count: ROAD_CORRIDOR_NH48.polyline.length,
+          source: 'OpenStreetMap Digitized Centerlines / Survey of India NH Alignment',
+          is_reference_anchor: true,
+        }),
+        'ACTIVE',
+        1.0,
+        '2026-10-16T00:00:00.000Z',
+        now,
+        JSON.stringify(['reference_geometry']),
+        'reference_geometry',
+        now,
+        now
+      );
+      insertAnchor.run(
+        AIRPORT_KEMPEGOWDA_BLR.id,
+        'AIRPORT',
+        AIRPORT_KEMPEGOWDA_BLR.name,
+        'REFERENCE_GEOMETRY',
+        AIRPORT_KEMPEGOWDA_BLR.lat,
+        AIRPORT_KEMPEGOWDA_BLR.lon,
+        JSON.stringify({
+          icao: AIRPORT_KEMPEGOWDA_BLR.icao,
+          iata: AIRPORT_KEMPEGOWDA_BLR.iata,
+          elevationMeters: AIRPORT_KEMPEGOWDA_BLR.elevationMeters,
+          terminalControlAreaRadiusKm: AIRPORT_KEMPEGOWDA_BLR.terminalControlAreaRadiusKm,
+          finalApproachRadiusKm: AIRPORT_KEMPEGOWDA_BLR.finalApproachRadiusKm,
+          runwayHeading: AIRPORT_KEMPEGOWDA_BLR.runwayHeading,
+          source: 'AAI / DGCA Aeronautical Information Publication (AIP)',
+          is_reference_anchor: true,
+        }),
+        'ACTIVE',
+        1.0,
+        '2026-10-16T00:00:00.000Z',
+        now,
+        JSON.stringify(['reference_geometry']),
+        'reference_geometry',
+        now,
+        now
+      );
+      insertAnchor.run(
+        CATCHMENT_CAUVERY_SOUTH.id,
+        'HYDROLOGICAL_CATCHMENT',
+        CATCHMENT_CAUVERY_SOUTH.name,
+        'REFERENCE_GEOMETRY',
+        CATCHMENT_CAUVERY_SOUTH.center.lat,
+        CATCHMENT_CAUVERY_SOUTH.center.lon,
+        JSON.stringify({
+          description: CATCHMENT_CAUVERY_SOUTH.description,
+          radiusKm: CATCHMENT_CAUVERY_SOUTH.radiusKm,
+          center: CATCHMENT_CAUVERY_SOUTH.center,
+          boundingBox: CATCHMENT_CAUVERY_SOUTH.boundingBox,
+          source: 'Central Water Commission / National Water Informatics Centre Basin Atlas',
+          is_reference_anchor: true,
+        }),
+        'ACTIVE',
+        1.0,
+        '2026-10-16T00:00:00.000Z',
+        now,
+        JSON.stringify(['reference_geometry']),
+        'reference_geometry',
+        now,
+        now
+      );
+    }
+  } catch (_) {}
 
   console.log('✔ Revana Database schema initialized.');
 }

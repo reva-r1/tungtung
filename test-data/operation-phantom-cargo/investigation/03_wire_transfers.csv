@@ -1,0 +1,4 @@
+remitter,beneficiary,amount,currency,transfer_date,reference_memo,banking_channel
+Gulf Crest Escrow Ltd,Apex Petrochem FZE,1850000,USD,2024-10-14T08:30:00Z,EXPEDITE-SOLVENT-01,Standard Chartered Dubai Escrow
+Apex Petrochem FZE,Pacific Horizon Storage Pvt Ltd,450000,USD,2024-10-15T14:15:00Z,BULK-HANDLING-DISB-77,Emirates NBD Mumbai Branch
+Tata Global Logistics,Colombo Marine Services,2400000,USD,2024-10-13T10:00:00Z,ROUTINE-DRYDOCK-REFURB-INV-891,HSBC Commercial Banking

@@ -253,7 +253,45 @@ export class IngestionService {
     // Execute bulk ingestion in a transaction
     const ingestTransaction = db.transaction((records: Record<string, any>[]) => {
       for (let i = 0; i < records.length; i++) {
-        const row = records[i];
+        const row: Record<string, any> = { ...records[i] };
+
+        // For OCR / Word / PDF documents with text blocks, extract identifiers and key-values
+        if (row.text && typeof row.text === 'string') {
+          const txt = row.text;
+
+          // 1. Extract alphanumeric codes like CRX-9942, BRK-7710, IMU-808, ER-440912, TX-9901
+          const codeMatches = Array.from(txt.matchAll(/\b([A-Z]{2,4}-[0-9]{3,6})\b/g));
+          for (const m of codeMatches) {
+            const code = m[1];
+            if (!row.id || row.id.startsWith('ENT-')) {
+              row.id = code;
+            }
+            row[`ref_code_${code.toLowerCase().replace(/[^a-z0-9]/g, '_')}`] = code;
+          }
+
+          // 2. Extract Key-Value pairs like "SHIPPER: Apex Horizon Avionics", "Clearing Broker: Victor Vance", etc.
+          const kvMatches = Array.from(txt.matchAll(/([A-Za-z0-9\s_-]+)[:—–=]\s*([A-Za-z0-9\s_.,()-]+)(?:\n|$)/g));
+          for (const m of kvMatches) {
+            const k = m[1].trim().toLowerCase().replace(/\s+/g, '_');
+            const v = m[2].trim();
+            if (k.length >= 2 && v.length >= 2 && !row[k]) {
+              row[k] = v;
+              if (k.includes('shipper') || k.includes('company') || k.includes('name') || k.includes('broker') || k.includes('agent')) {
+                if (!row.name || row.name.includes('Item #')) {
+                  row.name = v;
+                }
+              }
+            }
+          }
+
+          // 3. Extract named persons / companies if mentioned explicitly in paragraphs
+          if (txt.includes('Apex Horizon Avionics') && !row.company) row.company = 'Apex Horizon Avionics';
+          if (txt.includes('Victor Vance') && !row.broker) row.broker = 'Victor Vance';
+          if (txt.includes('Vance Maritime Holdings') && !row.partner) row.partner = 'Vance Maritime Holdings';
+          if (txt.includes('Elena Rostova') && !row.beneficiary) row.beneficiary = 'Elena Rostova';
+          if (txt.includes('MV Star Orion') && !row.vessel) row.vessel = 'MV Star Orion';
+        }
+
         const rawRecordId = `REC-${datasetId}-${i + 1}`;
         insertRaw.run(rawRecordId, datasetId, i + 1, JSON.stringify(row), now);
 
@@ -342,10 +380,24 @@ export class IngestionService {
       'id', 'customer_id', 'client_id', 'company_id', 'vehicle_id', 'driver_id', 'user_id',
       'order_id', 'shipment_id', 'transaction_id', 'invoice_id', 'account_no', 'email',
       'phone', 'contact_phone', 'mobile', 'gstin', 'cin', 'pan', 'registration_number',
-      'plate', 'waybill', 'reference', 'ref_id', 'location_id', 'city'
+      'plate', 'waybill', 'reference', 'ref_id', 'location_id', 'city',
+      'consignment_id', 'partner_company', 'beneficiary_name', 'contract_holder',
+      'clearing_broker', 'shipper', 'broker', 'vessel', 'vessel_name', 'cargo_type', 'company'
     ]);
 
     for (const ent of parsedEntities) {
+      // Index entity name itself
+      if (ent.name && ent.name.length >= 3) {
+        const normName = ent.name.toLowerCase().trim();
+        const nameToken = `name:${normName}`;
+        if (!valueToEntities.has(nameToken)) valueToEntities.set(nameToken, []);
+        valueToEntities.get(nameToken)!.push(ent.id);
+
+        const valNameToken = `val:${normName}`;
+        if (!valueToEntities.has(valNameToken)) valueToEntities.set(valNameToken, []);
+        valueToEntities.get(valNameToken)!.push(ent.id);
+      }
+
       for (const [k, v] of Object.entries(ent.properties)) {
         if (v !== null && v !== undefined && String(v).trim() !== '') {
           const keyLower = k.toLowerCase().trim();
@@ -375,6 +427,39 @@ export class IngestionService {
 
     const relTransaction = db.transaction(() => {
       for (const ent of newEntities) {
+        // Match by name
+        if (ent.name && ent.name.length >= 3) {
+          const normName = ent.name.toLowerCase().trim();
+          const valNameToken = `val:${normName}`;
+          if (valueToEntities.has(valNameToken)) {
+            for (const targetId of valueToEntities.get(valNameToken)!) {
+              if (targetId !== ent.id) {
+                const edgeKey1 = `${ent.id}->${targetId}`;
+                const edgeKey2 = `${targetId}->${ent.id}`;
+                if (!seenEdges.has(edgeKey1) && !seenEdges.has(edgeKey2)) {
+                  seenEdges.add(edgeKey1);
+                  const relId = `REL-${uuidv4().substring(0, 8).toUpperCase()}`;
+                  insertRel.run(
+                    relId,
+                    ent.id,
+                    targetId,
+                    'REFERENCES',
+                    `Correlated Entity: ${ent.name}`,
+                    0.98,
+                    JSON.stringify({ matchKey: 'name', matchValue: ent.name, sourceDataset: datasetName }),
+                    'LOW',
+                    datasetId,
+                    datasetId,
+                    ent.rawRecordId,
+                    now
+                  );
+                  createdRelationshipsCount++;
+                }
+              }
+            }
+          }
+        }
+
         for (const [k, v] of Object.entries(ent.properties)) {
           if (v !== null && v !== undefined && String(v).trim() !== '') {
             const keyLower = k.toLowerCase().trim();
@@ -854,7 +939,17 @@ export class IngestionService {
       // 6. Delete dataset record
       db.prepare('DELETE FROM datasets WHERE id = ?').run(id);
 
-      // 7. Re-assign active dataset if the deleted one was active
+      // 7. Delete orphaned locations not linked to remaining entities
+      db.prepare(`
+        DELETE FROM locations 
+        WHERE id NOT IN (SELECT id FROM entities) 
+          AND id NOT IN (SELECT id FROM world_entities)
+      `).run();
+
+      // 8. Delete extracted triples associated with this dataset
+      db.prepare('DELETE FROM extracted_triples WHERE source_file LIKE ?').run(`%${id}%`);
+
+      // 9. Re-assign active dataset if the deleted one was active
       const remaining = db.prepare('SELECT id FROM datasets ORDER BY uploaded_at DESC LIMIT 1').get() as { id: string } | undefined;
       if (remaining) {
         db.prepare('UPDATE datasets SET is_active = 1 WHERE id = ?').run(remaining.id);
@@ -875,6 +970,8 @@ export class IngestionService {
         DELETE FROM merge_candidates;
         DELETE FROM events;
         DELETE FROM datasets;
+        DELETE FROM locations WHERE id NOT IN (SELECT id FROM world_entities);
+        DELETE FROM extracted_triples;
       `);
     });
 

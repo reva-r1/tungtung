@@ -128,6 +128,18 @@ export const api = {
     return res.json();
   },
 
+  async searchGraphInquiry(query: string): Promise<{
+    nodes: any[];
+    edges: any[];
+    primaryId: string | null;
+    matchedEntities: any[];
+    summary: string;
+  }> {
+    const res = await fetch(`${API_BASE}/graph/inquiry?q=${encodeURIComponent(query)}`);
+    if (!res.ok) throw new Error('Failed to query graph inquiry');
+    return res.json();
+  },
+
   // Events & Timeline
   async getEvents(params?: { entityId?: string; eventType?: string; severity?: string; limit?: number }): Promise<TimelineEvent[]> {
     const queryParams = new URLSearchParams();
@@ -281,11 +293,11 @@ export const api = {
 
 
   // AI & Natural Language
-  async investigateAi(prompt: string, entityId?: string, investigationId?: string): Promise<AiInvestigationResponse> {
+  async investigateAi(prompt: string, entityId?: string, investigationId?: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<AiInvestigationResponse> {
     const res = await fetch(`${API_BASE}/ai/investigate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, entityId, investigationId }),
+      body: JSON.stringify({ prompt, entityId, investigationId, history }),
     });
     if (!res.ok) throw new Error('AI investigation request failed');
     return res.json();
@@ -785,8 +797,17 @@ export const api = {
 
   // =========================================================================
   // OMNI-SENSOR AI REASONING SPACE & CHAT MEMORY
-  // =========================================================================
-  async sendChatMessage(message: string, sessionId?: string): Promise<{ sessionId: string; reply: string; reasoning?: string; sources: string[]; timestamp: string }> {
+  async sendChatMessage(message: string, sessionId?: string): Promise<{
+    sessionId: string;
+    reply: string;
+    reasoning?: string;
+    sources: string[];
+    timestamp: string;
+    matchedEntities?: any[];
+    mappedEntityIds?: string[];
+    primaryEntityId?: string | null;
+    edges?: any[];
+  }> {
     const res = await fetch(`${API_BASE}/ai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

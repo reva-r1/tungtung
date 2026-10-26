@@ -25,7 +25,7 @@ const SEED_VESSELS: SeedVessel[] = [
   { mmsi: '211348000', imo: '9708681', name: 'MSC INES', type: 'Container Ship', lat: 18.9100, lon: 72.7850, speed: 8.2, course: 55, heading: 55, destination: 'JNPT MUMBAI', status: 'in_transit' },
   { mmsi: '419003412', imo: '9214567', name: 'OCEAN VALOR', type: 'Bulk Carrier', lat: 18.6200, lon: 72.2100, speed: 12.1, course: 80, heading: 82, destination: undefined, status: 'in_transit' },
   { mmsi: '636018342', imo: '9845231', name: 'CMA CGM ALASKA', type: 'Container Ship', lat: 19.1450, lon: 72.5600, speed: 15.6, course: 195, heading: 194, destination: 'JEBEL ALI', status: 'in_transit' },
-  { mmsi: '419004889', imo: '9678123', name: 'DHARANI PIONEER', type: 'Tug / Offshore Support', lat: 18.9450, lon: 72.8600, speed: 6.5, course: 310, heading: 310, destination: 'MUMBAI ANCHORAGE', status: 'at_anchor' },
+  { mmsi: '419004889', imo: '9678123', name: 'DHARANI PIONEER', type: 'Tug / Offshore Support', lat: 18.9450, lon: 72.8100, speed: 6.5, course: 310, heading: 310, destination: 'MUMBAI ANCHORAGE', status: 'at_anchor' },
   { mmsi: '352001923', imo: '9512344', name: 'PACIFIC HORIZON', type: 'LPG Tanker', lat: 18.3400, lon: 71.9500, speed: 14.5, course: 50, heading: 48, destination: 'JNPT MUMBAI', status: 'in_transit' },
   { mmsi: '419005120', imo: '9445120', name: 'JINDAL TARA', type: 'Bulk Carrier', lat: 19.3200, lon: 72.1500, speed: 10.9, course: 185, heading: 185, destination: 'GOA MORMUGAO', status: 'in_transit' },
 
@@ -34,7 +34,7 @@ const SEED_VESSELS: SeedVessel[] = [
   // -------------------------------------------------------------------------
   { mmsi: '419006734', imo: '9654321', name: 'MUNDRA VOYAGER', type: 'Container Ship', lat: 22.6100, lon: 69.5800, speed: 14.1, course: 350, heading: 348, destination: 'MUNDRA', status: 'in_transit' },
   { mmsi: '248382000', imo: '9315381', name: 'MAERSK KALAMATA', type: 'Container Ship', lat: 22.4500, lon: 69.6200, speed: 16.3, course: 345, heading: 346, destination: 'MUNDRA', status: 'in_transit' },
-  { mmsi: '419007812', imo: '9781190', name: 'DESH VISHAL', type: 'VLCC Supertanker', lat: 22.1800, lon: 69.2100, speed: 11.8, course: 15, heading: 16, destination: 'SIKKA REFINERY', status: 'in_transit' },
+  { mmsi: '419007812', imo: '9781190', name: 'DESH VISHAL', type: 'VLCC Supertanker', lat: 22.4800, lon: 69.2100, speed: 11.8, course: 15, heading: 16, destination: 'SIKKA REFINERY', status: 'in_transit' },
   { mmsi: '419008901', imo: '9589211', name: 'KANDLA PRIDE', type: 'Oil/Chemical Tanker', lat: 22.8200, lon: 70.0500, speed: 9.4, course: 40, heading: 40, destination: 'DEENDAYAL KANDLA', status: 'in_transit' },
   { mmsi: '538008123', imo: '9801239', name: 'STAR POLARIS', type: 'Bulk Carrier', lat: 21.8500, lon: 69.1000, speed: 12.7, course: 30, heading: 30, destination: undefined, status: 'in_transit' },
 
@@ -55,6 +55,76 @@ const SEED_VESSELS: SeedVessel[] = [
   { mmsi: '220456000', imo: '9654129', name: 'DANISH TRADER', type: 'Container Ship', lat: 5.8500, lon: 80.4500, speed: 17.1, course: 85, heading: 85, destination: 'SINGAPORE', status: 'in_transit' },
   { mmsi: '419014123', imo: '9481230', name: 'LANKA PRIDE', type: 'Crude Oil Tanker', lat: 5.7200, lon: 80.2000, speed: 12.3, course: 265, heading: 265, destination: 'MUMBAI', status: 'in_transit' },
 ];
+
+// Coarse coastal land polygons for Indian subcontinent and Sri Lanka to guard sea boundaries
+const PENINSULAR_INDIA = [
+  [8.08, 77.55], // Kanyakumari
+  [10.0, 76.15], // Kochi
+  [12.9, 74.80], // Mangalore
+  [15.4, 73.80], // Goa
+  [18.9, 72.82], // Mumbai JNPT
+  [20.5, 72.75], // Daman
+  [21.6, 72.50], // Bharuch
+  [22.3, 72.20], // Gulf of Khambhat
+  [24.5, 72.00],
+  [24.5, 88.50],
+  [21.6, 87.00], // West Bengal
+  [19.8, 85.80], // Odisha / Puri
+  [17.7, 83.30], // Vizag
+  [15.8, 80.30], // Machilipatnam
+  [13.1, 80.30], // Chennai
+  [11.9, 79.83], // Puducherry
+  [10.3, 79.85], // Point Calimere
+  [9.28, 79.30], // Rameswaram
+  [8.50, 78.15], // Tuticorin
+  [8.08, 77.55],
+];
+
+const GUJARAT_SAURASHTRA = [
+  [20.7, 70.9],
+  [20.9, 70.4],
+  [21.6, 69.6],
+  [22.25, 68.9],  // Dwarka / Okha point
+  [22.25, 70.1],  // Southern shore of Gulf of Kutch
+  [22.3, 71.8],   // Saurashtra interior
+  [21.6, 72.2],
+  [20.7, 70.9],
+];
+
+const SRI_LANKA = [
+  [5.92, 80.50], // Dondra Head
+  [6.00, 80.20], // Galle
+  [6.95, 79.85], // Colombo
+  [8.00, 79.70], // Kalpitiya
+  [9.80, 80.20], // Jaffna
+  [8.60, 81.20], // Trincomalee
+  [6.90, 81.85], // Batticaloa
+  [6.00, 81.10], // Hambantota
+  [5.92, 80.50],
+];
+
+function pointInPolygon(lat: number, lon: number, polygon: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0];
+    const yi = polygon[i][1];
+    const xj = polygon[j][0];
+    const yj = polygon[j][1];
+    const intersect = yi > lon !== yj > lon && lat < ((xj - xi) * (lon - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+export function isOverLand(lat: number, lon: number): boolean {
+  if (pointInPolygon(lat, lon, PENINSULAR_INDIA)) return true;
+  if (pointInPolygon(lat, lon, GUJARAT_SAURASHTRA)) return true;
+  if (pointInPolygon(lat, lon, SRI_LANKA)) return true;
+  // Specific coastal port bounds - mainland limits
+  if (lon > 72.92 && lat >= 18.7 && lat <= 19.3) return true; // Mumbai mainland
+  if (lon < 80.24 && lat >= 12.8 && lat <= 13.4) return true; // Chennai mainland
+  return false;
+}
 
 export class AisRealReplayProvider implements AisProvider {
   name = 'Revana Real-World AIS Replay Feed (Indian Ocean & Malacca)';
@@ -118,6 +188,10 @@ export class AisRealReplayProvider implements AisProvider {
 
     const dtHours = 3 / 3600; // 3 seconds in hours
     const now = new Date().toISOString();
+    // Multiplier configurable via env (default 1.0, removing legacy 10x distortion)
+    const timeMultiplier = process.env.AIS_REPLAY_TIME_MULTIPLIER
+      ? parseFloat(process.env.AIS_REPLAY_TIME_MULTIPLIER)
+      : 1.0;
 
     // Update 8-15 vessels per tick to simulate asynchronous AIS radio packets
     const batchSize = Math.floor(Math.random() * 8) + 10;
@@ -127,21 +201,42 @@ export class AisRealReplayProvider implements AisProvider {
 
       if (v.status === 'at_anchor') {
         // Minor GPS jitter for anchored vessels
-        v.lat += (Math.random() - 0.5) * 0.00008;
-        v.lon += (Math.random() - 0.5) * 0.00008;
+        const jitterLat = v.lat + (Math.random() - 0.5) * 0.00008;
+        const jitterLon = v.lon + (Math.random() - 0.5) * 0.00008;
+        if (!isOverLand(jitterLat, jitterLon)) {
+          v.lat = jitterLat;
+          v.lon = jitterLon;
+        }
       } else {
         // Advance along course: 1 knot = 1 nautical mile/hour = 1/60th deg latitude
-        const distanceNm = v.speed * dtHours * 10; // 10x accelerated time step for visible real-time map life
+        const distanceNm = v.speed * dtHours * timeMultiplier;
         const headingRad = (v.course * Math.PI) / 180;
         const dLat = (distanceNm / 60) * Math.cos(headingRad);
         const dLon = (distanceNm / (60 * Math.cos((v.lat * Math.PI) / 180))) * Math.sin(headingRad);
 
-        v.lat += dLat;
-        v.lon += dLon;
+        const proposedLat = v.lat + dLat;
+        const proposedLon = v.lon + dLon;
 
-        // Slight realistic course perturbation
-        v.course = (v.course + (Math.random() - 0.5) * 0.8 + 360) % 360;
-        v.heading = v.course;
+        // Coastline guard: if proposed position enters land, deflect or reverse course out to sea
+        if (isOverLand(proposedLat, proposedLon)) {
+          // Deflect vessel away from coast (reverse course +/- 30 deg)
+          v.course = (v.course + 180 + (Math.random() - 0.5) * 30 + 360) % 360;
+          v.heading = v.course;
+          // Step along the new deflected seaward heading
+          const seawardRad = (v.course * Math.PI) / 180;
+          const safeDLat = (distanceNm / 60) * Math.cos(seawardRad);
+          const safeDLon = (distanceNm / (60 * Math.cos((v.lat * Math.PI) / 180))) * Math.sin(seawardRad);
+          if (!isOverLand(v.lat + safeDLat, v.lon + safeDLon)) {
+            v.lat += safeDLat;
+            v.lon += safeDLon;
+          }
+        } else {
+          v.lat = proposedLat;
+          v.lon = proposedLon;
+          // Slight realistic course perturbation
+          v.course = (v.course + (Math.random() - 0.5) * 0.8 + 360) % 360;
+          v.heading = v.course;
+        }
       }
 
       this.messageCount++;

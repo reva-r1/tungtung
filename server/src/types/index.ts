@@ -349,6 +349,21 @@ export interface AiInvestigationResponse {
   groundingSummary?: string;
   dataGaps?: string[];
   proposedRelationships?: ProposedRelationshipItem[];
+  diagnostics?: {
+    provider?: string;
+    model?: string;
+    statusCode?: number;
+    errorType?: string;
+    rawError?: string;
+    retryAfterSec?: number;
+  };
+  suggestedFollowUps?: string[];
+  narrative?: {
+    whatIFound: string;
+    howRecordsConnect: string;
+    whatThisCouldMean: string;
+    whatWeShouldExamineNext: string;
+  };
 }
 
 // Revana Moving Entity & Maritime Types
@@ -421,5 +436,7 @@ export interface AisVesselRawUpdate {
   status?: string;
   timestamp?: string;
 }
+
+export * from './kg.types.js';
 
 

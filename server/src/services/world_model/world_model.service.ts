@@ -54,10 +54,11 @@ export class WorldModelService {
       throw new Error(`Invalid coordinate bounds: lat=${obs.location.latitude}, lon=${obs.location.longitude}`);
     }
 
-    const obsId = obs.id || `obs_${uuidv4()}`;
+    const obsEpochSec = Math.floor(new Date(obs.observed_at || Date.now()).getTime() / 1000);
+    const obsId = obs.id || `obs_${obs.provider}_${obs.entity_id}_${obsEpochSec}`;
     const valueJson = JSON.stringify(obs.value);
 
-    // Save observation
+    // Save observation (append/idempotent log)
     const insertObsStmt = db.prepare(`
       INSERT OR REPLACE INTO world_observations 
       (id, entity_id, entity_type, data_type, value, latitude, longitude, district, city, state, country, timestamp, observed_at, source, provider, confidence, quality, ttl, raw_payload_id, created_at)
@@ -91,19 +92,35 @@ export class WorldModelService {
     const existingStmt = db.prepare(`SELECT * FROM world_entities WHERE id = ?`);
     const existing = existingStmt.get(obs.entity_id) as any;
 
+    // Out-of-order protection: only supersede current_state if incoming observation is newer or equal
+    const obsEpoch = new Date(obs.observed_at).getTime();
+    const existingEpoch = existing && existing.last_observed_at ? new Date(existing.last_observed_at).getTime() : 0;
+    const isNewer = !existing || isNaN(existingEpoch) || obsEpoch >= existingEpoch;
+
+    // Merge source providers cleanly
+    let existingProviders: string[] = [];
+    if (existing && existing.source_providers) {
+      try {
+        existingProviders = JSON.parse(existing.source_providers);
+      } catch (_) {}
+    }
+    const mergedProviders = Array.from(new Set([...existingProviders, obs.provider]));
+
     let previousState: Record<string, any> | null = null;
     let deltaSummary: Record<string, any> = {};
 
     if (existing) {
       try {
         previousState = JSON.parse(existing.current_state);
-        // Compute delta
-        for (const key of Object.keys(obs.value)) {
-          if (previousState && previousState[key] !== obs.value[key]) {
-            deltaSummary[key] = {
-              from: previousState[key],
-              to: obs.value[key],
-            };
+        if (isNewer) {
+          // Compute delta only for newer observations
+          for (const key of Object.keys(obs.value)) {
+            if (previousState && previousState[key] !== obs.value[key]) {
+              deltaSummary[key] = {
+                from: previousState[key],
+                to: obs.value[key],
+              };
+            }
           }
         }
       } catch (_) {}
@@ -111,66 +128,83 @@ export class WorldModelService {
       deltaSummary = { initial_state: obs.value };
     }
 
-    // Upsert entity
     const now = new Date().toISOString();
     const entityName = obs.value.station_name || obs.value.title || obs.value.facility_name || obs.value.substation_name || obs.value.callsign || obs.entity_id;
-    const upsertEntityStmt = db.prepare(`
-      INSERT INTO world_entities 
-      (id, type, name, category, latitude, longitude, current_state, status, confidence, last_observed_at, last_updated_at, source_providers, last_provider, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET
-        type = excluded.type,
-        name = excluded.name,
-        category = excluded.category,
-        latitude = excluded.latitude,
-        longitude = excluded.longitude,
-        current_state = excluded.current_state,
-        status = excluded.status,
-        confidence = excluded.confidence,
-        last_observed_at = excluded.last_observed_at,
-        last_updated_at = excluded.last_updated_at,
-        source_providers = excluded.source_providers,
-        last_provider = excluded.last_provider,
-        updated_at = excluded.updated_at
-    `);
 
-    upsertEntityStmt.run(
-      obs.entity_id,
-      obs.entity_type,
-      entityName,
-      obs.data_type,
-      obs.location.latitude,
-      obs.location.longitude,
-      valueJson,
-      'ACTIVE',
-      obs.confidence ?? 1.0,
-      obs.observed_at,
-      now,
-      JSON.stringify([obs.provider]),
-      obs.provider,
-      existing ? (existing.created_at || now) : now,
-      now
-    );
+    if (isNewer) {
+      // Upsert entity with latest observed state
+      const upsertEntityStmt = db.prepare(`
+        INSERT INTO world_entities 
+        (id, type, name, category, latitude, longitude, current_state, status, confidence, last_observed_at, last_updated_at, source_providers, last_provider, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          type = excluded.type,
+          name = excluded.name,
+          category = excluded.category,
+          latitude = excluded.latitude,
+          longitude = excluded.longitude,
+          current_state = excluded.current_state,
+          status = excluded.status,
+          confidence = excluded.confidence,
+          last_observed_at = excluded.last_observed_at,
+          last_updated_at = excluded.last_updated_at,
+          source_providers = excluded.source_providers,
+          last_provider = excluded.last_provider,
+          updated_at = excluded.updated_at
+      `);
+
+      upsertEntityStmt.run(
+        obs.entity_id,
+        obs.entity_type,
+        entityName,
+        obs.data_type,
+        obs.location.latitude,
+        obs.location.longitude,
+        valueJson,
+        'ACTIVE',
+        obs.confidence ?? 1.0,
+        obs.observed_at,
+        now,
+        JSON.stringify(mergedProviders),
+        obs.provider,
+        existing ? (existing.created_at || now) : now,
+        now
+      );
+    } else {
+      // Out-of-order older observation: preserve existing newer state, only record provider linkage and updated_at
+      db.prepare(`
+        UPDATE world_entities 
+        SET source_providers = ?,
+            last_updated_at = ?,
+            updated_at = ?
+        WHERE id = ?
+      `).run(
+        JSON.stringify(mergedProviders),
+        now,
+        now,
+        obs.entity_id
+      );
+    }
 
     const updatedEntity: WorldEntityState = {
       id: obs.entity_id,
-      type: obs.entity_type,
-      name: entityName,
-      category: obs.data_type,
-      latitude: obs.location.latitude,
-      longitude: obs.location.longitude,
-      current_state: obs.value,
-      status: 'ACTIVE',
-      confidence: obs.confidence ?? 1.0,
-      last_observed_at: obs.observed_at,
-      last_provider: obs.provider,
+      type: isNewer ? obs.entity_type : (existing ? existing.type : obs.entity_type),
+      name: isNewer ? entityName : (existing ? existing.name : entityName),
+      category: isNewer ? obs.data_type : (existing ? existing.category : obs.data_type),
+      latitude: isNewer ? obs.location.latitude : (existing ? existing.latitude : obs.location.latitude),
+      longitude: isNewer ? obs.location.longitude : (existing ? existing.longitude : obs.location.longitude),
+      current_state: isNewer ? obs.value : (previousState || obs.value),
+      status: existing ? (existing.status || 'ACTIVE') : 'ACTIVE',
+      confidence: isNewer ? (obs.confidence ?? 1.0) : (existing ? existing.confidence : 1.0),
+      last_observed_at: isNewer ? obs.observed_at : (existing ? existing.last_observed_at : obs.observed_at),
+      last_provider: isNewer ? obs.provider : (existing ? existing.last_provider : obs.provider),
       created_at: existing ? existing.created_at : now,
       updated_at: now,
     };
 
-    // Record Temporal History
+    // Record Temporal History only for forward chronologically valid transitions
     let temporalRecord: TemporalStateRecord | null = null;
-    if (Object.keys(deltaSummary).length > 0) {
+    if (isNewer && Object.keys(deltaSummary).length > 0) {
       const historyId = `hist_${uuidv4()}`;
       const insertHistStmt = db.prepare(`
         INSERT INTO temporal_state_history 
@@ -469,8 +503,8 @@ export class WorldModelService {
       }
     }
 
-    // 3. Water Gauge to Catchment Basin
-    if (obs.entity_type === 'WATER_GAUGE') {
+    // 3. Water Gauge or Dam Reservoir to Catchment Basin
+    if (obs.entity_type === 'WATER_GAUGE' || obs.entity_type === 'WATER_RESERVOIR_GAUGE') {
       const { inRange, distanceKm } = isPointInRadius(
         lat,
         lon,
@@ -479,7 +513,7 @@ export class WorldModelService {
         CATCHMENT_CAUVERY_SOUTH.radiusKm
       );
 
-      // Only establish relationship when gauge is within the catchment radius
+      // Only establish relationship when gauge or reservoir is within the catchment radius
       if (inRange) {
         const confidence = computeConfidence({
           sourceReliability: getProviderReliability(obs.provider),
@@ -487,6 +521,10 @@ export class WorldModelService {
           distanceKm,
           maxDistanceKm: CATCHMENT_CAUVERY_SOUTH.radiusKm,
         });
+
+        const stageText = obs.value.water_level_m !== undefined
+          ? `${obs.value.water_level_m} m`
+          : (obs.value.current_live_storage_tmc !== undefined ? `${obs.value.current_live_storage_tmc} TMC` : 'Unreported');
 
         relationships.push({
           relationship_id: `rel_${obs.entity_id}_DRAINAGE_GRID`,
@@ -497,8 +535,8 @@ export class WorldModelService {
           timestamp: now,
           confidence,
           evidence: [
-            `Gauge location (${lat.toFixed(4)}, ${lon.toFixed(4)}) is ${distanceKm.toFixed(2)} km from ${CATCHMENT_CAUVERY_SOUTH.name} center (within ${CATCHMENT_CAUVERY_SOUTH.radiusKm} km radius)`,
-            `Observed water stage: ${obs.value.water_level_m !== undefined ? obs.value.water_level_m + ' m' : 'Unreported'} at ${obs.observed_at}`,
+            `Gauge/Reservoir location (${lat.toFixed(4)}, ${lon.toFixed(4)}) is ${distanceKm.toFixed(2)} km from ${CATCHMENT_CAUVERY_SOUTH.name} center (within ${CATCHMENT_CAUVERY_SOUTH.radiusKm} km radius)`,
+            `Observed hydrological stage/storage: ${stageText} at ${obs.observed_at}`,
           ],
         });
       }

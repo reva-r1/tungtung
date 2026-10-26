@@ -1,29 +1,17 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, Polyline, CircleMarker, useMap } from 'react-leaflet';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { MapContainer, TileLayer, Marker, Tooltip, Polyline, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { LocationRecord, MovingEntity, MaritimePattern } from '../../types';
+import 'leaflet.markercluster';
+import { LocationRecord, MovingEntity, MaritimePattern, DataMode } from '../../types';
 import { useInvestigation } from '../../context/InvestigationContext';
 import { api } from '../../services/api';
 import { MaritimePatternModal } from '../maritime/MaritimePatternModal';
 import {
-  MapPin,
   Compass,
   Layers,
-  Globe,
-  Tag,
-  Building2,
-  Anchor,
-  Activity,
-  AlertTriangle,
-  TrendingUp,
-  RotateCcw,
+  X,
   Navigation,
-  Eye,
-  EyeOff,
-  Plane,
-  Droplets,
-  CloudRain,
-  Radio
+  TrendingUp,
 } from 'lucide-react';
 
 interface TacticalMapProps {
@@ -31,6 +19,20 @@ interface TacticalMapProps {
   className?: string;
   selectedLocationId?: string;
   onSelectEntity?: (entityId: string) => void;
+}
+
+interface InspectorState {
+  id: string;
+  title: string;
+  type: string;
+  data_mode: DataMode;
+  statusDot: 'ok' | 'warn' | 'danger' | 'muted';
+  lat: number;
+  lng: number;
+  lastUpdated: string;
+  keyValues: { label: string; value: string | number }[];
+  hasTrail: boolean;
+  entityType: 'vessel' | 'aircraft' | 'facility' | 'reservoir' | 'earthquake' | 'environment';
 }
 
 // Fix default Leaflet icon paths
@@ -41,389 +43,455 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// Custom SVG Icons for Static Land Facilities (Warehouses, Ports, Checkpoints)
-const createFacilityIcon = (color: string) => {
-  return L.divIcon({
-    className: 'custom-tactical-pin',
-    html: `
-      <div style="
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: #090d16;
-        border: 2px solid ${color};
-        box-shadow: 0 0 12px ${color}aa;
-      ">
-        <div style="
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: ${color};
-        "></div>
-      </div>
-    `,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -14],
-  });
-};
-
-// Vessel color categorization based on commercial ship type
+// Color categorization for vessels
 const getVesselColor = (type?: string): string => {
-  if (!type) return '#38bdf8'; // Sky blue
+  if (!type) return '#38bdf8';
   const t = type.toLowerCase();
   if (t.includes('tanker') || t.includes('crude') || t.includes('oil') || t.includes('chemical') || t.includes('lpg')) {
     return '#f59e0b'; // Amber (Tankers)
   }
-  if (t.includes('container')) {
-    return '#10b981'; // Emerald (Container carriers)
+  if (t.includes('container') || t.includes('cargo')) {
+    return '#10b981'; // Emerald (Container/Cargo)
   }
   if (t.includes('bulk')) {
     return '#06b6d4'; // Cyan (Bulk carriers)
   }
   if (t.includes('tug') || t.includes('support') || t.includes('pilot')) {
-    return '#a855f7'; // Purple (Tugs/Service)
+    return '#a855f7'; // Purple (Tug/Service)
   }
-  return '#38bdf8'; // Default
+  return '#38bdf8';
 };
 
-// Dynamic Vessel Marker with True Course/Heading Directional Rotation
-const createVesselIcon = (vessel: MovingEntity, isSelected: boolean) => {
+// Facility color
+const getFacilityColor = (type: string): string => {
+  switch (type) {
+    case 'WAREHOUSE': return '#10b981';
+    case 'PORT': return '#4C90F0';
+    case 'CHECKPOINT': return '#06b6d4';
+    case 'TOLL_PLAZA': return '#f5a524';
+    case 'INCIDENT_SITE': return '#e5484d';
+    case 'TRANSIT_POINT': return '#a855f7';
+    default: return '#8B9097';
+  }
+};
+
+// 10-12px flat marker generators with 1.5px dark outline (#0E0F11) or 2px accent (#4C90F0) on selection
+const createVesselIcon = (vessel: MovingEntity, isSelected: boolean, currentZoom: number): L.DivIcon => {
+  if (currentZoom < 5) {
+    return L.divIcon({ className: '', html: '', iconSize: [0, 0] });
+  }
   const color = getVesselColor(vessel.vessel_type);
   const heading = vessel.heading ?? vessel.course ?? 0;
-  const isMoving = (vessel.speed || 0) > 0.5;
+  const stroke = isSelected ? '#4C90F0' : '#0E0F11';
+  const strokeWidth = isSelected ? '2' : '1.5';
 
   return L.divIcon({
-    className: 'custom-vessel-pin',
+    className: '',
     html: `
-      <div style="
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-      ">
-        ${isSelected ? `
-          <div style="
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
-            border: 2px dashed #06b6d4;
-            animation: pulse-ring 2s infinite ease-in-out;
-          "></div>
-        ` : ''}
-        <div style="
-          transform: rotate(${heading}deg);
-          transition: transform 0.6s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 24px;
-          height: 24px;
-          border-radius: 6px;
-          background: rgba(9, 13, 22, 0.92);
-          border: 1.5px solid ${color};
-          box-shadow: 0 0 10px ${color}88;
-        ">
-          <!-- Sleek Directional Ship Glyph -->
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="12 2 19 21 12 17 5 21 12 2" fill="${color}" fill-opacity="${isMoving ? '0.45' : '0.15'}"/>
-          </svg>
-        </div>
+      <div style="width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; transform: rotate(${heading}deg);">
+        <svg width="12" height="12" viewBox="0 0 12 12" style="overflow: visible;">
+          <polygon points="6,1 11,11 6,8.5 1,11" fill="${color}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linejoin="round" />
+        </svg>
       </div>
     `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-    popupAnchor: [0, -16],
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
   });
 };
 
-// Dynamic Aircraft Marker with Altitude-Aware Colors and Heading Rotation
-const getAircraftColor = (altitudeFt?: number, onGround?: boolean) => {
-  if (onGround) return '#94a3b8'; // Slate (On Ground)
-  if (!altitudeFt) return '#38bdf8'; // Sky
-  if (altitudeFt >= 25000) return '#06b6d4'; // Cyan (Cruising FL250+)
-  if (altitudeFt >= 10000) return '#10b981'; // Emerald (Mid Flight Level)
-  return '#f59e0b'; // Amber (Low Approach / Departure)
-};
+const createAircraftIcon = (aircraft: MovingEntity, isSelected: boolean): L.DivIcon => {
+  const altitude = aircraft.properties?.altitude_ft ?? aircraft.properties?.geo_altitude ?? 0;
+  let color = '#f59e0b';
+  if (altitude >= 25000) color = '#06b6d4';
+  else if (altitude >= 10000) color = '#10b981';
 
-const createAircraftIcon = (aircraft: MovingEntity, isSelected: boolean) => {
-  const altFt = aircraft.properties?.altitude_ft;
-  const onGround = aircraft.status === 'on_ground' || Boolean(aircraft.properties?.on_ground);
-  const color = getAircraftColor(altFt, onGround);
   const heading = aircraft.heading ?? aircraft.course ?? 0;
+  const stroke = isSelected ? '#4C90F0' : '#0E0F11';
+  const strokeWidth = isSelected ? '2' : '1.5';
 
   return L.divIcon({
-    className: 'custom-aircraft-pin',
+    className: '',
     html: `
-      <div style="
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-      ">
-        ${isSelected ? `
-          <div style="
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
-            border: 2px dashed ${color};
-            animation: pulse-ring 2s infinite ease-in-out;
-          "></div>
-        ` : ''}
-        <div style="
-          transform: rotate(${heading}deg);
-          transition: transform 0.6s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 24px;
-          height: 24px;
-          border-radius: 6px;
-          background: rgba(9, 13, 22, 0.94);
-          border: 1.5px solid ${color};
-          box-shadow: 0 0 10px ${color}88;
-        ">
-          <!-- Sleek Directional Airplane SVG Glyph -->
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="${color}" stroke="${color}" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
-          </svg>
-        </div>
+      <div style="width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; transform: rotate(${heading}deg);">
+        <svg width="12" height="12" viewBox="0 0 12 12" style="overflow: visible;">
+          <path d="M6,1 L11,10 L6,7.5 L1,10 Z" fill="${color}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linejoin="round" />
+        </svg>
       </div>
     `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-    popupAnchor: [0, -16],
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
   });
 };
 
-// Official Water-Level & Reservoir Monitoring Station Marker
-const getReservoirColor = (percent?: number) => {
-  if (percent == null || isNaN(percent)) return '#38bdf8'; // Sky blue default
-  if (percent >= 70) return '#06b6d4'; // Cyan (Abundant / High capacity)
-  if (percent >= 40) return '#10b981'; // Emerald (Normal capacity)
-  return '#f59e0b'; // Amber (Low / Depleted capacity)
-};
-
-const createReservoirIcon = (station: any, isSelected: boolean) => {
-  const percent = station.properties?.capacity_percent ?? station.capacity_percent;
-  const color = getReservoirColor(percent);
+const createFacilityIcon = (type: string, isSelected: boolean): L.DivIcon => {
+  const color = getFacilityColor(type);
+  const stroke = isSelected ? '#4C90F0' : '#0E0F11';
+  const strokeWidth = isSelected ? '2' : '1.5';
 
   return L.divIcon({
-    className: 'custom-reservoir-pin',
+    className: '',
     html: `
-      <div style="
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 30px;
-        height: 30px;
-      ">
-        ${isSelected ? `
-          <div style="
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
-            border: 2px dashed ${color};
-            animation: pulse-ring 2s infinite ease-in-out;
-          "></div>
-        ` : ''}
-        <div style="
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: rgba(9, 13, 22, 0.94);
-          border: 2px solid ${color};
-          box-shadow: 0 0 10px ${color}aa;
-        ">
-          <!-- Water Droplet / Dam Reservoir SVG Glyph -->
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="${color}" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
-          </svg>
-        </div>
+      <div style="width: 12px; height: 12px;">
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <rect x="1" y="1" width="10" height="10" rx="1" fill="${color}" stroke="${stroke}" stroke-width="${strokeWidth}" />
+        </svg>
       </div>
     `,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-    popupAnchor: [0, -15],
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
   });
 };
 
-// Custom SVG Icon for Earthquake Epicenters (pulsing ring sized and colored by magnitude)
-const createEarthquakeIcon = (eq: any, isSelected: boolean) => {
-  const mag = typeof eq.magnitude === 'number' ? eq.magnitude : 3.0;
-  const color = mag >= 5.0 ? '#ef4444' : mag >= 4.0 ? '#f59e0b' : '#38bdf8';
-  const size = Math.min(42, Math.max(22, Math.round(18 + mag * 3.5)));
+const createWaterGaugeIcon = (fillPct: number, isSelected: boolean): L.DivIcon => {
+  let color = '#f59e0b';
+  if (fillPct >= 70) color = '#06b6d4';
+  else if (fillPct >= 40) color = '#10b981';
+
+  const stroke = isSelected ? '#4C90F0' : '#0E0F11';
+  const strokeWidth = isSelected ? '2' : '1.5';
 
   return L.divIcon({
-    className: 'custom-earthquake-pin',
+    className: '',
     html: `
-      <div style="
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: ${size}px;
-        height: ${size}px;
-      ">
-        <div style="
-          position: absolute;
-          inset: 0;
-          border-radius: 50%;
-          background: ${color}22;
-          border: 1.5px solid ${color};
-          animation: pulse-ring 2.5s infinite ease-in-out;
-        "></div>
-        ${isSelected ? `
-          <div style="
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
-            border: 2px dashed ${color};
-          "></div>
-        ` : ''}
-        <div style="
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: ${color};
-          box-shadow: 0 0 8px ${color};
-        "></div>
+      <div style="width: 12px; height: 12px;">
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <polygon points="6,1 11,6 6,11 1,6" fill="${color}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linejoin="round" />
+        </svg>
+      </div>
+    `,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
+  });
+};
+
+const createQuakeIcon = (magnitude: number, isSelected: boolean): L.DivIcon => {
+  const size = Math.max(8, Math.min(20, Math.round(magnitude * 2.8)));
+  const half = size / 2;
+  let color = '#38bdf8';
+  if (magnitude >= 5.0) color = '#e5484d';
+  else if (magnitude >= 4.0) color = '#f5a524';
+
+  const stroke = isSelected ? '#4C90F0' : '#0E0F11';
+  const strokeWidth = isSelected ? '2' : '1.5';
+
+  return L.divIcon({
+    className: '',
+    html: `
+      <div style="width: ${size}px; height: ${size}px;">
+        <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+          <circle cx="${half}" cy="${half}" r="${Math.max(1, half - 1.5)}" fill="${color}" stroke="${stroke}" stroke-width="${strokeWidth}" />
+        </svg>
       </div>
     `,
     iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -size / 2],
+    iconAnchor: [half, half],
   });
 };
 
-// Custom SVG Icon for Weather & Environmental Monitoring Nodes
-const createEnvironmentIcon = (node: any, isSelected: boolean) => {
-  const color = '#10b981'; // Emerald
+const createEnvIcon = (isSelected: boolean): L.DivIcon => {
+  const stroke = isSelected ? '#4C90F0' : '#0E0F11';
+  const strokeWidth = isSelected ? '2' : '1.5';
+
   return L.divIcon({
-    className: 'custom-env-pin',
+    className: '',
     html: `
-      <div style="
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 28px;
-        height: 28px;
-      ">
-        ${isSelected ? `
-          <div style="
-            position: absolute;
-            inset: -3px;
-            border-radius: 50%;
-            border: 2px dashed ${color};
-          "></div>
-        ` : ''}
-        <div style="
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 22px;
-          height: 22px;
-          border-radius: 50%;
-          background: rgba(9, 13, 22, 0.94);
-          border: 2px solid ${color};
-          box-shadow: 0 0 10px ${color}88;
-        ">
-          <!-- Environmental Atmosphere / Cloud Glyph -->
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
-          </svg>
-        </div>
+      <div style="width: 10px; height: 10px;">
+        <svg width="10" height="10" viewBox="0 0 10 10">
+          <circle cx="5" cy="5" r="3.5" fill="#3DB46D" stroke="${stroke}" stroke-width="${strokeWidth}" />
+        </svg>
       </div>
     `,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -14],
+    iconSize: [10, 10],
+    iconAnchor: [5, 5],
   });
 };
 
-// Smooth Camera Controller
-const MapFlyController: React.FC<{
-  target: { lat: number; lng: number; zoom: number; id: number } | null;
-}> = ({ target }) => {
+// Map View Controller
+const MapFlyController: React.FC<{ target: { lat: number; lng: number; zoom?: number; id: number } | null }> = ({ target }) => {
   const map = useMap();
   useEffect(() => {
     if (target) {
-      map.flyTo([target.lat, target.lng], target.zoom, {
-        duration: 1.8,
-        easeLinearity: 0.25,
+      map.flyTo([target.lat, target.lng], target.zoom || map.getZoom(), {
+        duration: 1.2,
       });
     }
   }, [target, map]);
   return null;
 };
 
+// Map Zoom Listener to trigger cluster rendering & zoom thresholds
+const MapZoomTracker: React.FC<{ onZoomChange: (zoom: number) => void }> = ({ onZoomChange }) => {
+  const map = useMap();
+  useEffect(() => {
+    const handleZoom = () => {
+      onZoomChange(map.getZoom());
+    };
+    map.on('zoomend', handleZoom);
+    onZoomChange(map.getZoom());
+    return () => {
+      map.off('zoomend', handleZoom);
+    };
+  }, [map, onZoomChange]);
+  return null;
+};
+
+// Cluster Layer for Land Facilities
+const FacilityClusterLayer: React.FC<{
+  locations: LocationRecord[];
+  selectedId: string | null;
+  onSelect: (loc: LocationRecord) => void;
+}> = ({ locations, selectedId, onSelect }) => {
+  const map = useMap();
+  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+
+  useEffect(() => {
+    const cluster = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 35,
+      iconCreateFunction: (c) => {
+        const count = c.getChildCount();
+        return L.divIcon({
+          html: `<div class="flat-cluster-badge" style="width: 24px; height: 24px; line-height: 24px; text-align: center;">${count}</div>`,
+          className: '',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        });
+      },
+    });
+
+    clusterRef.current = cluster;
+    map.addLayer(cluster);
+
+    return () => {
+      map.removeLayer(cluster);
+    };
+  }, [map]);
+
+  useEffect(() => {
+    const cluster = clusterRef.current;
+    if (!cluster) return;
+
+    cluster.clearLayers();
+
+    locations.forEach((loc) => {
+      const isSelected = selectedId === loc.id;
+      const icon = createFacilityIcon(loc.type, isSelected);
+      const marker = L.marker([loc.latitude, loc.longitude], { icon });
+
+      marker.bindTooltip(`<span>${loc.name}</span>`, {
+        direction: 'top',
+        offset: [0, -10],
+        opacity: 1,
+        className: 'flat-map-tooltip',
+      });
+
+      marker.on('click', () => {
+        onSelect(loc);
+      });
+
+      cluster.addLayer(marker);
+    });
+  }, [locations, selectedId, onSelect]);
+
+  return null;
+};
+
+// Cluster Layer for Maritime AIS Vessels
+const VesselClusterLayer: React.FC<{
+  vessels: MovingEntity[];
+  currentZoom: number;
+  selectedId: string | null;
+  onSelect: (vessel: MovingEntity) => void;
+}> = ({ vessels, currentZoom, selectedId, onSelect }) => {
+  const map = useMap();
+  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+
+  useEffect(() => {
+    const cluster = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 40,
+      iconCreateFunction: (c) => {
+        const count = c.getChildCount();
+        return L.divIcon({
+          html: `<div class="flat-cluster-badge" style="width: 24px; height: 24px; line-height: 24px; text-align: center;">${count}</div>`,
+          className: '',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        });
+      },
+    });
+
+    clusterRef.current = cluster;
+    map.addLayer(cluster);
+
+    return () => {
+      map.removeLayer(cluster);
+    };
+  }, [map]);
+
+  useEffect(() => {
+    const cluster = clusterRef.current;
+    if (!cluster) return;
+
+    cluster.clearLayers();
+
+    vessels.forEach((vessel) => {
+      const isSelected = selectedId === vessel.id;
+      const icon = createVesselIcon(vessel, isSelected, currentZoom);
+      const marker = L.marker([vessel.latitude, vessel.longitude], { icon });
+
+      if (currentZoom >= 5) {
+        marker.bindTooltip(`<span>${vessel.name || vessel.id}</span>`, {
+          direction: 'top',
+          offset: [0, -10],
+          opacity: 1,
+          className: 'flat-map-tooltip',
+        });
+      }
+
+      marker.on('click', () => {
+        onSelect(vessel);
+      });
+
+      cluster.addLayer(marker);
+    });
+  }, [vessels, currentZoom, selectedId, onSelect]);
+
+  return null;
+};
+
+// Cluster Layer for Aircraft
+const AircraftClusterLayer: React.FC<{
+  aircraftList: MovingEntity[];
+  currentZoom: number;
+  selectedId: string | null;
+  onSelect: (aircraft: MovingEntity) => void;
+}> = ({ aircraftList, currentZoom, selectedId, onSelect }) => {
+  const map = useMap();
+  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+
+  useEffect(() => {
+    const cluster = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 40,
+      iconCreateFunction: (c) => {
+        const count = c.getChildCount();
+        return L.divIcon({
+          html: `<div class="flat-cluster-badge" style="width: 24px; height: 24px; line-height: 24px; text-align: center;">${count}</div>`,
+          className: '',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        });
+      },
+    });
+
+    clusterRef.current = cluster;
+    map.addLayer(cluster);
+
+    return () => {
+      map.removeLayer(cluster);
+    };
+  }, [map]);
+
+  useEffect(() => {
+    const cluster = clusterRef.current;
+    if (!cluster) return;
+
+    cluster.clearLayers();
+
+    // Hide aircraft below zoom 6
+    if (currentZoom < 6) {
+      return;
+    }
+
+    aircraftList.forEach((ac) => {
+      const isSelected = selectedId === ac.id;
+      const icon = createAircraftIcon(ac, isSelected);
+      const marker = L.marker([ac.latitude, ac.longitude], { icon });
+
+      marker.bindTooltip(`<span>${ac.name || ac.id}</span>`, {
+        direction: 'top',
+        offset: [0, -10],
+        opacity: 1,
+        className: 'flat-map-tooltip',
+      });
+
+      marker.on('click', () => {
+        onSelect(ac);
+      });
+
+      cluster.addLayer(marker);
+    });
+  }, [aircraftList, currentZoom, selectedId, onSelect]);
+
+  return null;
+};
+
 export const TacticalMap: React.FC<TacticalMapProps> = ({
   locations: propLocations,
   className = '',
+  selectedLocationId,
   onSelectEntity,
 }) => {
-  const { selectEntity, quickNavigateToEntity } = useInvestigation();
-  const [locations, setLocations] = useState<LocationRecord[]>(propLocations || []);
-  const [filterType, setFilterType] = useState<string>('ALL');
-  const [mapMode, setMapMode] = useState<'GOOGLE_HYBRID' | 'ESRI_SATELLITE' | 'DARK' | 'STREET'>('GOOGLE_HYBRID');
-  const [showLabels, setShowLabels] = useState<boolean>(true);
-  const [showPinNames, setShowPinNames] = useState<boolean>(true);
-  const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number; zoom: number; id: number } | null>(null);
+  const { quickNavigateToEntity, isMapEnabled, toggleMap, selectedEntityId } = useInvestigation();
 
-  // Revana Maritime, Aviation, Hydrological & Environmental States
-  const [showMaritime, setShowMaritime] = useState<boolean>(true);
-  const [showAviation, setShowAviation] = useState<boolean>(true);
-  const [showHydrology, setShowHydrology] = useState<boolean>(true);
-  const [showEarthquakes, setShowEarthquakes] = useState<boolean>(true);
-  const [showEnvironment, setShowEnvironment] = useState<boolean>(true);
-  const [showTrails, setShowTrails] = useState<boolean>(true);
+  // Pure Data Mode States (when map is OFF)
+  const [telemetryFilter, setTelemetryFilter] = useState<'all' | 'vessels' | 'aircraft' | 'facilities' | 'earthquakes'>('all');
+  const [telemetrySearch, setTelemetrySearch] = useState<string>('');
+
+  // Core Data State
+  const [locations, setLocations] = useState<LocationRecord[]>(propLocations || []);
   const [vessels, setVessels] = useState<MovingEntity[]>([]);
   const [aircraftList, setAircraftList] = useState<MovingEntity[]>([]);
   const [hydrologyStations, setHydrologyStations] = useState<any[]>([]);
   const [earthquakes, setEarthquakes] = useState<any[]>([]);
   const [weatherNodes, setWeatherNodes] = useState<any[]>([]);
   const [airQualityNodes, setAirQualityNodes] = useState<any[]>([]);
-  const [selectedVesselId, setSelectedVesselId] = useState<string | null>(null);
-  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
-  const [selectedEarthquakeId, setSelectedEarthquakeId] = useState<string | null>(null);
-  const [selectedEnvNodeId, setSelectedEnvNodeId] = useState<string | null>(null);
-  const [vesselTrack, setVesselTrack] = useState<[number, number][]>([]);
   const [patterns, setPatterns] = useState<MaritimePattern[]>([]);
   const [activePatternModal, setActivePatternModal] = useState<MaritimePattern | null>(null);
-  const [maritimeStatus, setMaritimeStatus] = useState<{ connected: boolean; source: string; mode: string } | null>(null);
-  const [aviationStatus, setAviationStatus] = useState<{
-    status: string;
-    connectionState: 'CONNECTED' | 'DEGRADED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
-    dataFreshness: 'FRESH' | 'STALE' | 'HISTORICAL' | 'EMPTY' | 'UNKNOWN';
-    operationalState: 'CONNECTED_FRESH' | 'CONNECTED_STALE' | 'CONNECTED_EMPTY' | 'CONNECTED_HISTORICAL' | 'RATE_LIMITED' | 'DISCONNECTED' | 'STANDBY';
-    lastPollAt: string | null;
-    lastSuccessfulPollAt: string | null;
-    newestObservationAt: string | null;
-    newestObservationAgeSec: number | null;
-    freshAircraftCount: number;
-    staleAircraftCount: number;
-    historicalCount: number;
-    totalAircraftInDb: number;
-    airborneCount: number;
-  } | null>(null);
-  const [hydrologyStatus, setHydrologyStatus] = useState<any | null>(null);
-  const [earthquakeStatus, setEarthquakeStatus] = useState<any | null>(null);
-  const [environmentStatus, setEnvironmentStatus] = useState<any | null>(null);
 
-  // 1. Initial Data Fetching & Periodic Freshness Refresh
+  // Status Feeds
+  const [maritimeStatus, setMaritimeStatus] = useState<{ connected: boolean; source: string; mode: string } | null>(null);
+  const [aviationStatus, setAviationStatus] = useState<any | null>(null);
+  const [earthquakeStatus, setEarthquakeStatus] = useState<any | null>(null);
+
+  // Map Controls State
+  const [mapMode, setMapMode] = useState<'DARK' | 'STREET' | 'SATELLITE'>('DARK');
+  const [showLabels, setShowLabels] = useState<boolean>(true);
+  const [showVessels, setShowVessels] = useState<boolean>(true);
+  const [showAircraft, setShowAircraft] = useState<boolean>(true);
+  const [showHydrology, setShowHydrology] = useState<boolean>(true);
+  const [showEarthquakes, setShowEarthquakes] = useState<boolean>(true);
+  const [showAtmosphere, setShowAtmosphere] = useState<boolean>(true);
+  const [showTrails, setShowTrails] = useState<boolean>(true);
+  const [showLayersPanel, setShowLayersPanel] = useState<boolean>(false);
+
+  // Map Navigation & Zoom
+  const [currentZoom, setCurrentZoom] = useState<number>(6);
+  const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number; zoom?: number; id: number } | null>(null);
+
+  // Inspector State
+  const [selectedEntity, setSelectedEntity] = useState<InspectorState | null>(null);
+  const [vesselTrack, setVesselTrack] = useState<[number, number][]>([]);
+
+  // Esc key listener to close Inspector
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedEntity(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // 1. Initial Data Fetching
   useEffect(() => {
     if (!propLocations) {
       api.getLocations().then(setLocations).catch(console.error);
@@ -431,46 +499,24 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
       setLocations(propLocations);
     }
 
-    // Fetch live feed connectivity status
     api.getMaritimeStatus().then(setMaritimeStatus).catch(() => setMaritimeStatus({ connected: false, source: 'AISStream.io', mode: 'STANDBY' }));
-    
-    const refreshAviationStatus = () => {
-      api.getAviationStatus().then(setAviationStatus).catch(() => setAviationStatus({
-        status: 'STANDBY',
-        connectionState: 'STANDBY',
-        dataFreshness: 'UNKNOWN',
-        operationalState: 'STANDBY',
-        lastPollAt: null,
-        lastSuccessfulPollAt: null,
-        newestObservationAt: null,
-        newestObservationAgeSec: null,
-        freshAircraftCount: 0,
-        staleAircraftCount: 0,
-        historicalCount: 0,
-        totalAircraftInDb: 0,
-        airborneCount: 0,
-      }));
-    };
-    refreshAviationStatus();
-    const aviationInterval = setInterval(refreshAviationStatus, 15000);
 
-    const refreshHydrologyStatus = () => {
-      api.getHydrologyStatus().then(setHydrologyStatus).catch(() => setHydrologyStatus(null));
+    const refreshAviation = () => {
+      api.getAviationStatus().then(setAviationStatus).catch(() => setAviationStatus(null));
     };
-    refreshHydrologyStatus();
-    const hydroInterval = setInterval(refreshHydrologyStatus, 15000);
+    refreshAviation();
+    const aviationInterval = setInterval(refreshAviation, 15000);
 
-    const refreshEarthquakeData = () => {
+    const refreshSeismic = () => {
       api.getEarthquakeStatus().then(setEarthquakeStatus).catch(() => setEarthquakeStatus(null));
       api.getEarthquakeEvents(100).then((data) => {
         if (data?.events) setEarthquakes(data.events);
       }).catch(console.error);
     };
-    refreshEarthquakeData();
-    const eqInterval = setInterval(refreshEarthquakeData, 20000);
+    refreshSeismic();
+    const seismicInterval = setInterval(refreshSeismic, 20000);
 
-    const refreshEnvironmentData = () => {
-      api.getEnvironmentStatus().then(setEnvironmentStatus).catch(() => setEnvironmentStatus(null));
+    const refreshEnv = () => {
       api.getWeatherNodes().then((data) => {
         if (data?.nodes) setWeatherNodes(data.nodes);
       }).catch(console.error);
@@ -478,38 +524,53 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
         if (data?.nodes) setAirQualityNodes(data.nodes);
       }).catch(console.error);
     };
-    refreshEnvironmentData();
-    const envInterval = setInterval(refreshEnvironmentData, 30000);
+    refreshEnv();
+    const envInterval = setInterval(refreshEnv, 30000);
 
-    // Fetch initial maritime vessels
     api.getMaritimeVessels(300).then((data) => {
       if (data?.vessels) setVessels(data.vessels);
     }).catch(console.error);
 
-    // Fetch initial aviation aircraft
     api.getAviationAircraft(300).then((data) => {
       if (data?.aircraft) setAircraftList(data.aircraft);
     }).catch(console.error);
 
-    // Fetch initial hydrology stations
     api.getHydrologyStations().then((data) => {
       if (data?.stations) setHydrologyStations(data.stations);
     }).catch(console.error);
 
-    // Fetch detected patterns
     api.getMaritimePatterns().then((data) => {
       if (data?.patterns) setPatterns(data.patterns);
     }).catch(console.error);
 
     return () => {
       clearInterval(aviationInterval);
-      clearInterval(hydroInterval);
-      clearInterval(eqInterval);
+      clearInterval(seismicInterval);
       clearInterval(envInterval);
     };
   }, [propLocations]);
 
-  // 2. Real-Time Moving Entity Stream via Server-Sent Events (SSE)
+  // Auto-focus selected location or entity from Knowledge Graph or context
+  useEffect(() => {
+    const targetId = selectedLocationId || selectedEntityId;
+    if (!targetId) return;
+
+    const loc = locations.find((l) => l.id === targetId || l.name === targetId);
+    if (loc) {
+      handleSelectFacility(loc);
+      setFlyTarget({ lat: loc.latitude, lng: loc.longitude, zoom: 14, id: Date.now() });
+      return;
+    }
+
+    const v = vessels.find((v) => v.id === targetId || v.mmsi === targetId || v.name === targetId);
+    if (v) {
+      handleSelectVessel(v);
+      setFlyTarget({ lat: v.latitude, lng: v.longitude, zoom: 12, id: Date.now() });
+      return;
+    }
+  }, [selectedLocationId, selectedEntityId, locations, vessels]);
+
+  // 2. Real-Time Moving Entity Stream via SSE
   useEffect(() => {
     let eventSource: EventSource | null = null;
     try {
@@ -527,13 +588,12 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
             }
             return [update, ...prev];
           });
-        } catch (_) { }
+        } catch (_) {}
       });
 
       eventSource.addEventListener('entity_position_update', (event) => {
         try {
           const update = JSON.parse(event.data) as MovingEntity;
-
           if (update.type === 'aircraft' || update.id?.startsWith('AIRCRAFT_')) {
             setAircraftList((prev) => {
               const index = prev.findIndex((a) => a.id === update.id);
@@ -545,7 +605,7 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
               return [update, ...prev];
             });
 
-            if (selectedVesselId && selectedVesselId === update.id) {
+            if (selectedEntity?.id === update.id) {
               setVesselTrack((prev) => [...prev, [update.latitude, update.longitude]]);
             }
           } else {
@@ -559,12 +619,11 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
               return [update, ...prev];
             });
 
-            // If updated vessel is currently selected, append to track
-            if (selectedVesselId && (selectedVesselId === update.id || selectedVesselId.endsWith(update.mmsi || ''))) {
+            if (selectedEntity?.id === update.id || (selectedEntity && selectedEntity.id.endsWith(update.mmsi || ''))) {
               setVesselTrack((prev) => [...prev, [update.latitude, update.longitude]]);
             }
           }
-        } catch (_) { }
+        } catch (_) {}
       });
     } catch (err) {
       console.error('SSE connection error:', err);
@@ -575,67 +634,317 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
         eventSource.close();
       }
     };
-  }, [selectedVesselId]);
+  }, [selectedEntity]);
 
-  // 3. Historical Track Retrieval on Entity Selection
-  const handleSelectVessel = async (entity: MovingEntity) => {
-    setSelectedVesselId(entity.id);
+  // Derived Data Modes
+  const vesselDataMode: DataMode = maritimeStatus?.connected ? 'LIVE' : 'REPLAY';
+  const aircraftDataMode: DataMode = aviationStatus?.operationalState === 'CONNECTED_FRESH' ? 'LIVE' : 'REPLAY';
+  const waterDataMode: DataMode = 'REPLAY';
+  const seismicDataMode: DataMode = earthquakeStatus?.operationalState === 'CONNECTED_FRESH' ? 'LIVE' : 'REPLAY';
+  const atmosphereDataMode: DataMode = 'SIMULATED';
+
+  // Selection Handlers
+  const handleSelectVessel = useCallback(async (vessel: MovingEntity) => {
+    const isMoving = (vessel.speed || 0) > 0.5;
+    const mode = maritimeStatus?.connected ? 'LIVE' : (vessel.data_mode || 'REPLAY');
+
+    setSelectedEntity({
+      id: vessel.id,
+      title: vessel.name || vessel.id,
+      type: vessel.vessel_type || 'Ship',
+      data_mode: mode,
+      statusDot: isMoving ? 'ok' : 'muted',
+      lat: vessel.latitude,
+      lng: vessel.longitude,
+      lastUpdated: vessel.last_updated_at || 'Recent',
+      hasTrail: true,
+      entityType: 'vessel',
+      keyValues: [
+        { label: 'MMSI', value: vessel.mmsi || 'N/A' },
+        { label: 'IMO', value: vessel.imo || 'N/A' },
+        { label: 'Speed', value: vessel.speed ? `${vessel.speed} kts` : '0 kts' },
+        { label: 'Course', value: `${vessel.course ?? vessel.heading ?? 0}°` },
+        { label: 'Heading', value: `${vessel.heading ?? 0}°` },
+        { label: 'Destination', value: vessel.destination || 'Unspecified' },
+        { label: 'Status', value: vessel.status || (isMoving ? 'Underway' : 'At Anchor') },
+        { label: 'Coordinates', value: `${vessel.latitude.toFixed(4)}, ${vessel.longitude.toFixed(4)}` },
+      ],
+    });
+
     try {
-      const trackRes = entity.type === 'aircraft'
-        ? await api.getAviationAircraftTrack(entity.id, 64)
-        : await api.getMaritimeVesselTrack(entity.id, 64);
+      const trackRes = await api.getMaritimeVesselTrack(vessel.id, 64);
       if (trackRes?.track && trackRes.track.length > 0) {
-        const coords: [number, number][] = trackRes.track.map((t) => [t.latitude, t.longitude]);
-        setVesselTrack(coords);
+        setVesselTrack(trackRes.track.map((t) => [t.latitude, t.longitude]));
       } else {
-        setVesselTrack([[entity.latitude, entity.longitude]]);
+        setVesselTrack([[vessel.latitude, vessel.longitude]]);
       }
     } catch (_) {
-      setVesselTrack([[entity.latitude, entity.longitude]]);
+      setVesselTrack([[vessel.latitude, vessel.longitude]]);
+    }
+  }, [maritimeStatus]);
+
+  const handleSelectAircraft = useCallback(async (aircraft: MovingEntity) => {
+    const mode: DataMode = aviationStatus?.operationalState === 'CONNECTED_FRESH' ? 'LIVE' : 'REPLAY';
+    const altitude = aircraft.properties?.altitude_ft ?? aircraft.properties?.geo_altitude;
+
+    setSelectedEntity({
+      id: aircraft.id,
+      title: aircraft.name || aircraft.id,
+      type: 'Aircraft',
+      data_mode: mode,
+      statusDot: mode === 'LIVE' ? 'ok' : 'muted',
+      lat: aircraft.latitude,
+      lng: aircraft.longitude,
+      lastUpdated: aircraft.last_updated_at || 'Recent',
+      hasTrail: true,
+      entityType: 'aircraft',
+      keyValues: [
+        { label: 'Callsign', value: aircraft.name || 'N/A' },
+        { label: 'ICAO24', value: aircraft.properties?.icao24 || aircraft.id.replace('AIRCRAFT_', '') },
+        { label: 'Altitude', value: altitude ? `${altitude.toLocaleString()} ft` : 'Ground' },
+        { label: 'Velocity', value: aircraft.speed ? `${aircraft.speed} kts` : '0 kts' },
+        { label: 'Heading', value: `${aircraft.heading ?? aircraft.course ?? 0}°` },
+        { label: 'Vertical rate', value: aircraft.properties?.vertical_rate ? `${aircraft.properties.vertical_rate} m/s` : 'Level' },
+        { label: 'Country', value: aircraft.properties?.origin_country || 'Unknown' },
+        { label: 'Coordinates', value: `${aircraft.latitude.toFixed(4)}, ${aircraft.longitude.toFixed(4)}` },
+      ],
+    });
+
+    try {
+      const trackRes = await api.getAviationAircraftTrack(aircraft.id, 64);
+      if (trackRes?.track && trackRes.track.length > 0) {
+        setVesselTrack(trackRes.track.map((t) => [t.latitude, t.longitude]));
+      } else {
+        setVesselTrack([[aircraft.latitude, aircraft.longitude]]);
+      }
+    } catch (_) {
+      setVesselTrack([[aircraft.latitude, aircraft.longitude]]);
+    }
+  }, [aviationStatus]);
+
+  const handleSelectFacility = useCallback((loc: LocationRecord) => {
+    setSelectedEntity({
+      id: loc.id,
+      title: loc.name,
+      type: loc.type,
+      data_mode: 'REPLAY',
+      statusDot: 'muted',
+      lat: loc.latitude,
+      lng: loc.longitude,
+      lastUpdated: 'Static record',
+      hasTrail: false,
+      entityType: 'facility',
+      keyValues: [
+        { label: 'Type', value: loc.type },
+        { label: 'City', value: loc.city },
+        { label: 'State', value: loc.state },
+        { label: 'Country', value: loc.country },
+        { label: 'Address', value: loc.address || 'N/A' },
+        { label: 'Coordinates', value: `${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}` },
+      ],
+    });
+    setVesselTrack([]);
+  }, []);
+
+  const handleSelectReservoir = useCallback((station: any) => {
+    const pct = station.percentage_full ?? 0;
+    setSelectedEntity({
+      id: station.id,
+      title: station.name || station.station_name,
+      type: 'Reservoir',
+      data_mode: waterDataMode,
+      statusDot: pct >= 40 ? 'ok' : 'warn',
+      lat: station.latitude,
+      lng: station.longitude,
+      lastUpdated: station.bulletin_date || 'Archived bulletin',
+      hasTrail: false,
+      entityType: 'reservoir',
+      keyValues: [
+        { label: 'Basin', value: station.river_basin || 'N/A' },
+        { label: 'Current storage', value: `${station.current_storage_mcm ?? station.storage_mcm ?? 0} MCM` },
+        { label: 'Capacity', value: `${station.full_reservoir_level_mcm ?? station.capacity_mcm ?? 0} MCM` },
+        { label: 'Storage level', value: `${pct}%` },
+        { label: 'Coordinates', value: `${station.latitude.toFixed(4)}, ${station.longitude.toFixed(4)}` },
+      ],
+    });
+    setVesselTrack([]);
+  }, [waterDataMode]);
+
+  const handleSelectEarthquake = useCallback((eq: any) => {
+    setSelectedEntity({
+      id: eq.id,
+      title: eq.place || `M${eq.magnitude} Seismic Event`,
+      type: 'Earthquake',
+      data_mode: seismicDataMode,
+      statusDot: eq.magnitude >= 5 ? 'danger' : 'warn',
+      lat: eq.latitude,
+      lng: eq.longitude,
+      lastUpdated: eq.time ? new Date(eq.time).toISOString() : 'Recent',
+      hasTrail: false,
+      entityType: 'earthquake',
+      keyValues: [
+        { label: 'Magnitude', value: `M ${eq.magnitude?.toFixed(1) ?? 'N/A'}` },
+        { label: 'Depth', value: `${eq.depth_km ?? eq.depth ?? 0} km` },
+        { label: 'Location', value: eq.place || 'Unknown' },
+        { label: 'Coordinates', value: `${eq.latitude.toFixed(4)}, ${eq.longitude.toFixed(4)}` },
+      ],
+    });
+    setVesselTrack([]);
+  }, [seismicDataMode]);
+
+  const handleSelectEnvironment = useCallback((node: any) => {
+    setSelectedEntity({
+      id: node.id,
+      title: node.name,
+      type: 'Atmosphere Model',
+      data_mode: atmosphereDataMode,
+      statusDot: 'muted',
+      lat: node.latitude,
+      lng: node.longitude,
+      lastUpdated: node.updated_at || 'Forecast step',
+      hasTrail: false,
+      entityType: 'environment',
+      keyValues: [
+        { label: 'Temperature', value: node.temperature_c != null ? `${node.temperature_c}°C` : 'N/A' },
+        { label: 'Humidity', value: node.relative_humidity_pct != null ? `${node.relative_humidity_pct}%` : 'N/A' },
+        { label: 'Precipitation', value: `${node.precipitation_mm ?? 0} mm` },
+        { label: 'Pressure', value: node.surface_pressure_hpa != null ? `${node.surface_pressure_hpa} hPa` : 'N/A' },
+        { label: 'Wind speed', value: node.wind_speed_kmh != null ? `${node.wind_speed_kmh} km/h` : 'N/A' },
+        { label: 'Coordinates', value: `${node.latitude.toFixed(4)}, ${node.longitude.toFixed(4)}` },
+      ],
+    });
+    setVesselTrack([]);
+  }, [atmosphereDataMode]);
+
+  // Center on Indian Ocean / Subcontinent
+  const defaultCenter: [number, number] = locations.length > 0
+    ? [locations[0].latitude, locations[0].longitude]
+    : [13.0, 80.2];
+
+  const malaccaPattern = patterns.find((p) => p.region.includes('Malacca')) || patterns[0];
+
+  const handleCenterSelected = () => {
+    if (selectedEntity) {
+      setFlyTarget({
+        lat: selectedEntity.lat,
+        lng: selectedEntity.lng,
+        zoom: Math.max(currentZoom, 13),
+        id: Date.now(),
+      });
     }
   };
 
-  const getMarkerColor = (type: string) => {
-    switch (type) {
-      case 'WAREHOUSE': return '#10b981'; // Emerald
-      case 'PORT': return '#3b82f6'; // Blue
-      case 'CHECKPOINT': return '#06b6d4'; // Cyan
-      case 'TOLL_PLAZA': return '#eab308'; // Yellow
-      case 'INCIDENT_SITE': return '#f43f5e'; // Ruby
-      case 'TRANSIT_POINT': return '#a855f7'; // Purple
-      default: return '#38bdf8'; // Sky
+  const handleOpenInGraph = () => {
+    if (selectedEntity) {
+      if (onSelectEntity) {
+        onSelectEntity(selectedEntity.id);
+      } else {
+        quickNavigateToEntity(selectedEntity.id, 'investigation');
+      }
     }
   };
 
-  const filteredLocations = filterType === 'ALL'
-    ? locations
-    : locations.filter((l) => l.type === filterType);
+  // Filtered telemetry list for pure data mode (when map is OFF)
+  const getCombinedTelemetryData = () => {
+    let list: Array<{
+      id: string;
+      title: string;
+      category: 'VESSEL' | 'AIRCRAFT' | 'FACILITY' | 'SEISMIC';
+      type: string;
+      lat: number;
+      lng: number;
+      metrics: string;
+      mode: string;
+      original: any;
+    }> = [];
 
-  const defaultCenter: [number, number] = filteredLocations.length > 0
-    ? [filteredLocations[0].latitude, filteredLocations[0].longitude]
-    : [13.0, 80.2]; // Default Indian Ocean / South India center
+    if (telemetryFilter === 'all' || telemetryFilter === 'vessels') {
+      vessels.forEach((v) => {
+        list.push({
+          id: v.id,
+          title: v.name || v.id,
+          category: 'VESSEL',
+          type: v.vessel_type || 'Ship',
+          lat: v.latitude,
+          lng: v.longitude,
+          metrics: `Speed: ${v.speed ?? 0} kts • Course: ${v.course ?? v.heading ?? 0}° • Draught: ${v.properties?.draught ?? 'N/A'} m`,
+          mode: v.data_mode || (maritimeStatus?.connected ? 'LIVE' : 'REPLAY'),
+          original: v,
+        });
+      });
+    }
 
-  const zoomToLevel = (zoom: number) => {
-    const centerLoc = filteredLocations[0] || { latitude: 12.9716, longitude: 77.5946 };
-    setFlyTarget({
-      lat: centerLoc.latitude,
-      lng: centerLoc.longitude,
-      zoom,
-      id: Date.now(),
-    });
+    if (telemetryFilter === 'all' || telemetryFilter === 'aircraft') {
+      aircraftList.forEach((a) => {
+        list.push({
+          id: a.id,
+          title: a.name || a.id,
+          category: 'AIRCRAFT',
+          type: 'Aircraft',
+          lat: a.latitude,
+          lng: a.longitude,
+          metrics: `Alt: ${a.properties?.altitude_ft ?? a.properties?.geo_altitude ?? 0} ft • Speed: ${a.speed ?? 0} kts • Country: ${a.properties?.origin_country || 'N/A'}`,
+          mode: aviationStatus?.operationalState === 'CONNECTED_FRESH' ? 'LIVE' : 'REPLAY',
+          original: a,
+        });
+      });
+    }
+
+    if (telemetryFilter === 'all' || telemetryFilter === 'facilities') {
+      locations.forEach((loc) => {
+        list.push({
+          id: loc.id,
+          title: loc.name,
+          category: 'FACILITY',
+          type: loc.type,
+          lat: loc.latitude,
+          lng: loc.longitude,
+          metrics: `City: ${loc.city || 'N/A'} • State: ${loc.state || 'N/A'} • Country: ${loc.country || 'N/A'}`,
+          mode: 'RECORD',
+          original: loc,
+        });
+      });
+    }
+
+    if (telemetryFilter === 'all' || telemetryFilter === 'earthquakes') {
+      earthquakes.forEach((eq) => {
+        list.push({
+          id: eq.id,
+          title: eq.place || `M${eq.magnitude} Seismic Event`,
+          category: 'SEISMIC',
+          type: 'Earthquake',
+          lat: eq.latitude,
+          lng: eq.longitude,
+          metrics: `Magnitude: M${eq.magnitude?.toFixed(1) ?? 'N/A'} • Depth: ${eq.depth_km ?? eq.depth ?? 0} km`,
+          mode: seismicDataMode,
+          original: eq,
+        });
+      });
+    }
+
+    if (telemetrySearch.trim()) {
+      const q = telemetrySearch.toLowerCase();
+      list = list.filter(
+        (item) =>
+          item.title.toLowerCase().includes(q) ||
+          item.id.toLowerCase().includes(q) ||
+          item.type.toLowerCase().includes(q) ||
+          item.metrics.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
   };
 
-  const zoomToLocation = (lat: number, lon: number, zoom: number = 17) => {
-    setFlyTarget({
-      lat,
-      lng: lon,
-      zoom,
-      id: Date.now(),
-    });
+  const handleItemClick = (item: any) => {
+    if (item.category === 'VESSEL') handleSelectVessel(item.original);
+    else if (item.category === 'AIRCRAFT') handleSelectAircraft(item.original);
+    else if (item.category === 'FACILITY') handleSelectFacility(item.original);
+    else if (item.category === 'SEISMIC') handleSelectEarthquake(item.original);
   };
 
   return (
-    <div className={`relative flex flex-col h-full bg-[#090d16] border border-[#1e293b] rounded-lg overflow-hidden ${className}`}>
+    <div className={`relative flex flex-col h-full bg-bg rounded overflow-hidden select-none ${className}`}>
       {/* Pattern Modal */}
       {activePatternModal && (
         <MaritimePatternModal
@@ -643,547 +952,164 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
           onClose={() => setActivePatternModal(null)}
           onSelectCorridor={(region) => {
             if (region.includes('Malacca')) {
-              zoomToLocation(3.2, 100.5, 7);
+              setFlyTarget({ lat: 3.2, lng: 100.5, zoom: 7, id: Date.now() });
             }
             setActivePatternModal(null);
           }}
         />
       )}
 
-      {/* Top Header / Tactical Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-[#0b1120] border-b border-[#1e293b] z-10 shrink-0">
-        <div className="flex items-center gap-2">
-          <Compass className="w-4 h-4 text-cyan-400" />
-          <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">
-            GEOSPATIAL RADAR
+      {/* 1. Slim Header Row (36px) */}
+      <div className="h-9 px-3 bg-panel border-b border-line flex items-center justify-between z-10 shrink-0 text-[13px]">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-medium text-fg">{isMapEnabled ? 'Geospatial Radar Map' : 'Telemetry & Geospatial Data'}</span>
+          <span className="text-line">·</span>
+          <span className="text-muted truncate">
+            {vessels.length} vessels · {aircraftList.length} aircraft · {earthquakes.length} quakes · {locations.length} facilities
           </span>
-          <span className="text-[11px] font-mono text-cyan-400/90 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/40">
-            {filteredLocations.length} Land Points
-          </span>
-          {showMaritime && (
-            <span
-              className={`text-[11px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${
-                maritimeStatus?.connected
-                  ? 'text-emerald-400/90 bg-emerald-950/60 border-emerald-800/40'
-                  : 'text-amber-400/90 bg-amber-950/60 border-amber-800/40'
-              }`}
-              title={maritimeStatus?.connected ? 'Real-time WebSocket streaming active' : 'Feed standby/offline; displaying verified historical vessel telemetry'}
+          {malaccaPattern && (
+            <button
+              onClick={() => setActivePatternModal(malaccaPattern)}
+              className="flex items-center gap-1.5 text-xs text-muted hover:text-fg ml-3 transition"
+              title="View detected corridor pattern"
             >
-              <Anchor className={`w-3 h-3 ${maritimeStatus?.connected ? 'text-emerald-400' : 'text-amber-400'}`} />
-              {vessels.length} {maritimeStatus?.connected ? 'Live Vessels' : 'Recorded Vessels'}
-            </span>
+              <span className="w-1.5 h-1.5 rounded-full bg-warn" />
+              <span>Malacca pattern alert</span>
+            </button>
           )}
-          {showAviation && (() => {
-            const opState = aviationStatus?.operationalState || 'STANDBY';
-            const freshCount = aviationStatus?.freshAircraftCount ?? 0;
-            const totalCount = aircraftList.length;
-
-            let badgeStyle = 'text-slate-400 bg-slate-900/60 border-slate-800/40';
-            let iconStyle = 'text-slate-400';
-            let label = `${totalCount} Aircraft (Standby)`;
-            let title = 'Aviation feed standby / waiting for poll';
-
-            if (opState === 'CONNECTED_FRESH') {
-              badgeStyle = 'text-emerald-300 bg-emerald-950/60 border-emerald-800/40';
-              iconStyle = 'text-emerald-400';
-              label = `${freshCount} Live Aircraft`;
-              title = `OpenSky connected & live: ${freshCount} active flights verified in airspace (< 2m)`;
-            } else if (opState === 'CONNECTED_EMPTY') {
-              badgeStyle = 'text-sky-300 bg-sky-950/60 border-sky-800/40';
-              iconStyle = 'text-sky-400';
-              label = `0 Active Flights (Live)`;
-              title = 'OpenSky connected; 0 aircraft currently reported in sector';
-            } else if (opState === 'CONNECTED_STALE' || opState === 'CONNECTED_HISTORICAL') {
-              badgeStyle = 'text-amber-300 bg-amber-950/60 border-amber-800/40';
-              iconStyle = 'text-amber-400';
-              const ageMin = Math.max(1, Math.round((aviationStatus?.newestObservationAgeSec || 0) / 60));
-              label = `${totalCount} Aircraft (Stale ${ageMin}m)`;
-              title = `OpenSky connected but observation is stale (${ageMin}m ago); displaying recorded positions`;
-            } else if (opState === 'RATE_LIMITED') {
-              badgeStyle = 'text-amber-400 bg-amber-950/60 border-amber-800/40';
-              iconStyle = 'text-amber-400';
-              label = `Aviation: Rate Limited`;
-              title = 'OpenSky API rate limit reached (cooling down)';
-            } else if (opState === 'DISCONNECTED') {
-              badgeStyle = 'text-rose-400 bg-rose-950/60 border-rose-800/40';
-              iconStyle = 'text-rose-400';
-              label = `Aviation: Disconnected`;
-              title = 'OpenSky provider connection failed or network offline';
-            }
-
-            return (
-              <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${badgeStyle}`} title={title}>
-                <Plane className={`w-3 h-3 ${iconStyle}`} />
-                {label}
-              </span>
-            );
-          })()}
-          {showHydrology && (() => {
-            const opState = hydrologyStatus?.operationalState || 'STANDBY';
-            const totalCount = hydrologyStatus?.totalStationsInDb ?? hydrologyStations.length;
-            const freshCount = totalCount;
-
-            let badgeStyle = 'text-slate-400 bg-slate-900/60 border-slate-800/40';
-            let iconStyle = 'text-slate-400';
-            let label = `${totalCount} Reservoirs (Standby)`;
-            let title = 'CWC Hydrology feed standby / waiting for poll';
-
-            if (opState === 'CONNECTED_FRESH') {
-              badgeStyle = 'text-cyan-300 bg-cyan-950/60 border-cyan-800/40';
-              iconStyle = 'text-cyan-400';
-              label = `${freshCount} Reservoirs (Fresh <3d)`;
-              title = `CWC / India-WRIS connected & fresh: ${freshCount} reservoirs updated within 3 days`;
-            } else if (opState === 'CONNECTED_HISTORICAL') {
-              badgeStyle = 'text-slate-300 bg-slate-900/80 border-slate-700/60';
-              iconStyle = 'text-slate-400';
-              const ageDays = hydrologyStatus?.newestObservationAgeDays ?? 1004;
-              label = `${totalCount} Reservoirs (Historical Archive)`;
-              title = `CWC / India-WRIS connected; displaying official archived bulletin data (${ageDays}d old)`;
-            } else if (opState === 'CONNECTED_STALE') {
-              badgeStyle = 'text-amber-300 bg-amber-950/60 border-amber-800/40';
-              iconStyle = 'text-amber-400';
-              label = `${totalCount} Reservoirs (Stale Bulletin)`;
-              title = 'CWC / India-WRIS connected; bulletin is older than 3 days';
-            } else if (opState === 'CONNECTED_EMPTY') {
-              badgeStyle = 'text-sky-300 bg-sky-950/60 border-sky-800/40';
-              iconStyle = 'text-sky-400';
-              label = `0 Reservoirs (Empty)`;
-              title = 'CWC feed connected; 0 records returned';
-            } else if (opState === 'RATE_LIMITED') {
-              badgeStyle = 'text-amber-400 bg-amber-950/60 border-amber-800/40';
-              iconStyle = 'text-amber-400';
-              label = `Hydrology: Rate Limited`;
-              title = 'CWC provider cooldown active';
-            } else if (opState === 'DISCONNECTED') {
-              badgeStyle = 'text-rose-400 bg-rose-950/60 border-rose-800/40';
-              iconStyle = 'text-rose-400';
-              label = `Hydrology: Disconnected`;
-              title = 'CWC provider connection failed or network offline';
-            }
-
-            return (
-              <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${badgeStyle}`} title={title}>
-                <Droplets className={`w-3 h-3 ${iconStyle}`} />
-                {label}
-              </span>
-            );
-          })()}
-          {showEarthquakes && (() => {
-            const opState = earthquakeStatus?.operationalState || 'STANDBY';
-            const totalCount = earthquakes.length || earthquakeStatus?.totalEventsInDb || 0;
-
-            let badgeStyle = 'text-slate-400 bg-slate-900/60 border-slate-800/40';
-            let iconStyle = 'text-slate-400';
-            let label = `${totalCount} Earthquakes (Standby)`;
-            let title = 'USGS Earthquake feed standby / waiting for poll';
-
-            if (opState === 'CONNECTED_FRESH') {
-              badgeStyle = 'text-amber-300 bg-amber-950/60 border-amber-800/40';
-              iconStyle = 'text-amber-400';
-              label = `${totalCount} Earthquakes (Fresh <3h)`;
-              title = `USGS Seismic feed connected: ${totalCount} seismic events reported`;
-            } else if (opState === 'CONNECTED_STALE') {
-              badgeStyle = 'text-amber-400/80 bg-amber-950/40 border-amber-800/30';
-              iconStyle = 'text-amber-400';
-              label = `${totalCount} Earthquakes (Past 24h)`;
-              title = 'USGS connected; latest events in 24h window';
-            } else if (opState === 'CONNECTED_HISTORICAL') {
-              badgeStyle = 'text-slate-300 bg-slate-900/80 border-slate-700/60';
-              iconStyle = 'text-slate-400';
-              label = `${totalCount} Earthquakes (Historical)`;
-              title = 'USGS feed connected; displaying historical seismic events';
-            } else if (opState === 'CONNECTED_EMPTY') {
-              badgeStyle = 'text-sky-300 bg-sky-950/60 border-sky-800/40';
-              iconStyle = 'text-sky-400';
-              label = `0 Earthquakes (Live Feed)`;
-              title = 'USGS feed connected; zero seismic events in query window';
-            } else if (opState === 'RATE_LIMITED') {
-              badgeStyle = 'text-amber-400 bg-amber-950/60 border-amber-800/40';
-              iconStyle = 'text-amber-400';
-              label = `Seismic: Rate Limited`;
-              title = 'USGS provider cooldown active';
-            } else if (opState === 'DISCONNECTED') {
-              badgeStyle = 'text-rose-400 bg-rose-950/60 border-rose-800/40';
-              iconStyle = 'text-rose-400';
-              label = `Seismic: Disconnected`;
-              title = 'USGS provider connection failed';
-            }
-
-            return (
-              <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${badgeStyle}`} title={title}>
-                <Activity className={`w-3 h-3 ${iconStyle}`} />
-                {label}
-              </span>
-            );
-          })()}
-          {showEnvironment && (() => {
-            const wxCount = weatherNodes.length || environmentStatus?.totalWeatherNodesInDb || 0;
-            const aqiCount = airQualityNodes.length || environmentStatus?.totalAirQualityNodesInDb || 0;
-            const wxConn = environmentStatus?.weatherConnectionState || 'STANDBY';
-
-            let badgeStyle = 'text-emerald-300 bg-emerald-950/60 border-emerald-800/40';
-            let iconStyle = 'text-emerald-400';
-            let label = `${wxCount} Weather / ${aqiCount} AQI Nodes (NWP & CAMS Models)`;
-            let title = 'Open-Meteo & Copernicus CAMS numerical models; not direct station telemetry';
-
-            if (wxConn === 'DISCONNECTED') {
-              badgeStyle = 'text-rose-400 bg-rose-950/60 border-rose-800/40';
-              iconStyle = 'text-rose-400';
-              label = `Environment: Disconnected`;
-              title = 'Open-Meteo provider connection failed';
-            } else if (wxConn === 'RATE_LIMITED') {
-              badgeStyle = 'text-amber-400 bg-amber-950/60 border-amber-800/40';
-              iconStyle = 'text-amber-400';
-              label = `Environment: Rate Limited`;
-              title = 'Open-Meteo cooldown active';
-            }
-
-            return (
-              <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${badgeStyle}`} title={title}>
-                <CloudRain className={`w-3 h-3 ${iconStyle}`} />
-                {label}
-              </span>
-            );
-          })()}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Quick Zoom Shortcuts */}
-          <div className="flex items-center bg-[#090d16] border border-[#1e293b] rounded p-0.5 text-[10px] font-mono">
-            <span className="text-slate-500 px-1.5 text-[9px] uppercase font-bold">Zoom:</span>
-            <button
-              onClick={() => zoomToLevel(18)}
-              className="px-2 py-0.5 rounded text-amber-300 hover:bg-amber-950/40 transition flex items-center gap-1 font-bold"
-              title="Street Level Map View"
-            >
-              <Building2 className="w-3 h-3 text-amber-400" />
-              Street
-            </button>
-            <button
-              onClick={() => zoomToLevel(13)}
-              className="px-2 py-0.5 rounded text-slate-300 hover:bg-slate-800 transition"
-              title="City Level Overview"
-            >
-              City
-            </button>
-            <button
-              onClick={() => zoomToLevel(6)}
-              className="px-2 py-0.5 rounded text-slate-300 hover:bg-slate-800 transition"
-              title="Regional / Maritime Overview"
-            >
-              Regional
-            </button>
-          </div>
-
-          {/* Map Layer Mode Buttons */}
-          <div className="flex items-center bg-[#090d16] border border-[#1e293b] rounded p-0.5 text-[10px] font-mono">
-            <button
-              onClick={() => setMapMode('GOOGLE_HYBRID')}
-              className={`px-2 py-0.5 rounded transition flex items-center gap-1 ${
-                mapMode === 'GOOGLE_HYBRID'
-                  ? 'bg-cyan-600/30 text-cyan-300 font-bold border border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="Google Satellite Hybrid: High-Res Building Rooftops + Roadmaps + Streets"
-            >
-              <Globe className="w-3 h-3 text-cyan-400" />
-              Google Hybrid
-            </button>
-            <button
-              onClick={() => setMapMode('ESRI_SATELLITE')}
-              className={`px-2 py-0.5 rounded transition flex items-center gap-1 ${
-                mapMode === 'ESRI_SATELLITE'
-                  ? 'bg-cyan-600/30 text-cyan-300 font-bold border border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Esri Satellite
-            </button>
-            <button
-              onClick={() => setMapMode('DARK')}
-              className={`px-2 py-0.5 rounded transition flex items-center gap-1 ${
-                mapMode === 'DARK'
-                  ? 'bg-cyan-600/30 text-cyan-300 font-bold border border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Layers className="w-3 h-3 text-slate-400" />
-              Dark
-            </button>
-            <button
-              onClick={() => setMapMode('STREET')}
-              className={`px-2 py-0.5 rounded transition ${
-                mapMode === 'STREET'
-                  ? 'bg-cyan-600/30 text-cyan-300 font-bold border border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Streets
-            </button>
-          </div>
-
-          {/* Maritime AIS Moving Entity Layer Toggle */}
+        {/* Global Map Toggle Button (Default: OFF) */}
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowMaritime(!showMaritime)}
-            className={`px-2 py-1 rounded text-[10px] font-mono border transition flex items-center gap-1.5 ${
-              showMaritime
-                ? 'bg-cyan-950/70 border-cyan-500/50 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
-                : 'bg-[#090d16] border-[#1e293b] text-slate-500 hover:text-slate-300'
+            onClick={toggleMap}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono font-medium border transition cursor-pointer ${
+              isMapEnabled
+                ? 'bg-cyan-950/70 border-cyan-500/80 text-cyan-300'
+                : 'bg-[#1C1E21] border-[#26292D] text-[#8B9097] hover:text-[#E6E7E9] hover:border-[#3E4247]'
             }`}
-            title="Toggle Live AIS Maritime Moving Entity Layer"
+            title={isMapEnabled ? 'Map is ON — click to turn OFF map and switch to fast Data Mode' : 'Map is OFF (Data Mode) — click to enable map'}
           >
-            <Anchor className="w-3 h-3" />
-            AIS Ships: {showMaritime ? 'ON' : 'OFF'}
-          </button>
-
-          {/* Aviation OpenSky Moving Entity Layer Toggle */}
-          <button
-            onClick={() => setShowAviation(!showAviation)}
-            className={`px-2 py-1 rounded text-[10px] font-mono border transition flex items-center gap-1.5 ${
-              showAviation
-                ? 'bg-sky-950/70 border-sky-500/50 text-sky-300 shadow-[0_0_8px_rgba(56,189,248,0.2)]'
-                : 'bg-[#090d16] border-[#1e293b] text-slate-500 hover:text-slate-300'
-            }`}
-            title="Toggle Live OpenSky Aviation ADS-B Entity Layer"
-          >
-            <Plane className="w-3 h-3" />
-            Aircraft: {showAviation ? 'ON' : 'OFF'}
-          </button>
-
-          {/* Hydrology CWC Reservoir Monitoring Layer Toggle */}
-          <button
-            onClick={() => setShowHydrology(!showHydrology)}
-            className={`px-2 py-1 rounded text-[10px] font-mono border transition flex items-center gap-1.5 ${
-              showHydrology
-                ? 'bg-teal-950/70 border-teal-500/50 text-teal-300 shadow-[0_0_8px_rgba(20,184,166,0.2)]'
-                : 'bg-[#090d16] border-[#1e293b] text-slate-500 hover:text-slate-300'
-            }`}
-            title="Toggle Official CWC Water-Level & Reservoir Monitoring Layer"
-          >
-            <Droplets className="w-3 h-3" />
-            Water: {showHydrology ? 'ON' : 'OFF'}
-          </button>
-
-          {/* USGS Earthquakes Seismic Layer Toggle */}
-          <button
-            onClick={() => setShowEarthquakes(!showEarthquakes)}
-            className={`px-2 py-1 rounded text-[10px] font-mono border transition flex items-center gap-1.5 ${
-              showEarthquakes
-                ? 'bg-amber-950/70 border-amber-500/50 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
-                : 'bg-[#090d16] border-[#1e293b] text-slate-500 hover:text-slate-300'
-            }`}
-            title="Toggle USGS Real-Time Global Seismic & Earthquake Hazard Layer"
-          >
-            <Activity className="w-3 h-3" />
-            Seismic: {showEarthquakes ? 'ON' : 'OFF'}
-          </button>
-
-          {/* Environmental Weather & Air Quality Models Layer Toggle */}
-          <button
-            onClick={() => setShowEnvironment(!showEnvironment)}
-            className={`px-2 py-1 rounded text-[10px] font-mono border transition flex items-center gap-1.5 ${
-              showEnvironment
-                ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.2)]'
-                : 'bg-[#090d16] border-[#1e293b] text-slate-500 hover:text-slate-300'
-            }`}
-            title="Toggle Open-Meteo Weather & Copernicus CAMS Air Quality Models Layer"
-          >
-            <CloudRain className="w-3 h-3" />
-            Atmosphere: {showEnvironment ? 'ON' : 'OFF'}
-          </button>
-
-          {/* Historical Trails Toggle */}
-          {showMaritime && (
-            <button
-              onClick={() => setShowTrails(!showTrails)}
-              className={`px-2 py-1 rounded text-[10px] font-mono border transition flex items-center gap-1 ${
-                showTrails
-                  ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
-                  : 'bg-[#090d16] border-[#1e293b] text-slate-500 hover:text-slate-300'
-              }`}
-              title="Toggle historical trajectory trails for selected vessels"
-            >
-              Trails: {showTrails ? 'ON' : 'OFF'}
-            </button>
-          )}
-
-          {/* Pin Name Badges Toggle */}
-          <button
-            onClick={() => setShowPinNames(!showPinNames)}
-            className={`px-2 py-1 rounded text-[10px] font-mono border transition flex items-center gap-1 ${
-              showPinNames
-                ? 'bg-sky-950/60 border-sky-600/50 text-sky-300'
-                : 'bg-[#090d16] border-[#1e293b] text-slate-500 hover:text-slate-300'
-            }`}
-            title="Toggle entity name badges above markers"
-          >
-            <Tag className="w-3 h-3" />
-            Tags: {showPinNames ? 'ON' : 'OFF'}
+            <span>{isMapEnabled ? 'Map Canvas: ON' : 'Map Canvas: OFF'}</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${isMapEnabled ? 'bg-cyan-400 animate-pulse' : 'bg-slate-600'}`} />
           </button>
         </div>
       </div>
 
-      {/* Map Container */}
-      <div className="flex-1 w-full h-full min-h-[300px] z-0 relative">
-        <MapContainer
+      {/* Map Canvas Container / Pure Data View */}
+      <div className="flex-1 w-full h-full relative z-0 flex flex-col overflow-hidden">
+        {isMapEnabled ? (
+          <>
+            <MapContainer
           center={defaultCenter}
           zoom={6}
           minZoom={3}
-          maxZoom={21}
+          maxZoom={20}
           scrollWheelZoom={true}
+          zoomControl={true}
           className="w-full h-full"
-          style={{ background: '#090d16' }}
+          style={{ background: '#0E0F11' }}
         >
-          {/* Active Flight Camera Controller */}
+          {/* Zoom State Tracker */}
+          <MapZoomTracker onZoomChange={setCurrentZoom} />
+
+          {/* Active Fly Controller */}
           <MapFlyController target={flyTarget} />
 
-          {/* Base Layer: Google Hybrid (Ultra-crisp satellite, building footprints, street roadmaps) */}
-          {mapMode === 'GOOGLE_HYBRID' && (
-            <TileLayer
-              attribution='&copy; Google Maps Satellite & Roadmaps'
-              url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
-              maxZoom={21}
-              maxNativeZoom={20}
-            />
-          )}
-
-          {/* Base Layer: Esri World Imagery (Satellite tile layer) */}
-          {mapMode === 'ESRI_SATELLITE' && (
-            <>
-              <TileLayer
-                attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
-                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                maxZoom={21}
-                maxNativeZoom={19}
-              />
-              {showLabels && (
-                <>
-                  <TileLayer
-                    attribution='&copy; Esri Boundaries & Places'
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-                    maxZoom={21}
-                    maxNativeZoom={19}
-                    opacity={0.9}
-                  />
-                  <TileLayer
-                    attribution='&copy; Esri Transportation'
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
-                    maxZoom={21}
-                    maxNativeZoom={19}
-                    opacity={0.8}
-                  />
-                </>
-              )}
-            </>
-          )}
-
-          {/* Base Layer: Dark Tactical */}
+          {/* Basemaps */}
           {mapMode === 'DARK' && (
             <TileLayer
               attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
               subdomains="abcd"
               maxZoom={20}
             />
           )}
 
-          {/* Base Layer: OpenStreetMap */}
           {mapMode === 'STREET' && (
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
               maxZoom={19}
             />
           )}
 
-          {/* ================================================================= */}
-          {/* STATIC LAND ENTITIES (Warehouses, Ports, Checkpoints)            */}
-          {/* ================================================================= */}
-          {filteredLocations.map((loc) => (
-            <Marker
-              key={loc.id}
-              position={[loc.latitude, loc.longitude]}
-              icon={createFacilityIcon(getMarkerColor(loc.type))}
-              eventHandlers={{
-                click: () => zoomToLocation(loc.latitude, loc.longitude, 18),
-              }}
-            >
-              {showPinNames && (
-                <Tooltip
-                  permanent
-                  direction="top"
-                  offset={[0, -14]}
-                  className="tactical-marker-tooltip"
-                >
-                  <span>{loc.name}</span>
-                </Tooltip>
-              )}
+          {mapMode === 'SATELLITE' && (
+            <TileLayer
+              attribution='Tiles &copy; Esri'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={19}
+            />
+          )}
 
-              <Popup className="tactical-popup">
-                <div className="p-1 font-mono text-xs text-slate-200 min-w-[220px]">
-                  <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300">
-                      {loc.type}
-                    </span>
-                    <span className="text-[10px] text-slate-400">{loc.city}</span>
-                  </div>
+          {/* Optional Labels Overlay */}
+          {showLabels && mapMode === 'DARK' && (
+            <TileLayer
+              attribution='&copy; CARTO'
+              url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
+              subdomains="abcd"
+              maxZoom={20}
+              opacity={0.85}
+            />
+          )}
 
-                  <div className="font-bold text-white text-xs mb-1">{loc.name}</div>
-                  {loc.address && (
-                    <div className="text-[10px] text-slate-400 mb-2">{loc.address}</div>
-                  )}
+          {showLabels && mapMode === 'SATELLITE' && (
+            <TileLayer
+              attribution='&copy; Esri'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={19}
+              opacity={0.8}
+            />
+          )}
 
-                  <div className="text-[10px] text-slate-300 bg-slate-900 p-1.5 rounded mb-2">
-                    Coordinates: {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)}
-                  </div>
+          {/* Static Land Facilities Cluster Layer */}
+          <FacilityClusterLayer
+            locations={locations}
+            selectedId={selectedEntity?.id || null}
+            onSelect={handleSelectFacility}
+          />
 
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => zoomToLocation(loc.latitude, loc.longitude, 18)}
-                      className="flex-1 py-1 bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 text-amber-200 text-[10px] font-bold rounded transition flex items-center justify-center gap-1"
-                    >
-                      <Building2 className="w-3 h-3" />
-                      BUILDINGS
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (onSelectEntity) onSelectEntity(loc.id);
-                        else quickNavigateToEntity(loc.id);
-                      }}
-                      className="flex-1 py-1 bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/50 text-cyan-200 text-[10px] font-bold rounded transition"
-                    >
-                      INSPECT
-                    </button>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          {/* Maritime AIS Vessels Cluster Layer */}
+          {showVessels && (
+            <VesselClusterLayer
+              vessels={vessels}
+              currentZoom={currentZoom}
+              selectedId={selectedEntity?.id || null}
+              onSelect={handleSelectVessel}
+            />
+          )}
 
-          {/* ================================================================= */}
-          {/* HISTORICAL TRACK / TRAIL POLYLINE FOR SELECTED VESSEL             */}
-          {/* ================================================================= */}
-          {showMaritime && showTrails && vesselTrack.length > 1 && (
+          {/* Aircraft ADS-B Cluster Layer (hidden < zoom 6) */}
+          {showAircraft && (
+            <AircraftClusterLayer
+              aircraftList={aircraftList}
+              currentZoom={currentZoom}
+              selectedId={selectedEntity?.id || null}
+              onSelect={handleSelectAircraft}
+            />
+          )}
+
+          {/* Historical Trail Polyline */}
+          {showTrails && vesselTrack.length > 1 && (
             <>
               <Polyline
                 positions={vesselTrack}
                 pathOptions={{
-                  color: '#06b6d4',
-                  weight: 3,
-                  dashArray: '4, 6',
-                  opacity: 0.9,
+                  color: '#4C90F0',
+                  weight: 2,
+                  dashArray: '3, 5',
+                  opacity: 0.85,
                 }}
               />
-              {/* Breadcrumb points along historical trail */}
               {vesselTrack.map((pt, i) => (
                 <CircleMarker
                   key={i}
                   center={pt}
-                  radius={i === vesselTrack.length - 1 ? 4 : 2}
+                  radius={i === vesselTrack.length - 1 ? 3 : 1.5}
                   pathOptions={{
-                    color: '#0891b2',
-                    fillColor: '#06b6d4',
-                    fillOpacity: 0.8,
+                    color: '#4C90F0',
+                    fillColor: '#4C90F0',
+                    fillOpacity: 0.9,
                     weight: 1,
                   }}
                 />
@@ -1191,655 +1117,520 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
             </>
           )}
 
-          {/* ================================================================= */}
-          {/* DYNAMIC MOVING-ENTITY LAYER (AIS VESSELS)                        */}
-          {/* ================================================================= */}
-          {showMaritime && vessels.map((vessel) => {
-            const isSelected = selectedVesselId === vessel.id;
-            const heading = vessel.heading ?? vessel.course ?? 0;
+          {/* Water Gauges Layer */}
+          {showHydrology && hydrologyStations.map((station) => (
+            <Marker
+              key={station.id}
+              position={[station.latitude, station.longitude]}
+              icon={createWaterGaugeIcon(station.percentage_full ?? 50, selectedEntity?.id === station.id)}
+              eventHandlers={{
+                click: () => handleSelectReservoir(station),
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -10]} opacity={1} className="flat-map-tooltip">
+                <span>{station.name || station.station_name} ({station.percentage_full ?? 0}%)</span>
+              </Tooltip>
+            </Marker>
+          ))}
 
-            return (
-              <Marker
-                key={vessel.id}
-                position={[vessel.latitude, vessel.longitude]}
-                icon={createVesselIcon(vessel, isSelected)}
-                eventHandlers={{
-                  click: () => handleSelectVessel(vessel),
-                }}
-              >
-                {showPinNames && (
-                  <Tooltip
-                    direction="top"
-                    offset={[0, -16]}
-                    className="tactical-marker-tooltip"
-                  >
-                    <span>{vessel.name}</span>
-                  </Tooltip>
-                )}
+          {/* Seismic / USGS Earthquakes Layer */}
+          {showEarthquakes && earthquakes.map((eq) => (
+            <Marker
+              key={eq.id}
+              position={[eq.latitude, eq.longitude]}
+              icon={createQuakeIcon(eq.magnitude ?? 4.0, selectedEntity?.id === eq.id)}
+              eventHandlers={{
+                click: () => handleSelectEarthquake(eq),
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -10]} opacity={1} className="flat-map-tooltip">
+                <span>M {eq.magnitude?.toFixed(1) ?? 'N/A'} - {eq.place || 'Seismic event'}</span>
+              </Tooltip>
+            </Marker>
+          ))}
 
-                <Popup className="tactical-popup">
-                  <div className="p-1 font-mono text-xs text-slate-200 min-w-[240px]">
-                    <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 flex items-center gap-1">
-                        <Anchor className="w-3 h-3 text-cyan-400" />
-                        {vessel.vessel_type || 'SHIP'}
-                      </span>
-                      <span className="text-[10px] text-slate-400 uppercase">
-                        {vessel.status || 'in_transit'}
-                      </span>
-                    </div>
-
-                    <div className="font-bold text-white text-sm mb-1">{vessel.name}</div>
-
-                    <div className="grid grid-cols-2 gap-1.5 my-2 text-[10px] bg-slate-900/90 p-2 rounded border border-slate-800">
-                      <div>
-                        <span className="text-slate-500">MMSI:</span>{' '}
-                        <span className="text-slate-300 font-bold">{vessel.mmsi || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">IMO:</span>{' '}
-                        <span className="text-slate-300 font-bold">{vessel.imo || 'Unavailable'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">SPEED (SOG):</span>{' '}
-                        <span className="text-amber-400 font-bold">{vessel.speed ? `${vessel.speed} kts` : '0 kts'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">HEADING:</span>{' '}
-                        <span className="text-cyan-400 font-bold">{heading}°</span>
-                      </div>
-                    </div>
-
-                    {/* Origin / Destination - Strictly distinguishes unknown data from missing implementation */}
-                    <div className="p-2 rounded bg-cyan-950/30 border border-cyan-900/40 text-[11px] mb-2">
-                      <div className="text-[9px] text-slate-400 uppercase font-bold mb-0.5">VOYAGE DESTINATION:</div>
-                      {vessel.destination ? (
-                        <div className="text-cyan-300 font-bold flex items-center gap-1">
-                          <Navigation className="w-3 h-3 text-cyan-400" />
-                          <span>{vessel.destination}</span>
-                        </div>
-                      ) : (
-                        <div className="text-slate-400 italic flex items-center gap-1">
-                          <EyeOff className="w-3 h-3 text-slate-500" />
-                          <span>Unknown destination</span>
-                          <span className="text-[9px] text-slate-500">(Not declared in AIS)</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="text-[10px] text-slate-400 mb-2">
-                      Coordinates: {vessel.latitude.toFixed(4)}, {vessel.longitude.toFixed(4)}
-                    </div>
-
-                    <div className="flex gap-1.5">
-                      <button
-                        onClick={() => handleSelectVessel(vessel)}
-                        className="flex-1 py-1.5 bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/50 text-cyan-200 text-[10px] font-bold rounded transition flex items-center justify-center gap-1"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        TRACE TRAIL
-                      </button>
-                      <button
-                        onClick={() => zoomToLocation(vessel.latitude, vessel.longitude, 16)}
-                        className="py-1.5 px-2 bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 text-amber-200 text-[10px] font-bold rounded transition"
-                        title="Zoom to vessel position"
-                      >
-                        CENTER
-                      </button>
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-
-          {/* ================================================================= */}
-          {/* DYNAMIC MOVING-ENTITY LAYER (OPENSKY AIRCRAFT)                   */}
-          {/* ================================================================= */}
-          {showAviation && aircraftList.map((aircraft) => {
-            const isSelected = selectedVesselId === aircraft.id;
-            const heading = aircraft.heading ?? aircraft.course ?? 0;
-            const props = aircraft.properties || {};
-
-            return (
-              <Marker
-                key={aircraft.id}
-                position={[aircraft.latitude, aircraft.longitude]}
-                icon={createAircraftIcon(aircraft, isSelected)}
-                eventHandlers={{
-                  click: () => handleSelectVessel(aircraft),
-                }}
-              >
-                {showPinNames && (
-                  <Tooltip
-                    direction="top"
-                    offset={[0, -16]}
-                    className="tactical-marker-tooltip"
-                  >
-                    <span>{aircraft.name}</span>
-                  </Tooltip>
-                )}
-
-                <Popup className="tactical-popup">
-                  <div className="p-1 font-mono text-xs text-slate-200 min-w-[250px]">
-                    {(() => {
-                      const obsAgeSec = Math.max(0, Math.floor((Date.now() - new Date(aircraft.last_updated_at).getTime()) / 1000));
-                      const isObsFresh = obsAgeSec <= 120;
-                      const isObsStale = obsAgeSec > 120 && obsAgeSec <= 900;
-                      const vRate = props.vertical_rate_mps ?? props.vertical_rate_ms;
-
-                      let statusBadge = 'bg-slate-800 text-slate-400';
-                      let statusText = `RECORDED (${Math.max(1, Math.round(obsAgeSec / 60))}m AGO)`;
-
-                      if (isObsFresh) {
-                        statusBadge = aircraft.status === 'on_ground' ? 'bg-slate-800 text-slate-300' : 'bg-emerald-950 text-emerald-300';
-                        statusText = aircraft.status === 'on_ground' ? 'ON GROUND (LIVE)' : 'AIRBORNE (LIVE)';
-                      } else if (isObsStale) {
-                        statusBadge = 'bg-amber-950 text-amber-300';
-                        statusText = `STALE (${Math.round(obsAgeSec / 60)}m AGO)`;
-                      }
-
-                      return (
-                        <>
-                          <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 flex items-center gap-1">
-                              <Plane className="w-3 h-3 text-sky-400" />
-                              ADS-B / FLIGHT
-                            </span>
-                            <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${statusBadge}`}>
-                              {statusText}
-                            </span>
-                          </div>
-
-                          <div className="font-bold text-white text-sm mb-1 flex items-center justify-between">
-                            <span>{aircraft.name}</span>
-                            <span className="text-[10px] font-mono text-slate-400">{props.icao24 ? String(props.icao24).toUpperCase() : ''}</span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-1.5 my-2 text-[10px] bg-slate-900/90 p-2 rounded border border-slate-800">
-                            <div>
-                              <span className="text-slate-500">ALTITUDE:</span>{' '}
-                              <span className="text-cyan-400 font-bold">
-                                {props.altitude_ft ? `${props.altitude_ft.toLocaleString()} ft` : (props.altitude_m ? `${props.altitude_m} m` : 'N/A')}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-slate-500">AIRSPEED:</span>{' '}
-                              <span className="text-amber-400 font-bold">
-                                {aircraft.speed ? `${aircraft.speed} kts` : (props.speed_knots ? `${props.speed_knots} kts` : (props.speed_kmh ? `${props.speed_kmh} km/h` : '0 kts'))}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-slate-500">HEADING:</span>{' '}
-                              <span className="text-sky-300 font-bold">{heading}°</span>
-                            </div>
-                            <div>
-                              <span className="text-slate-500">V/RATE:</span>{' '}
-                              <span className="text-slate-300 font-bold">
-                                {vRate != null ? `${vRate > 0 ? '+' : ''}${vRate} m/s` : '0 m/s'}
-                              </span>
-                            </div>
-                          </div>
-                        </>
-                      );
-                    })()}
-
-                    {/* Origin / Provenance Banner */}
-                    <div className="p-2 rounded bg-sky-950/30 border border-sky-900/40 text-[11px] mb-2">
-                      <div className="text-[9px] text-slate-400 uppercase font-bold mb-0.5">SOURCE PROVENANCE:</div>
-                      <div className="text-sky-300 text-[10px] font-bold flex items-center gap-1">
-                        <span>The OpenSky Network (ADS-B / Mode S)</span>
-                      </div>
-                      {props.origin_country && (
-                        <div className="text-[10px] text-slate-400 mt-0.5">
-                          Origin: <span className="text-slate-200">{props.origin_country}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="text-[10px] text-slate-400 mb-2">
-                      Coordinates: {aircraft.latitude.toFixed(4)}, {aircraft.longitude.toFixed(4)}
-                    </div>
-
-                    <div className="flex gap-1.5">
-                      <button
-                        onClick={() => handleSelectVessel(aircraft)}
-                        className="flex-1 py-1.5 bg-sky-600/30 hover:bg-sky-600/50 border border-sky-500/50 text-sky-200 text-[10px] font-bold rounded transition flex items-center justify-center gap-1"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        TRACE FLIGHT PATH
-                      </button>
-                      <button
-                        onClick={() => zoomToLocation(aircraft.latitude, aircraft.longitude, 14)}
-                        className="py-1.5 px-2 bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 text-amber-200 text-[10px] font-bold rounded transition"
-                        title="Zoom to aircraft position"
-                      >
-                        CENTER
-                      </button>
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-
-          {/* ================================================================= */}
-          {/* OFFICIAL WATER-LEVEL & RESERVOIR MONITORING LAYER (CWC INDIA-WRIS) */}
-          {/* ================================================================= */}
-          {showHydrology && hydrologyStations.map((station) => {
-            if (!station.latitude || !station.longitude) return null;
-            const isSelected = selectedStationId === station.id;
-            const props = station.properties || {};
-            const liveStorageBmc = props.live_storage_bmc ?? station.latest_observation?.live_storage_bmc ?? props.live_storage;
-            const liveStorageTmc = props.live_storage_tmc ?? station.latest_observation?.live_storage_tmc;
-            const capacityBmc = props.capacity_bmc ?? station.latest_observation?.capacity_bmc;
-            const capacityTmc = props.capacity_tmc ?? station.latest_observation?.capacity_tmc;
-            const capacityPercent = props.capacity_percent ?? station.latest_observation?.capacity_percent;
-            const obsTime = station.last_observed_at || station.latest_observation?.observed_at || station.last_updated_at;
-
-            return (
-              <Marker
-                key={station.id}
-                position={[station.latitude, station.longitude]}
-                icon={createReservoirIcon(station, isSelected)}
-                eventHandlers={{
-                  click: () => {
-                    setSelectedStationId(station.id);
-                    zoomToLocation(station.latitude, station.longitude, 12);
-                  },
-                }}
-              >
-                {showPinNames && (
-                  <Tooltip
-                    direction="top"
-                    offset={[0, -16]}
-                    className="tactical-marker-tooltip"
-                  >
-                    <span>{station.name}</span>
-                  </Tooltip>
-                )}
-
-                <Popup className="tactical-popup">
-                  <div className="p-1 font-mono text-xs text-slate-200 min-w-[260px]">
-                    {(() => {
-                      const obsAgeDays = obsTime ? Math.max(0, Math.floor((Date.now() - new Date(obsTime).getTime()) / (1000 * 3600 * 24))) : null;
-                      const isFresh = obsAgeDays != null && obsAgeDays <= 3;
-                      const isStale = obsAgeDays != null && obsAgeDays > 3 && obsAgeDays <= 30;
-
-                      let statusBadge = 'bg-slate-800 text-slate-300';
-                      let statusText = `HISTORICAL ARCHIVE (${obsAgeDays ?? 'N/A'}d AGO)`;
-
-                      if (isFresh) {
-                        statusBadge = 'bg-emerald-950 text-emerald-300';
-                        statusText = 'DAILY BULLETIN (FRESH)';
-                      } else if (isStale) {
-                        statusBadge = 'bg-amber-950 text-amber-300';
-                        statusText = `STALE BULLETIN (${obsAgeDays}d AGO)`;
-                      }
-
-                      return (
-                        <>
-                          <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-950 text-teal-300 flex items-center gap-1">
-                              <Droplets className="w-3 h-3 text-teal-400" />
-                              CWC / RESERVOIR
-                            </span>
-                            <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${statusBadge}`}>
-                              {statusText}
-                            </span>
-                          </div>
-
-                          <div className="font-bold text-white text-sm mb-0.5 flex items-center justify-between">
-                            <span>{station.name}</span>
-                            <span className="text-[10px] font-mono text-cyan-400">
-                              {capacityPercent != null ? `${capacityPercent}% FULL` : ''}
-                            </span>
-                          </div>
-
-                          <div className="text-[10px] text-slate-400 mb-2">
-                            {props.district ? `${props.district}, Karnataka` : 'Karnataka, India'}
-                            {props.river ? ` • River ${props.river}` : ''}
-                          </div>
-
-                          {/* Storage Capacity Gauge Bar */}
-                          {capacityPercent != null && (
-                            <div className="my-2 bg-slate-900/90 p-2 rounded border border-slate-800">
-                              <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                                <span>STORAGE CAPACITY:</span>
-                                <span className="font-bold text-cyan-300">{capacityPercent}%</span>
-                              </div>
-                              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-500 ${
-                                    capacityPercent >= 70 ? 'bg-cyan-400' : capacityPercent >= 40 ? 'bg-emerald-400' : 'bg-amber-400'
-                                  }`}
-                                  style={{ width: `${Math.min(100, Math.max(0, capacityPercent))}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-2 gap-1.5 my-2 text-[10px] bg-slate-900/90 p-2 rounded border border-slate-800">
-                            <div>
-                              <span className="text-slate-500">RECORDED STORAGE:</span>{' '}
-                              <span className="text-cyan-400 font-bold">
-                                {liveStorageBmc != null ? `${liveStorageBmc} BMC` : 'N/A'}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-slate-500">STORAGE (TMC):</span>{' '}
-                              <span className="text-teal-300 font-bold">
-                                {liveStorageTmc != null ? `${liveStorageTmc} TMC` : 'N/A'}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-slate-500">DESIGN CAPACITY:</span>{' '}
-                              <span className="text-slate-300 font-bold">
-                                {capacityBmc != null ? `${capacityBmc} BMC` : 'N/A'}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-slate-500">CAPACITY (TMC):</span>{' '}
-                              <span className="text-slate-300 font-bold">
-                                {capacityTmc != null ? `${capacityTmc} TMC` : 'N/A'}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Source Provenance Banner */}
-                          <div className="p-2 rounded bg-teal-950/30 border border-teal-900/40 text-[11px] mb-2">
-                            <div className="text-[9px] text-slate-400 uppercase font-bold mb-0.5">SOURCE PROVENANCE:</div>
-                            <div className="text-teal-300 text-[10px] font-bold flex items-center gap-1">
-                              <span>Central Water Commission (CWC)</span>
-                            </div>
-                            <div className="text-[10px] text-slate-400 mt-0.5">
-                              Portal: <span className="text-slate-200">National Water Informatics Centre / India-WRIS</span>
-                            </div>
-                            <div className="text-[9px] text-slate-500 mt-0.5">
-                              License: Open Government Data (OGD) India
-                            </div>
-                          </div>
-
-                          <div className="text-[10px] text-slate-400 mb-2">
-                            Observed Date: {obsTime ? `${obsTime.split('T')[0]} (${obsAgeDays ?? 'N/A'} days ago)` : 'N/A'}
-                          </div>
-
-                          <div className="flex gap-1.5">
-                            <button
-                              onClick={() => zoomToLocation(station.latitude, station.longitude, 14)}
-                              className="w-full py-1.5 px-2 bg-teal-600/30 hover:bg-teal-600/50 border border-teal-500/50 text-teal-200 text-[10px] font-bold rounded transition flex items-center justify-center gap-1"
-                              title="Zoom into reservoir dam site"
-                            >
-                              <Navigation className="w-3 h-3" />
-                              FOCUS RESERVOIR
-                            </button>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-
-          {/* ================================================================= */}
-          {/* USGS REAL-TIME SEISMIC HAZARDS & EARTHQUAKE EPICENTER LAYER       */}
-          {/* ================================================================= */}
-          {showEarthquakes && earthquakes.map((eq) => {
-            if (!eq.latitude || !eq.longitude) return null;
-            const isSelected = selectedEarthquakeId === eq.id;
-            const mag = eq.magnitude ?? (eq.properties?.magnitude ?? 0);
-            const depth = eq.depth_km ?? (eq.properties?.depth_km ?? 0);
-            const place = eq.place || eq.name || 'Seismic Epicenter';
-            const status = eq.status || eq.properties?.status || 'preliminary';
-            const originTime = eq.origin_time || eq.observed_at;
-
-            return (
-              <Marker
-                key={eq.id}
-                position={[eq.latitude, eq.longitude]}
-                icon={createEarthquakeIcon(eq, isSelected)}
-                eventHandlers={{
-                  click: () => {
-                    setSelectedEarthquakeId(eq.id);
-                    zoomToLocation(eq.latitude, eq.longitude, 8);
-                  },
-                }}
-              >
-                {showPinNames && (
-                  <Tooltip direction="top" offset={[0, -16]} className="tactical-marker-tooltip">
-                    <span>M{typeof mag === 'number' ? mag.toFixed(1) : mag} - {place}</span>
-                  </Tooltip>
-                )}
-
-                <Popup className="tactical-popup">
-                  <div className="p-1 font-mono text-xs text-slate-200 min-w-[260px]">
-                    <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 flex items-center gap-1">
-                        <Activity className="w-3 h-3 text-amber-400" />
-                        USGS / SEISMIC
-                      </span>
-                      <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${status === 'reviewed' ? 'bg-emerald-950 text-emerald-300' : 'bg-amber-950 text-amber-400'}`}>
-                        {status.toUpperCase()}
-                      </span>
-                    </div>
-
-                    <div className="font-bold text-white text-sm mb-0.5 flex items-center justify-between">
-                      <span>M{typeof mag === 'number' ? mag.toFixed(1) : mag} Earthquake</span>
-                      <span className="text-amber-400 text-xs font-mono">{eq.magType || 'seismic'}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-400 mb-2 truncate" title={place}>
-                      {place}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-1.5 bg-slate-900/60 p-2 rounded border border-slate-800 text-[11px] mb-2">
-                      <div>
-                        <span className="text-slate-500">DEPTH:</span>{' '}
-                        <span className="text-amber-300 font-bold">{typeof depth === 'number' ? depth.toFixed(1) : depth} km</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">TSUNAMI:</span>{' '}
-                        <span className={`font-bold ${eq.tsunami_alert ? 'text-rose-400' : 'text-slate-300'}`}>
-                          {eq.tsunami_alert ? 'ALERT ACTIVE' : 'NO ALERT'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">LAT / LON:</span>{' '}
-                        <span className="text-slate-300">{eq.latitude.toFixed(2)}, {eq.longitude.toFixed(2)}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">SIGNIFICANCE:</span>{' '}
-                        <span className="text-cyan-400">{eq.significance ?? 'N/A'}</span>
-                      </div>
-                    </div>
-
-                    {/* Source Provenance */}
-                    <div className="p-2 rounded bg-amber-950/20 border border-amber-900/30 text-[11px] mb-2">
-                      <div className="text-[9px] text-slate-400 uppercase font-bold mb-0.5">SOURCE PROVENANCE:</div>
-                      <div className="text-amber-300 text-[10px] font-bold">U.S. Geological Survey (USGS)</div>
-                      <div className="text-[9px] text-slate-400 mt-0.5">
-                        Feed: Real-Time GeoJSON / Public Domain
-                      </div>
-                      <div className="text-[9px] text-slate-400 mt-0.5">
-                        Origin Time: {originTime ? new Date(originTime).toLocaleString() : 'N/A'}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-1.5">
-                      <button
-                        onClick={() => zoomToLocation(eq.latitude, eq.longitude, 10)}
-                        className="w-full py-1.5 px-2 bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 text-amber-200 text-[10px] font-bold rounded transition flex items-center justify-center gap-1"
-                        title="Center map on seismic epicenter"
-                      >
-                        <Navigation className="w-3 h-3" />
-                        FOCUS EPICENTER
-                      </button>
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-
-          {/* ================================================================= */}
-          {/* OPEN-METEO WEATHER & AIR QUALITY OPERATIONAL MONITORING LAYER      */}
-          {/* ================================================================= */}
-          {showEnvironment && weatherNodes.map((wn) => {
-            if (!wn.latitude || !wn.longitude) return null;
-            const isSelected = selectedEnvNodeId === wn.id;
-            const aqiNode = airQualityNodes.find(a => a.id.replace('AQI_NODE_', '') === wn.id.replace('WEATHER_NODE_', ''));
-
-            return (
-              <Marker
-                key={wn.id}
-                position={[wn.latitude, wn.longitude]}
-                icon={createEnvironmentIcon(wn, isSelected)}
-                eventHandlers={{
-                  click: () => {
-                    setSelectedEnvNodeId(wn.id);
-                    zoomToLocation(wn.latitude, wn.longitude, 11);
-                  },
-                }}
-              >
-                {showPinNames && (
-                  <Tooltip direction="top" offset={[0, -16]} className="tactical-marker-tooltip">
-                    <span>{wn.name} ({wn.temperature_c ?? '--'}°C)</span>
-                  </Tooltip>
-                )}
-
-                <Popup className="tactical-popup">
-                  <div className="p-1 font-mono text-xs text-slate-200 min-w-[280px]">
-                    <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 flex items-center gap-1">
-                        <CloudRain className="w-3 h-3 text-emerald-400" />
-                        NWP & CAMS MODELS
-                      </span>
-                      <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
-                        MODEL ESTIMATE
-                      </span>
-                    </div>
-
-                    <div className="font-bold text-white text-sm mb-0.5">
-                      {wn.name}
-                    </div>
-                    <div className="text-[10px] text-slate-400 mb-2">
-                      Coordinates: {wn.latitude.toFixed(3)}°N, {wn.longitude.toFixed(3)}°E
-                    </div>
-
-                    {/* Meteorological Conditions */}
-                    <div className="grid grid-cols-2 gap-1.5 bg-slate-900/60 p-2 rounded border border-slate-800 text-[11px] mb-2">
-                      <div>
-                        <span className="text-slate-500">TEMP:</span>{' '}
-                        <span className="text-emerald-300 font-bold">{wn.temperature_c != null ? `${wn.temperature_c}°C` : 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">HUMIDITY:</span>{' '}
-                        <span className="text-sky-300 font-bold">{wn.relative_humidity_pct != null ? `${wn.relative_humidity_pct}%` : 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">PRECIP:</span>{' '}
-                        <span className="text-cyan-300 font-bold">{wn.precipitation_mm ?? 0} mm</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">PRESSURE:</span>{' '}
-                        <span className="text-slate-300">{wn.surface_pressure_hpa != null ? `${wn.surface_pressure_hpa} hPa` : 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">WIND:</span>{' '}
-                        <span className="text-amber-300 font-bold">{wn.wind_speed_kmh != null ? `${wn.wind_speed_kmh} km/h` : 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">DIRECTION:</span>{' '}
-                        <span className="text-slate-300">{wn.wind_direction_deg != null ? `${wn.wind_direction_deg}°` : 'N/A'}</span>
-                      </div>
-                    </div>
-
-                    {/* Air Quality Pollutants (Copernicus CAMS) */}
-                    {aqiNode && (
-                      <div className="grid grid-cols-2 gap-1.5 bg-teal-950/20 p-2 rounded border border-teal-900/30 text-[11px] mb-2">
-                        <div>
-                          <span className="text-slate-500">US AQI:</span>{' '}
-                          <span className="text-teal-300 font-bold">{aqiNode.us_aqi ?? 'N/A'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500">EU AQI:</span>{' '}
-                          <span className="text-teal-300">{aqiNode.european_aqi ?? 'N/A'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500">PM2.5:</span>{' '}
-                          <span className="text-amber-300 font-bold">{aqiNode.pm2_5_ugm3 != null ? `${aqiNode.pm2_5_ugm3} μg/m³` : 'N/A'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500">PM10:</span>{' '}
-                          <span className="text-slate-300">{aqiNode.pm10_ugm3 != null ? `${aqiNode.pm10_ugm3} μg/m³` : 'N/A'}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Truth in Labeling Warning */}
-                    <div className="p-2 rounded bg-amber-950/20 border border-amber-900/30 text-[10px] text-amber-300/90 mb-2">
-                      ⚠️ <span className="font-bold">Model Truth:</span> Derived from ECMWF/GFS weather prediction & Copernicus Atmosphere Monitoring Service (CAMS). Not direct physical sensor telemetry.
-                    </div>
-
-                    <div className="flex gap-1.5">
-                      <button
-                        onClick={() => zoomToLocation(wn.latitude, wn.longitude, 12)}
-                        className="w-full py-1.5 px-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-200 text-[10px] font-bold rounded transition flex items-center justify-center gap-1"
-                        title="Center map on environmental node"
-                      >
-                        <Navigation className="w-3 h-3" />
-                        FOCUS NODE
-                      </button>
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
+          {/* Environmental Atmosphere Model Nodes */}
+          {showAtmosphere && weatherNodes.map((wn) => (
+            <Marker
+              key={wn.id}
+              position={[wn.latitude, wn.longitude]}
+              icon={createEnvIcon(selectedEntity?.id === wn.id)}
+              eventHandlers={{
+                click: () => handleSelectEnvironment(wn),
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -10]} opacity={1} className="flat-map-tooltip">
+                <span>{wn.name} ({wn.temperature_c ?? '--'}°C)</span>
+              </Tooltip>
+            </Marker>
+          ))}
         </MapContainer>
-      </div>
 
-      {/* Map Legend */}
-      <div className="p-2 bg-[#0b1120] border-t border-[#1e293b] flex flex-wrap items-center justify-between text-[10px] font-mono text-slate-400 shrink-0">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#10b981]"></span> Container / Cargo
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span> Crude / Chemical Tanker
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#06b6d4]"></span> Bulk Carrier
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#a855f7]"></span> Tug / Service
-          </span>
-          <span className="flex items-center gap-1 text-slate-400">
-            | Aircraft: <span className="w-2 h-2 rounded-full bg-[#06b6d4] inline-block"></span> FL250+ <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block"></span> FL100-250 <span className="w-2 h-2 rounded-full bg-[#f59e0b] inline-block"></span> &lt;FL100
-          </span>
-          <span className="flex items-center gap-1 text-slate-400">
-            | Water: <span className="w-2 h-2 rounded-full bg-[#06b6d4] inline-block"></span> &gt;70% <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block"></span> 40-70% <span className="w-2 h-2 rounded-full bg-[#f59e0b] inline-block"></span> &lt;40%
-          </span>
-          <span className="flex items-center gap-1 text-amber-400">
-            | Seismic: <span className="w-2 h-2 rounded-full bg-[#ef4444] inline-block"></span> M5+ <span className="w-2 h-2 rounded-full bg-[#f59e0b] inline-block"></span> M4+ <span className="w-2 h-2 rounded-full bg-[#38bdf8] inline-block"></span> &lt;M4
-          </span>
-          <span className="flex items-center gap-1 text-emerald-400">
-            | Atmosphere: <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block"></span> NWP/CAMS Model
-          </span>
+        {/* Top-Right Overlay: Layers Button */}
+        <div className={`absolute top-3 ${selectedEntity ? 'right-[332px]' : 'right-3'} z-[1000] transition-all`}>
+          <button
+            onClick={() => setShowLayersPanel(!showLayersPanel)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-raised hover:bg-line text-muted hover:text-fg rounded text-xs transition border border-line"
+            title="Toggle map layers and legend"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span className="font-normal">Layers</span>
+            {showLayersPanel && <span className="w-1.5 h-1.5 rounded-full bg-accent ml-0.5" />}
+          </button>
         </div>
 
-        <div className="text-cyan-400/80 font-mono text-[10px] flex items-center gap-2">
-          <span>
-            {mapMode === 'GOOGLE_HYBRID'
-              ? '🛰️ Google Hybrid Satellite + Live AIS Vessel Stream (Heading & Trails)'
-              : mapMode === 'ESRI_SATELLITE'
-              ? '🛰️ Esri Optical Satellite + Live AIS Moving Entities'
-              : mapMode === 'DARK'
-              ? '🌑 CartoDB Dark Matter Tactical Layer + Live AIS'
-              : '🗺️ OpenStreetMap Vector Layer + Live AIS'}
-          </span>
-        </div>
+        {/* Layers & Legend Panel (~260px) */}
+        {showLayersPanel && (
+          <div
+            className={`absolute top-12 ${selectedEntity ? 'right-[332px]' : 'right-3'} z-[1000] w-[260px] bg-panel border border-line rounded p-3 space-y-3.5 max-h-[calc(100%-60px)] overflow-y-auto text-[13px] text-fg transition-all`}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-line">
+              <span className="text-xs text-muted">Map settings</span>
+              <button
+                onClick={() => setShowLayersPanel(false)}
+                className="text-muted hover:text-fg p-0.5 rounded transition"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Basemap Radio */}
+            <div>
+              <div className="text-xs text-muted mb-1.5">Basemap</div>
+              <div className="space-y-1 text-xs">
+                <label className="flex items-center gap-2 cursor-pointer py-0.5">
+                  <input
+                    type="radio"
+                    name="basemap"
+                    checked={mapMode === 'DARK'}
+                    onChange={() => setMapMode('DARK')}
+                    className="accent-[#4C90F0]"
+                  />
+                  <span>Dark</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer py-0.5">
+                  <input
+                    type="radio"
+                    name="basemap"
+                    checked={mapMode === 'STREET'}
+                    onChange={() => setMapMode('STREET')}
+                    className="accent-[#4C90F0]"
+                  />
+                  <span>Street</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer py-0.5">
+                  <input
+                    type="radio"
+                    name="basemap"
+                    checked={mapMode === 'SATELLITE'}
+                    onChange={() => setMapMode('SATELLITE')}
+                    className="accent-[#4C90F0]"
+                  />
+                  <span>Satellite</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Layer Toggles */}
+            <div className="pt-2 border-t border-line">
+              <div className="text-xs text-muted mb-1.5">Layers</div>
+              <div className="space-y-1.5 text-xs">
+                <label className="flex items-center justify-between cursor-pointer py-0.5">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={showVessels}
+                      onChange={(e) => setShowVessels(e.target.checked)}
+                      className="accent-[#4C90F0] rounded"
+                    />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#4C90F0]" />
+                    <span>AIS ships</span>
+                  </div>
+                  <span className="text-[11px] text-muted capitalize">{vesselDataMode.toLowerCase()}</span>
+                </label>
+                {vessels.length === 0 && (
+                  <p className="text-[11px] text-muted pl-6">No maritime vessels reported</p>
+                )}
+
+                <label className="flex items-center justify-between cursor-pointer py-0.5">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={showAircraft}
+                      onChange={(e) => setShowAircraft(e.target.checked)}
+                      className="accent-[#4C90F0] rounded"
+                    />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#38bdf8]" />
+                    <span>Aircraft</span>
+                  </div>
+                  <span className="text-[11px] text-muted capitalize">{aircraftDataMode.toLowerCase()}</span>
+                </label>
+                {aircraftList.length === 0 && (
+                  <p className="text-[11px] text-muted pl-6">No aircraft reported</p>
+                )}
+
+                <label className="flex items-center justify-between cursor-pointer py-0.5">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={showHydrology}
+                      onChange={(e) => setShowHydrology(e.target.checked)}
+                      className="accent-[#4C90F0] rounded"
+                    />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
+                    <span>Water gauges</span>
+                  </div>
+                  <span className="text-[11px] text-muted capitalize">{waterDataMode.toLowerCase()}</span>
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer py-0.5">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={showEarthquakes}
+                      onChange={(e) => setShowEarthquakes(e.target.checked)}
+                      className="accent-[#4C90F0] rounded"
+                    />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />
+                    <span>Seismic</span>
+                  </div>
+                  <span className="text-[11px] text-muted capitalize">{seismicDataMode.toLowerCase()}</span>
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer py-0.5">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={showAtmosphere}
+                      onChange={(e) => setShowAtmosphere(e.target.checked)}
+                      className="accent-[#4C90F0] rounded"
+                    />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#3DB46D]" />
+                    <span>Atmosphere</span>
+                  </div>
+                  <span className="text-[11px] text-muted capitalize">{atmosphereDataMode.toLowerCase()}</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer py-0.5">
+                  <input
+                    type="checkbox"
+                    checked={showTrails}
+                    onChange={(e) => setShowTrails(e.target.checked)}
+                    className="accent-[#4C90F0] rounded"
+                  />
+                  <span>Historical trails</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer py-0.5">
+                  <input
+                    type="checkbox"
+                    checked={showLabels}
+                    onChange={(e) => setShowLabels(e.target.checked)}
+                    className="accent-[#4C90F0] rounded"
+                  />
+                  <span>Map labels</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Legend inside Layers panel */}
+            <div className="pt-2 border-t border-line">
+              <div className="text-xs text-muted mb-2">Legend</div>
+              <div className="space-y-2 text-[11px] text-muted">
+                <div>
+                  <div className="text-fg mb-1">Vessels</div>
+                  <div className="grid grid-cols-2 gap-1">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" /> Container
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" /> Tanker
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#06b6d4]" /> Bulk
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#a855f7]" /> Service
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-fg mb-1">Aircraft</div>
+                  <div className="space-y-0.5">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#06b6d4]" /> FL250+ (high)
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" /> FL100–250 (mid)
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" /> &lt;FL100 (low)
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-fg mb-1">Seismic</div>
+                  <div className="space-y-0.5">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#e5484d]" /> M5+ strong
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#f5a524]" /> M4–M5 moderate
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#38bdf8]" /> &lt;M4 light
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+          </>
+        ) : (
+          /* Pure Data Mode View (when map is OFF) */
+          <div className="flex-1 flex flex-col overflow-hidden bg-[#090d16] p-3">
+            {/* Top Bar for Data Mode */}
+            <div className="mb-3 flex items-center justify-between gap-3 shrink-0">
+              {/* Category Filter Pills */}
+              <div className="flex items-center gap-1 bg-[#141d2e] p-1 rounded border border-slate-800 text-xs font-mono">
+                {(
+                  [
+                    { id: 'all', label: `All (${vessels.length + aircraftList.length + locations.length + earthquakes.length})` },
+                    { id: 'vessels', label: `Vessels (${vessels.length})` },
+                    { id: 'aircraft', label: `Aircraft (${aircraftList.length})` },
+                    { id: 'facilities', label: `Facilities (${locations.length})` },
+                    { id: 'earthquakes', label: `Seismic (${earthquakes.length})` },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setTelemetryFilter(tab.id)}
+                    className={`px-2.5 py-1 rounded transition cursor-pointer font-medium ${
+                      telemetryFilter === tab.id
+                        ? 'bg-cyan-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Search & Actions */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Filter data stream..."
+                  value={telemetrySearch}
+                  onChange={(e) => setTelemetrySearch(e.target.value)}
+                  className="bg-[#141d2e] border border-slate-800 text-xs text-slate-200 placeholder-slate-500 rounded px-3 py-1 font-mono focus:outline-none focus:border-cyan-500 w-56"
+                />
+                <button
+                  onClick={toggleMap}
+                  className="px-3 py-1 text-xs font-mono font-semibold text-cyan-400 hover:text-white bg-cyan-950/60 hover:bg-cyan-900/60 rounded border border-cyan-700/60 transition cursor-pointer flex items-center gap-1"
+                >
+                  <span>Turn Map Canvas ON</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Status Notification Banner */}
+            <div className="mb-2 px-3 py-1.5 rounded bg-[#0b1220] border border-cyan-900/30 flex items-center justify-between text-xs font-mono text-slate-400 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-slate-500" />
+                <span>Map Canvas is OFF by default. High-frequency telemetry stream processed directly in data table.</span>
+              </div>
+              <span className="text-[11px] text-cyan-400/80">Click any row to inspect telemetry & telemetry trail</span>
+            </div>
+
+            {/* High-Density Data Table */}
+            <div className="flex-1 border border-slate-800/80 rounded bg-[#060910] overflow-y-auto">
+              {(() => {
+                const items = getCombinedTelemetryData();
+                if (items.length === 0) {
+                  return (
+                    <div className="h-48 flex flex-col items-center justify-center text-slate-500 font-mono text-xs">
+                      <span>No records found matching filter criteria.</span>
+                    </div>
+                  );
+                }
+                return (
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead className="bg-[#0b1220] border-b border-slate-800 sticky top-0 text-slate-400 text-[11px] uppercase tracking-wider z-10">
+                      <tr>
+                        <th className="py-2.5 px-3">Entity / Object</th>
+                        <th className="py-2.5 px-3">Domain</th>
+                        <th className="py-2.5 px-3">Type</th>
+                        <th className="py-2.5 px-3">Coordinates (Lat, Lng)</th>
+                        <th className="py-2.5 px-3">Telemetry / Operational Metrics</th>
+                        <th className="py-2.5 px-3">Feed Mode</th>
+                        <th className="py-2.5 px-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {items.map((item) => {
+                        const isSelected = selectedEntity?.id === item.id;
+                        return (
+                          <tr
+                            key={item.id}
+                            onClick={() => handleItemClick(item)}
+                            className={`hover:bg-slate-800/40 transition cursor-pointer ${
+                              isSelected ? 'bg-cyan-950/40 border-l-2 border-l-cyan-400' : ''
+                            }`}
+                          >
+                            <td className="py-2.5 px-3">
+                              <div className="font-semibold text-slate-200">{item.title}</div>
+                              <div className="text-[10px] text-slate-500">ID: {item.id}</div>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                                  item.category === 'VESSEL'
+                                    ? 'bg-amber-950/60 text-amber-300 border-amber-600/40'
+                                    : item.category === 'AIRCRAFT'
+                                    ? 'bg-sky-950/60 text-sky-300 border-sky-600/40'
+                                    : item.category === 'SEISMIC'
+                                    ? 'bg-rose-950/60 text-rose-300 border-rose-600/40'
+                                    : 'bg-emerald-950/60 text-emerald-300 border-emerald-600/40'
+                                }`}
+                              >
+                                {item.category}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-300 text-[11px]">{item.type}</td>
+                            <td className="py-2.5 px-3 text-slate-400 text-[11px]">
+                              {item.lat?.toFixed(4)}, {item.lng?.toFixed(4)}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-300 text-[11px] max-w-sm truncate">
+                              {item.metrics}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                  item.mode === 'LIVE'
+                                    ? 'bg-emerald-950 text-emerald-400 border border-emerald-600/50'
+                                    : 'bg-slate-800 text-slate-400'
+                                }`}
+                              >
+                                {item.mode}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleItemClick(item);
+                                }}
+                                className="px-2 py-1 text-[10px] font-bold text-cyan-400 hover:text-white bg-cyan-950/60 hover:bg-cyan-800/60 rounded border border-cyan-800/60 transition cursor-pointer"
+                              >
+                                Inspect
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* Phase 3: Inspector Panel (320px, panel bg) */}
+        {selectedEntity && (
+          <div className="absolute top-0 right-0 bottom-0 w-[320px] bg-panel border-l border-line z-[1100] flex flex-col overflow-hidden text-fg text-[13px]">
+            {/* Header */}
+            <div className="p-3 border-b border-line flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${
+                    selectedEntity.statusDot === 'ok'
+                      ? 'bg-ok'
+                      : selectedEntity.statusDot === 'warn'
+                      ? 'bg-warn'
+                      : selectedEntity.statusDot === 'danger'
+                      ? 'bg-danger'
+                      : 'bg-muted'
+                  }`}
+                />
+                <div className="min-w-0">
+                  <h2 className="text-[13px] font-medium text-fg truncate">{selectedEntity.title}</h2>
+                  <div className="text-[11px] text-muted flex items-center gap-1.5">
+                    <span className="capitalize">{selectedEntity.type}</span>
+                    <span>·</span>
+                    <span className="font-mono text-[10px] text-muted uppercase">{selectedEntity.data_mode}</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedEntity(null)}
+                className="p-1 rounded text-muted hover:text-fg hover:bg-raised transition"
+                title="Close (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Inspector Details */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              {/* Data Mode Row */}
+              <div className="flex items-center justify-between py-1.5 px-2 bg-raised rounded text-xs">
+                <span className="text-muted">Data mode</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${selectedEntity.data_mode === 'LIVE' ? 'bg-ok' : 'bg-muted'}`} />
+                  <span className="font-mono text-[11px] text-fg uppercase">{selectedEntity.data_mode}</span>
+                </div>
+              </div>
+
+              {/* Key/Value List */}
+              <div className="space-y-1">
+                {selectedEntity.keyValues.map((kv, i) => (
+                  <div key={i} className="flex items-baseline justify-between py-1 text-xs border-b border-line/40 last:border-b-0">
+                    <span className="text-muted">{kv.label}</span>
+                    <span className="font-mono text-fg text-right max-w-[170px] truncate">{kv.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Last Updated Timestamp */}
+              <div className="pt-2 text-[11px] text-muted flex items-center justify-between">
+                <span>Last updated</span>
+                <span className="font-mono text-fg">{selectedEntity.lastUpdated}</span>
+              </div>
+            </div>
+
+            {/* Inspector Actions */}
+            <div className="p-3 border-t border-line flex flex-col gap-1.5 bg-panel">
+              {selectedEntity.hasTrail && (
+                <button
+                  onClick={() => setShowTrails(true)}
+                  className="w-full py-1.5 px-3 bg-raised hover:bg-line text-fg rounded text-xs font-medium transition text-left flex items-center justify-between"
+                >
+                  <span>Show trail</span>
+                  <Navigation className="w-3.5 h-3.5 text-muted" />
+                </button>
+              )}
+              <button
+                onClick={handleCenterSelected}
+                className="w-full py-1.5 px-3 bg-raised hover:bg-line text-fg rounded text-xs font-medium transition text-left flex items-center justify-between"
+              >
+                <span>Center</span>
+                <Compass className="w-3.5 h-3.5 text-muted" />
+              </button>
+              <button
+                onClick={handleOpenInGraph}
+                className="w-full py-1.5 px-3 bg-accent text-white rounded text-xs font-medium hover:bg-accent/90 transition text-left flex items-center justify-between"
+              >
+                <span>Open in graph</span>
+                <TrendingUp className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

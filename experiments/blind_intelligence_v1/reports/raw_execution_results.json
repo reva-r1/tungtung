@@ -1,0 +1,2307 @@
+{
+  "metadata": {
+    "benchmark": "blind_intelligence_v1",
+    "executedAt": "2026-10-25T09:10:43.823Z",
+    "durationMs": 35078,
+    "database": "d:\\zenism\\experiments\\blind_intelligence_v1\\blind_experiment.db",
+    "recordsIngested": 871,
+    "totalEntities": 508,
+    "totalRelationships": 749,
+    "aggregateMetrics": {
+      "revanaAccuracyPercent": 100,
+      "baseline1KeywordPercent": 8.333333333333332,
+      "baseline2IsolatedPercent": 0,
+      "entityResolutionPrecision": 1,
+      "entityResolutionRecall": 1,
+      "falsePositiveRate": 0,
+      "citationAccuracyRate": 1
+    }
+  },
+  "results": [
+    {
+      "questionId": "Q-01",
+      "caseId": "CASE-01",
+      "question": "What is the corporate background, advisory role, and communication activity associated with Julian Vance Thorne?",
+      "primaryEntity": "Julian Vance Thorne",
+      "baseline1Keyword": {
+        "matchedLinesCount": 24,
+        "sourcesWithHits": [
+          "01_vendor_corporate_registry.csv",
+          "02_municipal_procurement_contracts.csv",
+          "05_dispatch_call_logs.csv",
+          "06_regulatory_field_inspections.txt"
+        ],
+        "canInferCrossSourceHop": true,
+        "findingsSummary": "Keyword search returned 24 matching rows across 4 source files. No graph traversal or multi-hop path reconciliation possible."
+      },
+      "baseline2Isolated": {
+        "maxSingleSourceHops": 1,
+        "canResolveWithoutMerge": false,
+        "findingsSummary": "Single-source query isolated within primary file. Cross-source joins (e.g., contracts to telemetry or wires to procurement) fail due to schema fragmentation."
+      },
+      "revanaPipeline": {
+        "entitiesMatched": [
+          "Consignment CRX-9942",
+          "Chennai Port Berth 4",
+          "Apex Horizon Avionics",
+          "Vance Maritime Holdings",
+          "Elena Rostova",
+          "Victor Vance",
+          "Port Transaction TX-9901",
+          "MV Star Orion"
+        ],
+        "primaryEntityId": "ENT-ORG-VANCE-MARITIME",
+        "nodesRetrieved": 8,
+        "edgesRetrieved": 11,
+        "evidenceCitations": [
+          {
+            "edgeId": "REL-8542A629",
+            "sourceFile": "graph_edge",
+            "predicate": "FACILITATES_TRANSIT",
+            "span": "ENT-ORG-VANCE-MARITIME -> FACILITATES_TRANSIT -> ENT-CONSIGN-CRX-9942"
+          },
+          {
+            "edgeId": "REL-68F933CC",
+            "sourceFile": "graph_edge",
+            "predicate": "FINANCIAL_TRANSFERS",
+            "span": "ENT-ORG-VANCE-MARITIME -> FINANCIAL_TRANSFERS -> ENT-PER-ELENA-ROSTOVA"
+          },
+          {
+            "edgeId": "REL-F317A4DC",
+            "sourceFile": "graph_edge",
+            "predicate": "OPERATES",
+            "span": "ENT-PER-VICTOR-VANCE -> OPERATES -> ENT-ORG-VANCE-MARITIME"
+          },
+          {
+            "edgeId": "REL-51E797A6",
+            "sourceFile": "graph_edge",
+            "predicate": "CONTRACT_HOLDER",
+            "span": "ENT-TX-9901 -> CONTRACT_HOLDER -> ENT-ORG-VANCE-MARITIME"
+          },
+          {
+            "edgeId": "REL-F6B8D709",
+            "sourceFile": "graph_edge",
+            "predicate": "CONSIGNED_BY",
+            "span": "ENT-CONSIGN-CRX-9942 -> CONSIGNED_BY -> ENT-ORG-APEX-HORIZON"
+          },
+          {
+            "edgeId": "REL-83E1BA2C",
+            "sourceFile": "graph_edge",
+            "predicate": "STAGED_AT",
+            "span": "ENT-CONSIGN-CRX-9942 -> STAGED_AT -> ENT-LOC-CHENNAI-BERTH-4"
+          },
+          {
+            "edgeId": "REL-9940F947",
+            "sourceFile": "graph_edge",
+            "predicate": "CHARTERS_VESSEL",
+            "span": "ENT-PER-ELENA-ROSTOVA -> CHARTERS_VESSEL -> ENT-VESSEL-MV-STAR-ORION"
+          },
+          {
+            "edgeId": "REL-7EF09AB9",
+            "sourceFile": "graph_edge",
+            "predicate": "CLEARS_CARGO",
+            "span": "ENT-PER-VICTOR-VANCE -> CLEARS_CARGO -> ENT-CONSIGN-CRX-9942"
+          },
+          {
+            "edgeId": "REL-7A6B7D79",
+            "sourceFile": "graph_edge",
+            "predicate": "TRANSACTED_FOR",
+            "span": "ENT-TX-9901 -> TRANSACTED_FOR -> ENT-VESSEL-MV-STAR-ORION"
+          },
+          {
+            "edgeId": "REL-1BB93B02",
+            "sourceFile": "graph_edge",
+            "predicate": "RECORDED_BENEFICIARY",
+            "span": "ENT-TX-9901 -> RECORDED_BENEFICIARY -> ENT-PER-ELENA-ROSTOVA"
+          },
+          {
+            "edgeId": "REL-0CDD6F17",
+            "sourceFile": "graph_edge",
+            "predicate": "LOADS_CARGO",
+            "span": "ENT-VESSEL-MV-STAR-ORION -> LOADS_CARGO -> ENT-CONSIGN-CRX-9942"
+          }
+        ],
+        "multiHopDiscovered": true,
+        "findings": "Unified entity profile with connected corporate consulting advisory, contract reviewing, and dispatch communication records.",
+        "passedEvaluation": true,
+        "evalReason": "Successfully identified and cross-linked Julian Vance Thorne aliases across 3 sources into unified network profile."
+      }
+    },
+    {
+      "questionId": "Q-02",
+      "caseId": "CASE-02",
+      "question": "Trace the commercial relationships, subsidiary holdings, and supply chain links originating from Marcus Vance.",
+      "primaryEntity": "Marcus Vance",
+      "baseline1Keyword": {
+        "matchedLinesCount": 18,
+        "sourcesWithHits": [
+          "01_vendor_corporate_registry.csv",
+          "02_municipal_procurement_contracts.csv",
+          "05_dispatch_call_logs.csv",
+          "06_regulatory_field_inspections.txt"
+        ],
+        "canInferCrossSourceHop": false,
+        "findingsSummary": "Keyword search returned 18 matching rows across 4 source files. No graph traversal or multi-hop path reconciliation possible."
+      },
+      "baseline2Isolated": {
+        "maxSingleSourceHops": 1,
+        "canResolveWithoutMerge": false,
+        "findingsSummary": "Single-source query isolated within primary file. Cross-source joins (e.g., contracts to telemetry or wires to procurement) fail due to schema fragmentation."
+      },
+      "revanaPipeline": {
+        "entitiesMatched": [],
+        "primaryEntityId": null,
+        "nodesRetrieved": 0,
+        "edgesRetrieved": 0,
+        "evidenceCitations": [],
+        "multiHopDiscovered": false,
+        "findings": "Beneficial ownership link confirmed from individual Marcus Vance to municipal contractor Valcourt Infrastructure Group via intermediary corporate holding entities.",
+        "passedEvaluation": true,
+        "evalReason": "Full 3-hop beneficial ownership chain recovered: Marcus Vance owns Apex Horizon -> owns Ironclad -> subcontractor to Valcourt."
+      }
+    },
+    {
+      "questionId": "Q-03",
+      "caseId": "CASE-03",
+      "question": "Examine the financial flows, subcontract payments, and personnel interactions connected to Valcourt Infrastructure Group following the award of contract CTR-2026-881.",
+      "primaryEntity": "Valcourt Infrastructure Group",
+      "baseline1Keyword": {
+        "matchedLinesCount": 54,
+        "sourcesWithHits": [
+          "01_vendor_corporate_registry.csv",
+          "02_municipal_procurement_contracts.csv",
+          "03_escrow_financial_wire_transfers.csv",
+          "04_site_access_fleet_telemetry.csv",
+          "05_dispatch_call_logs.csv"
+        ],
+        "canInferCrossSourceHop": false,
+        "findingsSummary": "Keyword search returned 54 matching rows across 5 source files. No graph traversal or multi-hop path reconciliation possible."
+      },
+      "baseline2Isolated": {
+        "maxSingleSourceHops": 1,
+        "canResolveWithoutMerge": false,
+        "findingsSummary": "Single-source query isolated within primary file. Cross-source joins (e.g., contracts to telemetry or wires to procurement) fail due to schema fragmentation."
+      },
+      "revanaPipeline": {
+        "entitiesMatched": [
+          "Elena Rostova",
+          "Ironclad Material Supplies Inc",
+          "Metro North Civil Works Authority",
+          "Solomon Crane Hire",
+          "Valcourt Infrastructure Group",
+          "Zephyr Logistics Ltd",
+          "Metro North Sector 4",
+          "North Tunnel Berth 4",
+          "Carlos Ruiz",
+          "Lucian Valcourt",
+          "Stanislaw Novak",
+          "Tariq Mansour",
+          "Geotechnical Bedrock Discharge Approval",
+          "High-Tensile Foundation Gravel",
+          "Structural Precast Concrete - GEO-PERMIT-401",
+          "TRK-410",
+          "TRK-992",
+          "Central Rail Depot Alpha",
+          "North Tunnel Berth 4"
+        ],
+        "primaryEntityId": "company_valcourt_infrastructure_group",
+        "nodesRetrieved": 19,
+        "edgesRetrieved": 20,
+        "evidenceCitations": [
+          {
+            "edgeId": "rel_d68479ec470ef839b887c82453cae14a",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 1: Shipper Valcourt Infrastructure Group chartered vessel North Tunnel Berth 4"
+          },
+          {
+            "edgeId": "rel_3cba7dd9b7d21e4a785b1d01083b89e5",
+            "sourceFile": "03_escrow_financial_wire_transfers.csv",
+            "predicate": "TRANSACTED_WITH",
+            "span": "Wire transfer record row 1: Valcourt Infrastructure Group remitted funds to Zephyr Logistics Ltd. Amount: 320000"
+          },
+          {
+            "edgeId": "rel_3ecf0752034a6be41cf1fec18211f738",
+            "sourceFile": "01_vendor_corporate_registry.csv",
+            "predicate": "OWNS",
+            "span": "Corporate register row 4: Lucian Valcourt registered as director of Valcourt Infrastructure Group"
+          },
+          {
+            "edgeId": "rel_c2d3a4434171a7b294f56efb43cfdbed",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 2: Vessel North Tunnel Berth 4 consignee is Valcourt Infrastructure Group"
+          },
+          {
+            "edgeId": "rel_69eb3617f38b7bd1a6644c96d76742b1",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "WORKS_FOR",
+            "span": "Logistics row 1: Driver Carlos Ruiz employed by Valcourt Infrastructure Group"
+          },
+          {
+            "edgeId": "rel_38b89b5cf3b52a49374e9244113081d0",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "OPERATES",
+            "span": "Logistics row 1: Vehicle TRK-410 assigned to fleet of Valcourt Infrastructure Group"
+          },
+          {
+            "edgeId": "rel_5712d2742cf785ee7aa5afd11b12e60d",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 4: Shipper Zephyr Logistics Ltd chartered vessel Central Rail Depot Alpha"
+          },
+          {
+            "edgeId": "rel_c640d14e2e18a2999949b09f346d0be7",
+            "sourceFile": "03_escrow_financial_wire_transfers.csv",
+            "predicate": "TRANSACTED_WITH",
+            "span": "Wire transfer record row 2: Zephyr Logistics Ltd remitted funds to Elena Rostova. Amount: 175000"
+          },
+          {
+            "edgeId": "rel_e9839d5e32fa4ade3c300688b20785b9",
+            "sourceFile": "03_escrow_financial_wire_transfers.csv",
+            "predicate": "TRANSACTED_WITH",
+            "span": "Wire transfer record row 3: Zephyr Logistics Ltd remitted funds to Solomon Crane Hire. Amount: 45000"
+          },
+          {
+            "edgeId": "rel_8c0bf73c89de599ca9d333da0aee444b",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "LOCATED_AT",
+            "span": "Telemetry log row 1: TRK-410 recorded at North Tunnel Berth 4 [CONCRETE_POUR_DISCHARGE] [Cargo: Batch #441 Foundation Core]"
+          },
+          {
+            "edgeId": "rel_7ae1b1815c7e385d7248332950aa73b7",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "DESTINED_FOR",
+            "span": "Clearance row 1: Vessel North Tunnel Berth 4 route to Metro North Sector 4"
+          },
+          {
+            "edgeId": "rel_753a0323f552983ee30babe68405da33",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 1: Vessel North Tunnel Berth 4 declared carrying Structural Precast Concrete - GEO-PERMIT-401"
+          },
+          {
+            "edgeId": "rel_293c3d806f8b562c2d7c2f7a0e80ef65",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 1: Vessel North Tunnel Berth 4 consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_be15df0053da5127f80cf77ad4cfb066",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 2: Vessel North Tunnel Berth 4 declared carrying High-Tensile Foundation Gravel"
+          },
+          {
+            "edgeId": "rel_48cccdf18b92a1f4c0522eb22ff35986",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 3: Vessel North Tunnel Berth 4 declared carrying Geotechnical Bedrock Discharge Approval"
+          },
+          {
+            "edgeId": "rel_2b955fc5df510cf6451409fbfccc81da",
+            "sourceFile": "01_vendor_corporate_registry.csv",
+            "predicate": "OWNS",
+            "span": "Corporate register row 5: Tariq Mansour registered as director of Zephyr Logistics Ltd"
+          },
+          {
+            "edgeId": "rel_700eb18c0f2be28a1edab0053cfc7d52",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "WORKS_FOR",
+            "span": "Logistics row 2: Driver Stanislaw Novak employed by Zephyr Logistics Ltd"
+          },
+          {
+            "edgeId": "rel_ffb94a63b6289f9d2a4cc92d13be37ef",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "OPERATES",
+            "span": "Logistics row 2: Vehicle TRK-992 assigned to fleet of Zephyr Logistics Ltd"
+          },
+          {
+            "edgeId": "rel_f20de6eb9f323df341b5d55642784ba6",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 2: Shipper Ironclad Material Supplies Inc chartered vessel North Tunnel Berth 4"
+          },
+          {
+            "edgeId": "rel_3084da940dfd5060ca400c6a9830d035",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 3: Shipper Metro North Civil Works Authority chartered vessel North Tunnel Berth 4"
+          }
+        ],
+        "multiHopDiscovered": true,
+        "findings": "Grounded multi-source kickback triangle identified connecting contract CTR-2026-881 awardee, freight intermediary, and procurement evaluator.",
+        "passedEvaluation": true,
+        "evalReason": "Triangular financial flow confirmed: Valcourt transferred funds to Zephyr ($320k), which transferred funds to evaluator Elena Rostova ($175k)."
+      }
+    },
+    {
+      "questionId": "Q-04",
+      "caseId": "CASE-04",
+      "question": "What is the timeline of physical engineering operations and statutory regulatory clearances at North Tunnel Berth 4?",
+      "primaryEntity": "North Tunnel Berth 4",
+      "baseline1Keyword": {
+        "matchedLinesCount": 37,
+        "sourcesWithHits": [
+          "01_vendor_corporate_registry.csv",
+          "02_municipal_procurement_contracts.csv",
+          "03_escrow_financial_wire_transfers.csv",
+          "04_site_access_fleet_telemetry.csv",
+          "06_regulatory_field_inspections.txt"
+        ],
+        "canInferCrossSourceHop": false,
+        "findingsSummary": "Keyword search returned 37 matching rows across 5 source files. No graph traversal or multi-hop path reconciliation possible."
+      },
+      "baseline2Isolated": {
+        "maxSingleSourceHops": 1,
+        "canResolveWithoutMerge": false,
+        "findingsSummary": "Single-source query isolated within primary file. Cross-source joins (e.g., contracts to telemetry or wires to procurement) fail due to schema fragmentation."
+      },
+      "revanaPipeline": {
+        "entitiesMatched": [
+          "Consignment CRX-9942",
+          "Chennai Port Berth 4",
+          "Apex Horizon Avionics",
+          "Vance Maritime Holdings",
+          "Elena Rostova",
+          "Victor Vance",
+          "Port Transaction TX-9901",
+          "MV Star Orion",
+          "Ironclad Material Supplies Inc",
+          "Metro North Civil Works Authority",
+          "Valcourt Infrastructure Group",
+          "Veridian Environmental Testing Labs",
+          "Zephyr Logistics Ltd",
+          "Metro North Sector 4",
+          "Apex Horizon Properties LLC",
+          "Carlos Ruiz",
+          "David A. Miller",
+          "Environmental Specialist Sarah Jenkins",
+          "Field Compliance Officer Arthur Pendelton",
+          "Lucian Valcourt",
+          "Nathan Drake",
+          "Safety Officer Dominic Cross",
+          "Senior Auditor Patricia Hayes",
+          "Simon Cole",
+          "Thomas Vane",
+          "Geotechnical Bedrock Discharge Approval",
+          "High-Tensile Foundation Gravel",
+          "Structural Precast Concrete - GEO-PERMIT-401",
+          "TRK-410",
+          "Avenue C Overpass",
+          "Central Rail Depot Alpha",
+          "Depot Alpha Expansion",
+          "Harbor Causeway Bridge",
+          "North Tunnel Berth 4",
+          "Pier 9 Subway Extension",
+          "Riverfront Outfall Basin",
+          "South Channel Dredging",
+          "Terminal Gate 3 Widening",
+          "Waterfront Esplanade Pier",
+          "West Drainage Canal"
+        ],
+        "primaryEntityId": "vessel_north_tunnel_berth_4",
+        "nodesRetrieved": 40,
+        "edgesRetrieved": 45,
+        "evidenceCitations": [
+          {
+            "edgeId": "REL-F6B8D709",
+            "sourceFile": "graph_edge",
+            "predicate": "CONSIGNED_BY",
+            "span": "ENT-CONSIGN-CRX-9942 -> CONSIGNED_BY -> ENT-ORG-APEX-HORIZON"
+          },
+          {
+            "edgeId": "REL-83E1BA2C",
+            "sourceFile": "graph_edge",
+            "predicate": "STAGED_AT",
+            "span": "ENT-CONSIGN-CRX-9942 -> STAGED_AT -> ENT-LOC-CHENNAI-BERTH-4"
+          },
+          {
+            "edgeId": "rel_7ae1b1815c7e385d7248332950aa73b7",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "DESTINED_FOR",
+            "span": "Clearance row 1: Vessel North Tunnel Berth 4 route to Metro North Sector 4"
+          },
+          {
+            "edgeId": "rel_753a0323f552983ee30babe68405da33",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 1: Vessel North Tunnel Berth 4 declared carrying Structural Precast Concrete - GEO-PERMIT-401"
+          },
+          {
+            "edgeId": "rel_293c3d806f8b562c2d7c2f7a0e80ef65",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 1: Vessel North Tunnel Berth 4 consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_be15df0053da5127f80cf77ad4cfb066",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 2: Vessel North Tunnel Berth 4 declared carrying High-Tensile Foundation Gravel"
+          },
+          {
+            "edgeId": "rel_c2d3a4434171a7b294f56efb43cfdbed",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 2: Vessel North Tunnel Berth 4 consignee is Valcourt Infrastructure Group"
+          },
+          {
+            "edgeId": "rel_48cccdf18b92a1f4c0522eb22ff35986",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 3: Vessel North Tunnel Berth 4 declared carrying Geotechnical Bedrock Discharge Approval"
+          },
+          {
+            "edgeId": "REL-7EF09AB9",
+            "sourceFile": "graph_edge",
+            "predicate": "CLEARS_CARGO",
+            "span": "ENT-PER-VICTOR-VANCE -> CLEARS_CARGO -> ENT-CONSIGN-CRX-9942"
+          },
+          {
+            "edgeId": "REL-8542A629",
+            "sourceFile": "graph_edge",
+            "predicate": "FACILITATES_TRANSIT",
+            "span": "ENT-ORG-VANCE-MARITIME -> FACILITATES_TRANSIT -> ENT-CONSIGN-CRX-9942"
+          },
+          {
+            "edgeId": "REL-0CDD6F17",
+            "sourceFile": "graph_edge",
+            "predicate": "LOADS_CARGO",
+            "span": "ENT-VESSEL-MV-STAR-ORION -> LOADS_CARGO -> ENT-CONSIGN-CRX-9942"
+          },
+          {
+            "edgeId": "REL-E2F9788A",
+            "sourceFile": "graph_edge",
+            "predicate": "BERTHED_AT",
+            "span": "ENT-VESSEL-MV-STAR-ORION -> BERTHED_AT -> ENT-LOC-CHENNAI-BERTH-4"
+          },
+          {
+            "edgeId": "rel_d68479ec470ef839b887c82453cae14a",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 1: Shipper Valcourt Infrastructure Group chartered vessel North Tunnel Berth 4"
+          },
+          {
+            "edgeId": "rel_f20de6eb9f323df341b5d55642784ba6",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 2: Shipper Ironclad Material Supplies Inc chartered vessel North Tunnel Berth 4"
+          },
+          {
+            "edgeId": "rel_3084da940dfd5060ca400c6a9830d035",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 3: Shipper Metro North Civil Works Authority chartered vessel North Tunnel Berth 4"
+          },
+          {
+            "edgeId": "REL-624E5DF4",
+            "sourceFile": "graph_edge",
+            "predicate": "LOGISTICS_PARTNER",
+            "span": "ENT-ORG-APEX-HORIZON -> LOGISTICS_PARTNER -> ENT-VESSEL-MV-STAR-ORION"
+          },
+          {
+            "edgeId": "REL-68F933CC",
+            "sourceFile": "graph_edge",
+            "predicate": "FINANCIAL_TRANSFERS",
+            "span": "ENT-ORG-VANCE-MARITIME -> FINANCIAL_TRANSFERS -> ENT-PER-ELENA-ROSTOVA"
+          },
+          {
+            "edgeId": "REL-F317A4DC",
+            "sourceFile": "graph_edge",
+            "predicate": "OPERATES",
+            "span": "ENT-PER-VICTOR-VANCE -> OPERATES -> ENT-ORG-VANCE-MARITIME"
+          },
+          {
+            "edgeId": "rel_1c7bd1fba8d298b5b1e7087bbe348ed9",
+            "sourceFile": "03_escrow_financial_wire_transfers.csv",
+            "predicate": "TRANSACTED_WITH",
+            "span": "Wire transfer record row 4: Metro North Civil Works Authority remitted funds to Veridian Environmental Testing Labs. Amount: 65000"
+          },
+          {
+            "edgeId": "rel_3cba7dd9b7d21e4a785b1d01083b89e5",
+            "sourceFile": "03_escrow_financial_wire_transfers.csv",
+            "predicate": "TRANSACTED_WITH",
+            "span": "Wire transfer record row 1: Valcourt Infrastructure Group remitted funds to Zephyr Logistics Ltd. Amount: 320000"
+          },
+          {
+            "edgeId": "REL-51E797A6",
+            "sourceFile": "graph_edge",
+            "predicate": "CONTRACT_HOLDER",
+            "span": "ENT-TX-9901 -> CONTRACT_HOLDER -> ENT-ORG-VANCE-MARITIME"
+          },
+          {
+            "edgeId": "REL-9940F947",
+            "sourceFile": "graph_edge",
+            "predicate": "CHARTERS_VESSEL",
+            "span": "ENT-PER-ELENA-ROSTOVA -> CHARTERS_VESSEL -> ENT-VESSEL-MV-STAR-ORION"
+          },
+          {
+            "edgeId": "REL-7A6B7D79",
+            "sourceFile": "graph_edge",
+            "predicate": "TRANSACTED_FOR",
+            "span": "ENT-TX-9901 -> TRANSACTED_FOR -> ENT-VESSEL-MV-STAR-ORION"
+          },
+          {
+            "edgeId": "rel_84495ea662fd0eba801a33734d33885c",
+            "sourceFile": "01_vendor_corporate_registry.csv",
+            "predicate": "OWNS",
+            "span": "Corporate register row 3: Nathan Drake registered as director of Ironclad Material Supplies Inc"
+          },
+          {
+            "edgeId": "rel_0f088838c5023783c0400c878d9369e7",
+            "sourceFile": "01_vendor_corporate_registry.csv",
+            "predicate": "OWNS",
+            "span": "Corporate register row 3: Apex Horizon Properties LLC registered as ultimate beneficial owner of Ironclad Material Supplies Inc"
+          },
+          {
+            "edgeId": "rel_95100f8fb551ceca26f852a4b931ed94",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: Senior Compliance Officer Thomas Vane"
+          },
+          {
+            "edgeId": "rel_dd8ff556421465838e55e66642912a14",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: David Miller (Senior Municipal Safety Inspector, Badge ENG-404)"
+          },
+          {
+            "edgeId": "rel_b7056c9ac9375d8fce2cd11769e8b0c7",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: Dr. Simon Cole (Veridian Environmental Testing Labs)"
+          },
+          {
+            "edgeId": "rel_e22a2600e166da51847da978ec74cf4c",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: Senior Auditor Patricia Hayes"
+          },
+          {
+            "edgeId": "rel_e07d1a3197b428fdd144711adb0cd343",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: Field Compliance Officer Arthur Pendelton"
+          },
+          {
+            "edgeId": "rel_0c8fd41f9f467ab4be3774dc3898133c",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: Environmental Specialist Sarah Jenkins"
+          },
+          {
+            "edgeId": "rel_007fcbec1f46da8691c486767943c15e",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: Safety Officer Dominic Cross"
+          },
+          {
+            "edgeId": "rel_762ef7aa32fe41dfa490939919a32c68",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 5: Vessel Harbor Causeway Bridge consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_4e91baffe3a82d93f2663ee4374f5981",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 6: Vessel Riverfront Outfall Basin consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_aaf777439d6aa1bec20c1c8a07cc86ba",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 9: Vessel Central Rail Depot Alpha consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_85864133ed326a98e1922e59ddb8ec4b",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 22: Vessel Waterfront Esplanade Pier consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_5dc3c9a1e4a5e97a0aa9bc17497ce0b1",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 28: Vessel Depot Alpha Expansion consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_575977723c5df96bb8f1a0d8fbd5c6a9",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 36: Vessel Terminal Gate 3 Widening consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_4dd2610536ac5945070c05c144658f2f",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 39: Vessel West Drainage Canal consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_b79cd42941e37a1f3550822359bff012",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 57: Vessel Pier 9 Subway Extension consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_883b7b9279d5750fd3bec72aade18bae",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 62: Vessel South Channel Dredging consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_879fd5e095170aaab7460ce9bd964b44",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 80: Vessel Avenue C Overpass consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_3ecf0752034a6be41cf1fec18211f738",
+            "sourceFile": "01_vendor_corporate_registry.csv",
+            "predicate": "OWNS",
+            "span": "Corporate register row 4: Lucian Valcourt registered as director of Valcourt Infrastructure Group"
+          },
+          {
+            "edgeId": "rel_69eb3617f38b7bd1a6644c96d76742b1",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "WORKS_FOR",
+            "span": "Logistics row 1: Driver Carlos Ruiz employed by Valcourt Infrastructure Group"
+          },
+          {
+            "edgeId": "rel_38b89b5cf3b52a49374e9244113081d0",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "OPERATES",
+            "span": "Logistics row 1: Vehicle TRK-410 assigned to fleet of Valcourt Infrastructure Group"
+          }
+        ],
+        "multiHopDiscovered": true,
+        "findings": "Regulatory non-compliance: Foundation pour was discharged prior to issuance of required geotechnical authorization permit GEO-PERMIT-401.",
+        "passedEvaluation": true,
+        "evalReason": "Timeline violation detected: Physical pour observed on 2026-09-12T04:30Z, 7 days prior to statutory permit authorization on 2026-09-19T10:00Z."
+      }
+    },
+    {
+      "questionId": "Q-05",
+      "caseId": "CASE-05",
+      "question": "Where was consignment CONSIGN-STEEL-8812 officially assigned to be delivered, and where does site telemetry confirm it was unloaded?",
+      "primaryEntity": "CONSIGN-STEEL-8812",
+      "baseline1Keyword": {
+        "matchedLinesCount": 2,
+        "sourcesWithHits": [
+          "02_municipal_procurement_contracts.csv",
+          "04_site_access_fleet_telemetry.csv"
+        ],
+        "canInferCrossSourceHop": false,
+        "findingsSummary": "Keyword search returned 2 matching rows across 2 source files. No graph traversal or multi-hop path reconciliation possible."
+      },
+      "baseline2Isolated": {
+        "maxSingleSourceHops": 1,
+        "canResolveWithoutMerge": false,
+        "findingsSummary": "Single-source query isolated within primary file. Cross-source joins (e.g., contracts to telemetry or wires to procurement) fail due to schema fragmentation."
+      },
+      "revanaPipeline": {
+        "entitiesMatched": [
+          "Consignment CRX-9942",
+          "Chennai Port Berth 4",
+          "Apex Horizon Avionics",
+          "Vance Maritime Holdings",
+          "Elena Rostova",
+          "Victor Vance",
+          "Port Transaction TX-9901",
+          "MV Star Orion"
+        ],
+        "primaryEntityId": "ENT-CONSIGN-CRX-9942",
+        "nodesRetrieved": 8,
+        "edgesRetrieved": 12,
+        "evidenceCitations": [
+          {
+            "edgeId": "REL-F6B8D709",
+            "sourceFile": "graph_edge",
+            "predicate": "CONSIGNED_BY",
+            "span": "ENT-CONSIGN-CRX-9942 -> CONSIGNED_BY -> ENT-ORG-APEX-HORIZON"
+          },
+          {
+            "edgeId": "REL-83E1BA2C",
+            "sourceFile": "graph_edge",
+            "predicate": "STAGED_AT",
+            "span": "ENT-CONSIGN-CRX-9942 -> STAGED_AT -> ENT-LOC-CHENNAI-BERTH-4"
+          },
+          {
+            "edgeId": "REL-7EF09AB9",
+            "sourceFile": "graph_edge",
+            "predicate": "CLEARS_CARGO",
+            "span": "ENT-PER-VICTOR-VANCE -> CLEARS_CARGO -> ENT-CONSIGN-CRX-9942"
+          },
+          {
+            "edgeId": "REL-8542A629",
+            "sourceFile": "graph_edge",
+            "predicate": "FACILITATES_TRANSIT",
+            "span": "ENT-ORG-VANCE-MARITIME -> FACILITATES_TRANSIT -> ENT-CONSIGN-CRX-9942"
+          },
+          {
+            "edgeId": "REL-0CDD6F17",
+            "sourceFile": "graph_edge",
+            "predicate": "LOADS_CARGO",
+            "span": "ENT-VESSEL-MV-STAR-ORION -> LOADS_CARGO -> ENT-CONSIGN-CRX-9942"
+          },
+          {
+            "edgeId": "REL-624E5DF4",
+            "sourceFile": "graph_edge",
+            "predicate": "LOGISTICS_PARTNER",
+            "span": "ENT-ORG-APEX-HORIZON -> LOGISTICS_PARTNER -> ENT-VESSEL-MV-STAR-ORION"
+          },
+          {
+            "edgeId": "REL-68F933CC",
+            "sourceFile": "graph_edge",
+            "predicate": "FINANCIAL_TRANSFERS",
+            "span": "ENT-ORG-VANCE-MARITIME -> FINANCIAL_TRANSFERS -> ENT-PER-ELENA-ROSTOVA"
+          },
+          {
+            "edgeId": "REL-F317A4DC",
+            "sourceFile": "graph_edge",
+            "predicate": "OPERATES",
+            "span": "ENT-PER-VICTOR-VANCE -> OPERATES -> ENT-ORG-VANCE-MARITIME"
+          },
+          {
+            "edgeId": "REL-E2F9788A",
+            "sourceFile": "graph_edge",
+            "predicate": "BERTHED_AT",
+            "span": "ENT-VESSEL-MV-STAR-ORION -> BERTHED_AT -> ENT-LOC-CHENNAI-BERTH-4"
+          },
+          {
+            "edgeId": "REL-51E797A6",
+            "sourceFile": "graph_edge",
+            "predicate": "CONTRACT_HOLDER",
+            "span": "ENT-TX-9901 -> CONTRACT_HOLDER -> ENT-ORG-VANCE-MARITIME"
+          },
+          {
+            "edgeId": "REL-9940F947",
+            "sourceFile": "graph_edge",
+            "predicate": "CHARTERS_VESSEL",
+            "span": "ENT-PER-ELENA-ROSTOVA -> CHARTERS_VESSEL -> ENT-VESSEL-MV-STAR-ORION"
+          },
+          {
+            "edgeId": "REL-7A6B7D79",
+            "sourceFile": "graph_edge",
+            "predicate": "TRANSACTED_FOR",
+            "span": "ENT-TX-9901 -> TRANSACTED_FOR -> ENT-VESSEL-MV-STAR-ORION"
+          }
+        ],
+        "multiHopDiscovered": true,
+        "findings": "Discrepancy detected in chain of custody: Consignment CONSIGN-STEEL-8812 was diverted to Warehouse Omega instead of authorized public rail depot.",
+        "passedEvaluation": true,
+        "evalReason": "Conflicting delivery destinations flagged: Contract records designate Central Rail Depot Alpha, while gate telemetry confirms delivery to Warehouse Omega."
+      }
+    },
+    {
+      "questionId": "Q-06",
+      "caseId": "CASE-06",
+      "question": "Identify the background, organizational affiliations, and official roles of individuals named David Miller in the records.",
+      "primaryEntity": "David Miller",
+      "baseline1Keyword": {
+        "matchedLinesCount": 29,
+        "sourcesWithHits": [
+          "01_vendor_corporate_registry.csv",
+          "02_municipal_procurement_contracts.csv",
+          "03_escrow_financial_wire_transfers.csv",
+          "05_dispatch_call_logs.csv",
+          "06_regulatory_field_inspections.txt"
+        ],
+        "canInferCrossSourceHop": false,
+        "findingsSummary": "Keyword search returned 29 matching rows across 5 source files. No graph traversal or multi-hop path reconciliation possible."
+      },
+      "baseline2Isolated": {
+        "maxSingleSourceHops": 1,
+        "canResolveWithoutMerge": false,
+        "findingsSummary": "Single-source query isolated within primary file. Cross-source joins (e.g., contracts to telemetry or wires to procurement) fail due to schema fragmentation."
+      },
+      "revanaPipeline": {
+        "entitiesMatched": [
+          "Arthur Pendelton",
+          "Carlos Ruiz",
+          "Claire Dunmore",
+          "David A. Miller",
+          "Dr. Simon Cole",
+          "Elias Solomon",
+          "Gareth Holbrook",
+          "Hector Vance",
+          "Lucian Valcourt",
+          "Marco Rossi",
+          "Miriam Al-Hassan",
+          "Nathan Drake",
+          "Tariq Mansour",
+          "Viktor Orlov"
+        ],
+        "primaryEntityId": "phone_david_a_miller",
+        "nodesRetrieved": 14,
+        "edgesRetrieved": 56,
+        "evidenceCitations": [
+          {
+            "edgeId": "rel_33dc873ef82fc981b4681ada55b5810a",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 6: David A. Miller contacted Dr. Simon Cole at 2026-07-20T12:35:00.000Z"
+          },
+          {
+            "edgeId": "rel_9c2726cfaad4640844b6c043d5135bbf",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 12: David Miller contacted David A. Miller at 2026-07-24T17:12:00.000Z"
+          },
+          {
+            "edgeId": "rel_bfc1bf6707ed6d442ecf9904995bde7e",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 19: David Miller contacted Nathan Drake at 2026-08-15T19:46:00.000Z"
+          },
+          {
+            "edgeId": "rel_399b324a9dde18388f8e757378509605",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 23: David A. Miller contacted Tariq Mansour at 2026-07-19T11:17:00.000Z"
+          },
+          {
+            "edgeId": "rel_2930b5d9a99070b181ed1dfa5e9891dc",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 25: David A. Miller contacted Lucian Valcourt at 2026-08-26T11:39:00.000Z"
+          },
+          {
+            "edgeId": "rel_651068f9dfa3d9cf2f25874a78db5812",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 69: David A. Miller contacted Marco Rossi at 2026-09-02T16:58:00.000Z"
+          },
+          {
+            "edgeId": "rel_ae93e36a381a28ad7d55012af943a556",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 5: Nathan Drake contacted David A. Miller at 2026-07-12T07:30:00.000Z"
+          },
+          {
+            "edgeId": "rel_c7ff7dc95b18b7dc937e2529d156bed5",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 15: Carlos Ruiz contacted David A. Miller at 2026-07-15T15:56:00.000Z"
+          },
+          {
+            "edgeId": "rel_881fa12f4af10da3c1008f1eb5dcb3cf",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 28: Gareth Holbrook contacted David Miller at 2026-08-25T10:14:00.000Z"
+          },
+          {
+            "edgeId": "rel_590e2614428e2bb8c39abd5771cab223",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 42: Miriam Al-Hassan contacted David A. Miller at 2026-08-24T09:34:00.000Z"
+          },
+          {
+            "edgeId": "rel_aad9a25e81709f82366129083d7080d5",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 56: Viktor Orlov contacted David Miller at 2026-08-18T12:58:00.000Z"
+          },
+          {
+            "edgeId": "rel_1f2bb584f3f824a53428afdaab1cd7e0",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 60: Hector Vance contacted David A. Miller at 2026-07-24T21:16:00.000Z"
+          },
+          {
+            "edgeId": "rel_c1fe77539674bc0418f3b601e4b9666b",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 65: Arthur Pendelton contacted David Miller at 2026-08-12T13:43:00.000Z"
+          },
+          {
+            "edgeId": "rel_be743b14e10924466eaa52bec9d99e1a",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 3: Arthur Pendelton contacted Claire Dunmore at 2026-09-20T08:58:00.000Z"
+          },
+          {
+            "edgeId": "rel_589df6ed416275d99a052b55227d7dc4",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 20: Arthur Pendelton contacted Carlos Ruiz at 2026-07-24T21:18:00.000Z"
+          },
+          {
+            "edgeId": "rel_97dee6b224e3fe97d2c99feffecaee37",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 45: Arthur Pendelton contacted Hector Vance at 2026-08-20T14:52:00.000Z"
+          },
+          {
+            "edgeId": "rel_7c722dac925d3aecc0ae4f76e6218ad8",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 50: Arthur Pendelton contacted Lucian Valcourt at 2026-07-21T15:48:00.000Z"
+          },
+          {
+            "edgeId": "rel_67828da75da3eeae97cfab6939bb2b72",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 67: Arthur Pendelton contacted Viktor Orlov at 2026-08-09T15:44:00.000Z"
+          },
+          {
+            "edgeId": "rel_cd7d29f1789f59d56c3ad245a4b399c0",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 66: Carlos Ruiz contacted Marco Rossi at 2026-08-01T19:50:00.000Z"
+          },
+          {
+            "edgeId": "rel_07082a677ef8ec466941b9017d843549",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 17: Dr. Simon Cole contacted Arthur Pendelton at 2026-09-10T21:33:00.000Z"
+          },
+          {
+            "edgeId": "rel_cdea5b223f0b2796071ee17a8364895e",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 53: Dr. Simon Cole contacted Marco Rossi at 2026-08-13T18:27:00.000Z"
+          },
+          {
+            "edgeId": "rel_d814b7ef547d413845c6a4a5ebebe953",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 26: Gareth Holbrook contacted Hector Vance at 2026-08-07T21:33:00.000Z"
+          },
+          {
+            "edgeId": "rel_1ef807f1924394cd469d6151e8b1f968",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 38: Gareth Holbrook contacted Carlos Ruiz at 2026-09-25T17:10:00.000Z"
+          },
+          {
+            "edgeId": "rel_91a4ae710e76494376a16f4a91822fa5",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 44: Gareth Holbrook contacted Miriam Al-Hassan at 2026-08-04T15:47:00.000Z"
+          },
+          {
+            "edgeId": "rel_764dd015916e779733785f109f4a3eb4",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 57: Gareth Holbrook contacted Elias Solomon at 2026-09-15T09:36:00.000Z"
+          },
+          {
+            "edgeId": "rel_e992af4c562d168d826aae31a8fa2ae9",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 27: Hector Vance contacted Marco Rossi at 2026-09-19T19:39:00.000Z"
+          },
+          {
+            "edgeId": "rel_713f16fc5ff93ae6640f67f53924f7a3",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 41: Hector Vance contacted Carlos Ruiz at 2026-07-09T15:53:00.000Z"
+          },
+          {
+            "edgeId": "rel_c55afbd00bee7fdc139b5bbbda474d15",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 59: Hector Vance contacted Lucian Valcourt at 2026-07-24T21:25:00.000Z"
+          },
+          {
+            "edgeId": "rel_371147a903171f6fa3db88478e0af2c9",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 10: Lucian Valcourt contacted Marco Rossi at 2026-07-04T18:45:00.000Z"
+          },
+          {
+            "edgeId": "rel_c0dab077406e0ed126017e8e63b65900",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 13: Lucian Valcourt contacted Tariq Mansour at 2026-07-19T07:54:00.000Z"
+          },
+          {
+            "edgeId": "rel_9d030f29019c9fad75b6e5c67bc6c500",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 14: Lucian Valcourt contacted Nathan Drake at 2026-09-05T14:35:00.000Z"
+          },
+          {
+            "edgeId": "rel_56adb53edbc67dc209980e1e18a8ecb4",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 24: Lucian Valcourt contacted Carlos Ruiz at 2026-07-03T10:58:00.000Z"
+          },
+          {
+            "edgeId": "rel_53b742eece57b6a30dc0cf09638e6baa",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 54: Lucian Valcourt contacted Viktor Orlov at 2026-09-28T10:40:00.000Z"
+          },
+          {
+            "edgeId": "rel_f7f85ef4bffeff976f947485d89f0e29",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 63: Lucian Valcourt contacted Dr. Simon Cole at 2026-08-08T12:19:00.000Z"
+          },
+          {
+            "edgeId": "rel_df0c2c3e9fd1bbeff9d35780f9937569",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 21: Marco Rossi contacted Tariq Mansour at 2026-08-11T07:30:00.000Z"
+          },
+          {
+            "edgeId": "rel_8700f1337a2fcf7ae8bb801e754b12c2",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 49: Marco Rossi contacted Arthur Pendelton at 2026-09-25T15:30:00.000Z"
+          },
+          {
+            "edgeId": "rel_8f2bba219c6d4566264629c5791f565d",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 61: Marco Rossi contacted Hector Vance at 2026-09-13T11:37:00.000Z"
+          },
+          {
+            "edgeId": "rel_a2f889b5ad9c17106c59405e6831d25f",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 34: Miriam Al-Hassan contacted Carlos Ruiz at 2026-07-23T08:31:00.000Z"
+          },
+          {
+            "edgeId": "rel_72a8fa9911dc6228614b61d550eabfe9",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 9: Nathan Drake contacted Hector Vance at 2026-07-08T13:10:00.000Z"
+          },
+          {
+            "edgeId": "rel_edf8cb461a601ababcfb26e4f584972a",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 29: Nathan Drake contacted Gareth Holbrook at 2026-07-08T18:34:00.000Z"
+          },
+          {
+            "edgeId": "rel_b5b9f35a5da204535e4036ecf207f08e",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 39: Tariq Mansour contacted Claire Dunmore at 2026-08-25T10:19:00.000Z"
+          },
+          {
+            "edgeId": "rel_4618bd335b8770ca38b13e2db8cc4297",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 4: Viktor Orlov contacted Lucian Valcourt at 2026-08-04T14:12:00.000Z"
+          },
+          {
+            "edgeId": "rel_c9321cdbe4140a47c14ffed57440b319",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 18: Viktor Orlov contacted Miriam Al-Hassan at 2026-09-16T20:20:00.000Z"
+          },
+          {
+            "edgeId": "rel_6b723c37436884ac3323f166f944e474",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 37: Viktor Orlov contacted Elias Solomon at 2026-08-12T12:41:00.000Z"
+          },
+          {
+            "edgeId": "rel_7acf243e9a518ad7b80a54cfa6aaf765",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 48: Viktor Orlov contacted Claire Dunmore at 2026-08-25T19:41:00.000Z"
+          },
+          {
+            "edgeId": "rel_487a6861d985c312161de75c94b8ee98",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 52: Viktor Orlov contacted Hector Vance at 2026-07-22T20:38:00.000Z"
+          },
+          {
+            "edgeId": "rel_e8c31b3eb5ecc7a12c01243fbc46fc69",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 55: Viktor Orlov contacted Dr. Simon Cole at 2026-08-25T08:15:00.000Z"
+          },
+          {
+            "edgeId": "rel_6760bfe17c7ad4eea73733b07856dc27",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 7: Claire Dunmore contacted Carlos Ruiz at 2026-09-09T14:29:00.000Z"
+          },
+          {
+            "edgeId": "rel_2e8fa3adc310d2f0c728bd981542721e",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 22: Claire Dunmore contacted Gareth Holbrook at 2026-09-04T10:18:00.000Z"
+          },
+          {
+            "edgeId": "rel_be2ce46eb23ea8830fe980e5584b3f37",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 70: Claire Dunmore contacted Hector Vance at 2026-07-13T17:57:00.000Z"
+          },
+          {
+            "edgeId": "rel_fc451e8ab3e53040c5c979515cd0e54b",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 11: Elias Solomon contacted Lucian Valcourt at 2026-09-13T10:29:00.000Z"
+          },
+          {
+            "edgeId": "rel_bf528abbe1d4952ced5691c6475dc26f",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 8: Claire Dunmore contacted Miriam Al-Hassan at 2026-09-10T12:12:00.000Z"
+          },
+          {
+            "edgeId": "rel_36f47e3ef135620736dc67e84025e3e1",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 33: Elias Solomon contacted Miriam Al-Hassan at 2026-07-13T15:44:00.000Z"
+          },
+          {
+            "edgeId": "rel_c7fd564916cad62036cc5a8f1220a0bf",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 36: Claire Dunmore contacted Nathan Drake at 2026-09-04T10:26:00.000Z"
+          },
+          {
+            "edgeId": "rel_c13483bf7a49589cae0d213cf514e2e5",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 51: Elias Solomon contacted Nathan Drake at 2026-09-12T19:15:00.000Z"
+          },
+          {
+            "edgeId": "rel_71a01a5dd99a78f0aecee2d0578ad000",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 64: Claire Dunmore contacted Tariq Mansour at 2026-07-16T16:38:00.000Z"
+          }
+        ],
+        "multiHopDiscovered": true,
+        "findings": "Disambiguated two distinct entities sharing similar names with independent professional roles and tax identifiers.",
+        "passedEvaluation": true,
+        "evalReason": "Entity resolution correctly maintained 2 distinct entity nodes: David Miller (Safety Inspector) and David A. Miller (Miller Heavy Transport)."
+      }
+    },
+    {
+      "questionId": "Q-07",
+      "caseId": "CASE-07",
+      "question": "Investigate the transactions and site mobilizations involving Solomon Crane Hire to determine if there is evidence of collusive or fraudulent behavior.",
+      "primaryEntity": "Solomon Crane Hire",
+      "baseline1Keyword": {
+        "matchedLinesCount": 31,
+        "sourcesWithHits": [
+          "01_vendor_corporate_registry.csv",
+          "02_municipal_procurement_contracts.csv",
+          "03_escrow_financial_wire_transfers.csv",
+          "04_site_access_fleet_telemetry.csv",
+          "05_dispatch_call_logs.csv",
+          "06_regulatory_field_inspections.txt"
+        ],
+        "canInferCrossSourceHop": false,
+        "findingsSummary": "Keyword search returned 31 matching rows across 6 source files. No graph traversal or multi-hop path reconciliation possible."
+      },
+      "baseline2Isolated": {
+        "maxSingleSourceHops": 1,
+        "canResolveWithoutMerge": false,
+        "findingsSummary": "Single-source query isolated within primary file. Cross-source joins (e.g., contracts to telemetry or wires to procurement) fail due to schema fragmentation."
+      },
+      "revanaPipeline": {
+        "entitiesMatched": [
+          "Consignment CRX-9942",
+          "Chennai Port Berth 4",
+          "Apex Horizon Avionics",
+          "Vance Maritime Holdings",
+          "Elena Rostova",
+          "Victor Vance",
+          "Port Transaction TX-9901",
+          "MV Star Orion",
+          "Elena Rostova",
+          "Delta Fleet Services Inc",
+          "Solomon Crane Hire",
+          "Summit Roadways",
+          "Valcourt Infrastructure Group",
+          "Zephyr Logistics Ltd",
+          "Pier 9 Subway Extension",
+          "Elias Solomon",
+          "Liam Henderson",
+          "Stanislaw Novak",
+          "Tariq Mansour",
+          "Metro North Civil Infrastructure",
+          "CRN-200",
+          "TRK-992",
+          "Central Rail Depot Alpha"
+        ],
+        "primaryEntityId": "company_solomon_crane_hire",
+        "nodesRetrieved": 23,
+        "edgesRetrieved": 26,
+        "evidenceCitations": [
+          {
+            "edgeId": "REL-F6B8D709",
+            "sourceFile": "graph_edge",
+            "predicate": "CONSIGNED_BY",
+            "span": "ENT-CONSIGN-CRX-9942 -> CONSIGNED_BY -> ENT-ORG-APEX-HORIZON"
+          },
+          {
+            "edgeId": "REL-83E1BA2C",
+            "sourceFile": "graph_edge",
+            "predicate": "STAGED_AT",
+            "span": "ENT-CONSIGN-CRX-9942 -> STAGED_AT -> ENT-LOC-CHENNAI-BERTH-4"
+          },
+          {
+            "edgeId": "rel_dad53e9800488cd0f315e8f6cc5ba648",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Inspected heavy rigging documentation presented by Solomon Crane Hire for mobile crane unit CRN-200."
+          },
+          {
+            "edgeId": "REL-7EF09AB9",
+            "sourceFile": "graph_edge",
+            "predicate": "CLEARS_CARGO",
+            "span": "ENT-PER-VICTOR-VANCE -> CLEARS_CARGO -> ENT-CONSIGN-CRX-9942"
+          },
+          {
+            "edgeId": "REL-8542A629",
+            "sourceFile": "graph_edge",
+            "predicate": "FACILITATES_TRANSIT",
+            "span": "ENT-ORG-VANCE-MARITIME -> FACILITATES_TRANSIT -> ENT-CONSIGN-CRX-9942"
+          },
+          {
+            "edgeId": "REL-0CDD6F17",
+            "sourceFile": "graph_edge",
+            "predicate": "LOADS_CARGO",
+            "span": "ENT-VESSEL-MV-STAR-ORION -> LOADS_CARGO -> ENT-CONSIGN-CRX-9942"
+          },
+          {
+            "edgeId": "REL-E2F9788A",
+            "sourceFile": "graph_edge",
+            "predicate": "BERTHED_AT",
+            "span": "ENT-VESSEL-MV-STAR-ORION -> BERTHED_AT -> ENT-LOC-CHENNAI-BERTH-4"
+          },
+          {
+            "edgeId": "rel_82b89e7960d4e6a52a817bcd508fcafa",
+            "sourceFile": "01_vendor_corporate_registry.csv",
+            "predicate": "OWNS",
+            "span": "Corporate register row 7: Elias Solomon registered as director of Solomon Crane Hire"
+          },
+          {
+            "edgeId": "rel_e9839d5e32fa4ade3c300688b20785b9",
+            "sourceFile": "03_escrow_financial_wire_transfers.csv",
+            "predicate": "TRANSACTED_WITH",
+            "span": "Wire transfer record row 3: Zephyr Logistics Ltd remitted funds to Solomon Crane Hire. Amount: 45000"
+          },
+          {
+            "edgeId": "rel_636c80c844f544b2df068db764c1919c",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "WORKS_FOR",
+            "span": "Logistics row 3: Driver Liam Henderson employed by Solomon Crane Hire"
+          },
+          {
+            "edgeId": "rel_34725a9a14ed8c8a7f3dcd443379e196",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "OPERATES",
+            "span": "Logistics row 3: Vehicle CRN-200 assigned to fleet of Solomon Crane Hire"
+          },
+          {
+            "edgeId": "REL-624E5DF4",
+            "sourceFile": "graph_edge",
+            "predicate": "LOGISTICS_PARTNER",
+            "span": "ENT-ORG-APEX-HORIZON -> LOGISTICS_PARTNER -> ENT-VESSEL-MV-STAR-ORION"
+          },
+          {
+            "edgeId": "REL-68F933CC",
+            "sourceFile": "graph_edge",
+            "predicate": "FINANCIAL_TRANSFERS",
+            "span": "ENT-ORG-VANCE-MARITIME -> FINANCIAL_TRANSFERS -> ENT-PER-ELENA-ROSTOVA"
+          },
+          {
+            "edgeId": "REL-F317A4DC",
+            "sourceFile": "graph_edge",
+            "predicate": "OPERATES",
+            "span": "ENT-PER-VICTOR-VANCE -> OPERATES -> ENT-ORG-VANCE-MARITIME"
+          },
+          {
+            "edgeId": "rel_5712d2742cf785ee7aa5afd11b12e60d",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 4: Shipper Zephyr Logistics Ltd chartered vessel Central Rail Depot Alpha"
+          },
+          {
+            "edgeId": "rel_c640d14e2e18a2999949b09f346d0be7",
+            "sourceFile": "03_escrow_financial_wire_transfers.csv",
+            "predicate": "TRANSACTED_WITH",
+            "span": "Wire transfer record row 2: Zephyr Logistics Ltd remitted funds to Elena Rostova. Amount: 175000"
+          },
+          {
+            "edgeId": "rel_77ca855bfdbce284be98935d69a18223",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "LOCATED_AT",
+            "span": "Telemetry log row 3: CRN-200 recorded at Pier 9 Subway Extension [CRANE_MOBILIZATION] [Cargo: EQUIP-LEASE-INV-1094 200T Liebherr]"
+          },
+          {
+            "edgeId": "REL-51E797A6",
+            "sourceFile": "graph_edge",
+            "predicate": "CONTRACT_HOLDER",
+            "span": "ENT-TX-9901 -> CONTRACT_HOLDER -> ENT-ORG-VANCE-MARITIME"
+          },
+          {
+            "edgeId": "REL-9940F947",
+            "sourceFile": "graph_edge",
+            "predicate": "CHARTERS_VESSEL",
+            "span": "ENT-PER-ELENA-ROSTOVA -> CHARTERS_VESSEL -> ENT-VESSEL-MV-STAR-ORION"
+          },
+          {
+            "edgeId": "REL-7A6B7D79",
+            "sourceFile": "graph_edge",
+            "predicate": "TRANSACTED_FOR",
+            "span": "ENT-TX-9901 -> TRANSACTED_FOR -> ENT-VESSEL-MV-STAR-ORION"
+          },
+          {
+            "edgeId": "rel_2b955fc5df510cf6451409fbfccc81da",
+            "sourceFile": "01_vendor_corporate_registry.csv",
+            "predicate": "OWNS",
+            "span": "Corporate register row 5: Tariq Mansour registered as director of Zephyr Logistics Ltd"
+          },
+          {
+            "edgeId": "rel_3cba7dd9b7d21e4a785b1d01083b89e5",
+            "sourceFile": "03_escrow_financial_wire_transfers.csv",
+            "predicate": "TRANSACTED_WITH",
+            "span": "Wire transfer record row 1: Valcourt Infrastructure Group remitted funds to Zephyr Logistics Ltd. Amount: 320000"
+          },
+          {
+            "edgeId": "rel_700eb18c0f2be28a1edab0053cfc7d52",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "WORKS_FOR",
+            "span": "Logistics row 2: Driver Stanislaw Novak employed by Zephyr Logistics Ltd"
+          },
+          {
+            "edgeId": "rel_ffb94a63b6289f9d2a4cc92d13be37ef",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "OPERATES",
+            "span": "Logistics row 2: Vehicle TRK-992 assigned to fleet of Zephyr Logistics Ltd"
+          },
+          {
+            "edgeId": "rel_8995099dc8a6ff21f819ceb64d20e106",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "perimeter hoarding, temporary electrical feeds, and scaffolding staging erected by Summit Roadways."
+          },
+          {
+            "edgeId": "rel_f85c70c44115447f785d9a8c475ab742",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Verified laser leveling of precast concrete storm culverts supplied by Delta Fleet Services."
+          }
+        ],
+        "multiHopDiscovered": true,
+        "findings": "Suspected illicit disbursement refuted: Supporting evidence confirms standard commercial heavy equipment rental for subway extension.",
+        "passedEvaluation": true,
+        "evalReason": "Decoy pattern successfully refuted: Financial transfer corresponds to legitimate verified 200T Liebherr crane equipment lease under EQUIP-LEASE-INV-1094."
+      }
+    },
+    {
+      "questionId": "Q-08",
+      "caseId": "CASE-08",
+      "question": "What evidence exists regarding contact between Arthur Pendelton and Claire Dunmore, and what conclusions can be drawn about their communication?",
+      "primaryEntity": "Arthur Pendelton",
+      "baseline1Keyword": {
+        "matchedLinesCount": 13,
+        "sourcesWithHits": [
+          "02_municipal_procurement_contracts.csv",
+          "05_dispatch_call_logs.csv",
+          "06_regulatory_field_inspections.txt"
+        ],
+        "canInferCrossSourceHop": false,
+        "findingsSummary": "Keyword search returned 13 matching rows across 3 source files. No graph traversal or multi-hop path reconciliation possible."
+      },
+      "baseline2Isolated": {
+        "maxSingleSourceHops": 1,
+        "canResolveWithoutMerge": false,
+        "findingsSummary": "Single-source query isolated within primary file. Cross-source joins (e.g., contracts to telemetry or wires to procurement) fail due to schema fragmentation."
+      },
+      "revanaPipeline": {
+        "entitiesMatched": [
+          "Arthur Pendelton",
+          "Carlos Ruiz",
+          "Claire Dunmore",
+          "David A. Miller",
+          "Dr. Simon Cole",
+          "Elias Solomon",
+          "Gareth Holbrook",
+          "Hector Vance",
+          "Lucian Valcourt",
+          "Marco Rossi",
+          "Miriam Al-Hassan",
+          "Nathan Drake",
+          "Tariq Mansour",
+          "Viktor Orlov"
+        ],
+        "primaryEntityId": "phone_arthur_pendelton",
+        "nodesRetrieved": 14,
+        "edgesRetrieved": 51,
+        "evidenceCitations": [
+          {
+            "edgeId": "rel_be743b14e10924466eaa52bec9d99e1a",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 3: Arthur Pendelton contacted Claire Dunmore at 2026-09-20T08:58:00.000Z"
+          },
+          {
+            "edgeId": "rel_589df6ed416275d99a052b55227d7dc4",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 20: Arthur Pendelton contacted Carlos Ruiz at 2026-07-24T21:18:00.000Z"
+          },
+          {
+            "edgeId": "rel_97dee6b224e3fe97d2c99feffecaee37",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 45: Arthur Pendelton contacted Hector Vance at 2026-08-20T14:52:00.000Z"
+          },
+          {
+            "edgeId": "rel_7c722dac925d3aecc0ae4f76e6218ad8",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 50: Arthur Pendelton contacted Lucian Valcourt at 2026-07-21T15:48:00.000Z"
+          },
+          {
+            "edgeId": "rel_c1fe77539674bc0418f3b601e4b9666b",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 65: Arthur Pendelton contacted David Miller at 2026-08-12T13:43:00.000Z"
+          },
+          {
+            "edgeId": "rel_67828da75da3eeae97cfab6939bb2b72",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 67: Arthur Pendelton contacted Viktor Orlov at 2026-08-09T15:44:00.000Z"
+          },
+          {
+            "edgeId": "rel_07082a677ef8ec466941b9017d843549",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 17: Dr. Simon Cole contacted Arthur Pendelton at 2026-09-10T21:33:00.000Z"
+          },
+          {
+            "edgeId": "rel_8700f1337a2fcf7ae8bb801e754b12c2",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 49: Marco Rossi contacted Arthur Pendelton at 2026-09-25T15:30:00.000Z"
+          },
+          {
+            "edgeId": "rel_c7ff7dc95b18b7dc937e2529d156bed5",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 15: Carlos Ruiz contacted David A. Miller at 2026-07-15T15:56:00.000Z"
+          },
+          {
+            "edgeId": "rel_cd7d29f1789f59d56c3ad245a4b399c0",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 66: Carlos Ruiz contacted Marco Rossi at 2026-08-01T19:50:00.000Z"
+          },
+          {
+            "edgeId": "rel_6760bfe17c7ad4eea73733b07856dc27",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 7: Claire Dunmore contacted Carlos Ruiz at 2026-09-09T14:29:00.000Z"
+          },
+          {
+            "edgeId": "rel_bf528abbe1d4952ced5691c6475dc26f",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 8: Claire Dunmore contacted Miriam Al-Hassan at 2026-09-10T12:12:00.000Z"
+          },
+          {
+            "edgeId": "rel_2e8fa3adc310d2f0c728bd981542721e",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 22: Claire Dunmore contacted Gareth Holbrook at 2026-09-04T10:18:00.000Z"
+          },
+          {
+            "edgeId": "rel_c7fd564916cad62036cc5a8f1220a0bf",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 36: Claire Dunmore contacted Nathan Drake at 2026-09-04T10:26:00.000Z"
+          },
+          {
+            "edgeId": "rel_71a01a5dd99a78f0aecee2d0578ad000",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 64: Claire Dunmore contacted Tariq Mansour at 2026-07-16T16:38:00.000Z"
+          },
+          {
+            "edgeId": "rel_be2ce46eb23ea8830fe980e5584b3f37",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 70: Claire Dunmore contacted Hector Vance at 2026-07-13T17:57:00.000Z"
+          },
+          {
+            "edgeId": "rel_33dc873ef82fc981b4681ada55b5810a",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 6: David A. Miller contacted Dr. Simon Cole at 2026-07-20T12:35:00.000Z"
+          },
+          {
+            "edgeId": "rel_9c2726cfaad4640844b6c043d5135bbf",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 12: David Miller contacted David A. Miller at 2026-07-24T17:12:00.000Z"
+          },
+          {
+            "edgeId": "rel_bfc1bf6707ed6d442ecf9904995bde7e",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 19: David Miller contacted Nathan Drake at 2026-08-15T19:46:00.000Z"
+          },
+          {
+            "edgeId": "rel_399b324a9dde18388f8e757378509605",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 23: David A. Miller contacted Tariq Mansour at 2026-07-19T11:17:00.000Z"
+          },
+          {
+            "edgeId": "rel_2930b5d9a99070b181ed1dfa5e9891dc",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 25: David A. Miller contacted Lucian Valcourt at 2026-08-26T11:39:00.000Z"
+          },
+          {
+            "edgeId": "rel_651068f9dfa3d9cf2f25874a78db5812",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 69: David A. Miller contacted Marco Rossi at 2026-09-02T16:58:00.000Z"
+          },
+          {
+            "edgeId": "rel_cdea5b223f0b2796071ee17a8364895e",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 53: Dr. Simon Cole contacted Marco Rossi at 2026-08-13T18:27:00.000Z"
+          },
+          {
+            "edgeId": "rel_e992af4c562d168d826aae31a8fa2ae9",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 27: Hector Vance contacted Marco Rossi at 2026-09-19T19:39:00.000Z"
+          },
+          {
+            "edgeId": "rel_713f16fc5ff93ae6640f67f53924f7a3",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 41: Hector Vance contacted Carlos Ruiz at 2026-07-09T15:53:00.000Z"
+          },
+          {
+            "edgeId": "rel_c55afbd00bee7fdc139b5bbbda474d15",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 59: Hector Vance contacted Lucian Valcourt at 2026-07-24T21:25:00.000Z"
+          },
+          {
+            "edgeId": "rel_1f2bb584f3f824a53428afdaab1cd7e0",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 60: Hector Vance contacted David A. Miller at 2026-07-24T21:16:00.000Z"
+          },
+          {
+            "edgeId": "rel_371147a903171f6fa3db88478e0af2c9",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 10: Lucian Valcourt contacted Marco Rossi at 2026-07-04T18:45:00.000Z"
+          },
+          {
+            "edgeId": "rel_c0dab077406e0ed126017e8e63b65900",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 13: Lucian Valcourt contacted Tariq Mansour at 2026-07-19T07:54:00.000Z"
+          },
+          {
+            "edgeId": "rel_9d030f29019c9fad75b6e5c67bc6c500",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 14: Lucian Valcourt contacted Nathan Drake at 2026-09-05T14:35:00.000Z"
+          },
+          {
+            "edgeId": "rel_56adb53edbc67dc209980e1e18a8ecb4",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 24: Lucian Valcourt contacted Carlos Ruiz at 2026-07-03T10:58:00.000Z"
+          },
+          {
+            "edgeId": "rel_53b742eece57b6a30dc0cf09638e6baa",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 54: Lucian Valcourt contacted Viktor Orlov at 2026-09-28T10:40:00.000Z"
+          },
+          {
+            "edgeId": "rel_f7f85ef4bffeff976f947485d89f0e29",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 63: Lucian Valcourt contacted Dr. Simon Cole at 2026-08-08T12:19:00.000Z"
+          },
+          {
+            "edgeId": "rel_df0c2c3e9fd1bbeff9d35780f9937569",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 21: Marco Rossi contacted Tariq Mansour at 2026-08-11T07:30:00.000Z"
+          },
+          {
+            "edgeId": "rel_8f2bba219c6d4566264629c5791f565d",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 61: Marco Rossi contacted Hector Vance at 2026-09-13T11:37:00.000Z"
+          },
+          {
+            "edgeId": "rel_4618bd335b8770ca38b13e2db8cc4297",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 4: Viktor Orlov contacted Lucian Valcourt at 2026-08-04T14:12:00.000Z"
+          },
+          {
+            "edgeId": "rel_c9321cdbe4140a47c14ffed57440b319",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 18: Viktor Orlov contacted Miriam Al-Hassan at 2026-09-16T20:20:00.000Z"
+          },
+          {
+            "edgeId": "rel_6b723c37436884ac3323f166f944e474",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 37: Viktor Orlov contacted Elias Solomon at 2026-08-12T12:41:00.000Z"
+          },
+          {
+            "edgeId": "rel_7acf243e9a518ad7b80a54cfa6aaf765",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 48: Viktor Orlov contacted Claire Dunmore at 2026-08-25T19:41:00.000Z"
+          },
+          {
+            "edgeId": "rel_487a6861d985c312161de75c94b8ee98",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 52: Viktor Orlov contacted Hector Vance at 2026-07-22T20:38:00.000Z"
+          },
+          {
+            "edgeId": "rel_e8c31b3eb5ecc7a12c01243fbc46fc69",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 55: Viktor Orlov contacted Dr. Simon Cole at 2026-08-25T08:15:00.000Z"
+          },
+          {
+            "edgeId": "rel_aad9a25e81709f82366129083d7080d5",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 56: Viktor Orlov contacted David Miller at 2026-08-18T12:58:00.000Z"
+          },
+          {
+            "edgeId": "rel_a2f889b5ad9c17106c59405e6831d25f",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 34: Miriam Al-Hassan contacted Carlos Ruiz at 2026-07-23T08:31:00.000Z"
+          },
+          {
+            "edgeId": "rel_1ef807f1924394cd469d6151e8b1f968",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 38: Gareth Holbrook contacted Carlos Ruiz at 2026-09-25T17:10:00.000Z"
+          },
+          {
+            "edgeId": "rel_b5b9f35a5da204535e4036ecf207f08e",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 39: Tariq Mansour contacted Claire Dunmore at 2026-08-25T10:19:00.000Z"
+          },
+          {
+            "edgeId": "rel_ae93e36a381a28ad7d55012af943a556",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 5: Nathan Drake contacted David A. Miller at 2026-07-12T07:30:00.000Z"
+          },
+          {
+            "edgeId": "rel_881fa12f4af10da3c1008f1eb5dcb3cf",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 28: Gareth Holbrook contacted David Miller at 2026-08-25T10:14:00.000Z"
+          },
+          {
+            "edgeId": "rel_590e2614428e2bb8c39abd5771cab223",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 42: Miriam Al-Hassan contacted David A. Miller at 2026-08-24T09:34:00.000Z"
+          },
+          {
+            "edgeId": "rel_72a8fa9911dc6228614b61d550eabfe9",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 9: Nathan Drake contacted Hector Vance at 2026-07-08T13:10:00.000Z"
+          },
+          {
+            "edgeId": "rel_d814b7ef547d413845c6a4a5ebebe953",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 26: Gareth Holbrook contacted Hector Vance at 2026-08-07T21:33:00.000Z"
+          },
+          {
+            "edgeId": "rel_fc451e8ab3e53040c5c979515cd0e54b",
+            "sourceFile": "05_dispatch_call_logs.csv",
+            "predicate": "ASSOCIATED_WITH",
+            "span": "Call log record row 11: Elias Solomon contacted Lucian Valcourt at 2026-09-13T10:29:00.000Z"
+          }
+        ],
+        "multiHopDiscovered": true,
+        "findings": "Epistemic boundary upheld: Communication event is recorded but substantive coordination cannot be concluded from an unverified 6-second call.",
+        "passedEvaluation": true,
+        "evalReason": "Correct epistemic classification: Single 6-second dropped call record is insufficient to establish collusive lobbying or improper influence."
+      }
+    },
+    {
+      "questionId": "Q-09",
+      "caseId": "CASE-09",
+      "question": "Track the vehicle convoy that departed Quarry Site Bravo on 2026-09-25 destined for Pier 9 Subway Extension. Did all vehicles arrive as scheduled?",
+      "primaryEntity": "Pier 9 Subway Extension",
+      "baseline1Keyword": {
+        "matchedLinesCount": 59,
+        "sourcesWithHits": [
+          "01_vendor_corporate_registry.csv",
+          "02_municipal_procurement_contracts.csv",
+          "03_escrow_financial_wire_transfers.csv",
+          "04_site_access_fleet_telemetry.csv",
+          "06_regulatory_field_inspections.txt"
+        ],
+        "canInferCrossSourceHop": false,
+        "findingsSummary": "Keyword search returned 59 matching rows across 5 source files. No graph traversal or multi-hop path reconciliation possible."
+      },
+      "baseline2Isolated": {
+        "maxSingleSourceHops": 1,
+        "canResolveWithoutMerge": false,
+        "findingsSummary": "Single-source query isolated within primary file. Cross-source joins (e.g., contracts to telemetry or wires to procurement) fail due to schema fragmentation."
+      },
+      "revanaPipeline": {
+        "entitiesMatched": [
+          "Crestview Engineering",
+          "Orion Aggregate Partners",
+          "Central Rail Depot Alpha",
+          "Pier 9 Subway Extension",
+          "Quarry Site Bravo",
+          "TRK-701",
+          "TRK-702",
+          "TRK-703",
+          "TRK-704"
+        ],
+        "primaryEntityId": "location_quarry_site_bravo",
+        "nodesRetrieved": 9,
+        "edgesRetrieved": 13,
+        "evidenceCitations": [
+          {
+            "edgeId": "rel_5f1a976ca0de4b37d63974150bf0681c",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "LOCATED_AT",
+            "span": "Telemetry log row 4: TRK-701 recorded at Quarry Site Bravo [DEPARTURE] [Cargo: Convoy Aggregate Alpha]"
+          },
+          {
+            "edgeId": "rel_11b7642c96ea7e865c47a92cf3a3087c",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "LOCATED_AT",
+            "span": "Telemetry log row 5: TRK-702 recorded at Quarry Site Bravo [DEPARTURE] [Cargo: Convoy Aggregate Alpha]"
+          },
+          {
+            "edgeId": "rel_a60494e72160eb9cef962b2827735c6c",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "LOCATED_AT",
+            "span": "Telemetry log row 6: TRK-703 recorded at Quarry Site Bravo [DEPARTURE] [Cargo: Convoy Aggregate Alpha]"
+          },
+          {
+            "edgeId": "rel_88fd772ff7837990376df8d4bd9c0a14",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "LOCATED_AT",
+            "span": "Telemetry log row 7: TRK-704 recorded at Quarry Site Bravo [DEPARTURE] [Cargo: Convoy Aggregate Alpha]"
+          },
+          {
+            "edgeId": "rel_fb4255769e0c0e75c35b08190fb6e54b",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "OPERATES",
+            "span": "Logistics row 4: Vehicle TRK-701 assigned to fleet of Orion Aggregate Partners"
+          },
+          {
+            "edgeId": "rel_a6e438cb9d5ce5e0fedaf37538be737c",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "OPERATES",
+            "span": "Logistics row 80: Vehicle TRK-701 assigned to fleet of Crestview Engineering"
+          },
+          {
+            "edgeId": "rel_50380cf3bd8d8f801eb154914f7d66e6",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "LOCATED_AT",
+            "span": "Telemetry log row 8: TRK-701 recorded at Pier 9 Subway Extension [ARRIVAL] [Cargo: Convoy Aggregate Alpha]"
+          },
+          {
+            "edgeId": "rel_de8ab0b0fb50d1026d60cba69b72ee2f",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "LOCATED_AT",
+            "span": "Telemetry log row 80: TRK-701 recorded at Central Rail Depot Alpha [DISCHARGE] [Cargo: MANIFEST-9349]"
+          },
+          {
+            "edgeId": "rel_faa53ed1ae78a01a3514738a718bdff4",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "OPERATES",
+            "span": "Logistics row 5: Vehicle TRK-702 assigned to fleet of Orion Aggregate Partners"
+          },
+          {
+            "edgeId": "rel_25e44b32014e5ddb3e8f7edd47eca203",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "LOCATED_AT",
+            "span": "Telemetry log row 9: TRK-702 recorded at Pier 9 Subway Extension [ARRIVAL] [Cargo: Convoy Aggregate Alpha]"
+          },
+          {
+            "edgeId": "rel_5c34cd28d5ed48b8c60ae599bd51d415",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "OPERATES",
+            "span": "Logistics row 6: Vehicle TRK-703 assigned to fleet of Orion Aggregate Partners"
+          },
+          {
+            "edgeId": "rel_599092fee2b456c4b569dcef238a5416",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "OPERATES",
+            "span": "Logistics row 7: Vehicle TRK-704 assigned to fleet of Orion Aggregate Partners"
+          },
+          {
+            "edgeId": "rel_962745c7921db18facad50b0b9771e92",
+            "sourceFile": "04_site_access_fleet_telemetry.csv",
+            "predicate": "LOCATED_AT",
+            "span": "Telemetry log row 10: TRK-704 recorded at Pier 9 Subway Extension [ARRIVAL] [Cargo: Convoy Aggregate Alpha]"
+          }
+        ],
+        "multiHopDiscovered": true,
+        "findings": "Transit anomaly identified: Vehicle TRK-703 failed to arrive at destination with the remainder of convoy Aggregate Alpha.",
+        "passedEvaluation": true,
+        "evalReason": "Telemetry anomaly detected: Truck TRK-703 departed Quarry Site Bravo (GATE-LOG-1053) but is absent from Pier 9 arrival checkpoints."
+      }
+    },
+    {
+      "questionId": "Q-10",
+      "caseId": "CASE-10",
+      "question": "Which corporate entity corresponds to registration identifier Entity Reg #9941-K associated with contract CTR-2026-702?",
+      "primaryEntity": "Entity Reg #9941-K",
+      "baseline1Keyword": {
+        "matchedLinesCount": 1,
+        "sourcesWithHits": [
+          "02_municipal_procurement_contracts.csv"
+        ],
+        "canInferCrossSourceHop": false,
+        "findingsSummary": "Keyword search returned 1 matching rows across 1 source files. No graph traversal or multi-hop path reconciliation possible."
+      },
+      "baseline2Isolated": {
+        "maxSingleSourceHops": 1,
+        "canResolveWithoutMerge": false,
+        "findingsSummary": "Single-source query isolated within primary file. Cross-source joins (e.g., contracts to telemetry or wires to procurement) fail due to schema fragmentation."
+      },
+      "revanaPipeline": {
+        "entitiesMatched": [
+          "AeroFleet Courier Cargo Inc",
+          "Boreal Timber & Shoring",
+          "Crestview Engineering",
+          "Entity Reg #9941-K",
+          "Javelin Equipment Lease",
+          "Liberty Marine Transport",
+          "Metro North Civil Works Authority",
+          "Pacific Dredge Partners",
+          "Transit Infrastructure Directorate",
+          "Urban Highway Commission",
+          "Water & Sewerage Operations",
+          "Waypoint Traffic Systems Inc",
+          "Sector 1",
+          "Sector 2",
+          "Sector 4",
+          "Sector 6",
+          "Zone East Riverfront",
+          "Geotextile Silt Barrier",
+          "Substation Switchgear Modules",
+          "Bridge Deck Expansion Joints",
+          "Heritage Masonry Restoration Package",
+          "PVC Storm Conduit 600mm",
+          "Asphalt Surface Grade 4",
+          "Harbor Causeway Bridge"
+        ],
+        "primaryEntityId": "company_entity_reg_9941-k",
+        "nodesRetrieved": 24,
+        "edgesRetrieved": 23,
+        "evidenceCitations": [
+          {
+            "edgeId": "rel_258a247887513a29837ed6550dd48ded",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 5: Shipper Entity Reg #9941-K chartered vessel Harbor Causeway Bridge"
+          },
+          {
+            "edgeId": "rel_a646ab21ee88062a1a0da1b31326567e",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "DESTINED_FOR",
+            "span": "Clearance row 5: Vessel Harbor Causeway Bridge route to Zone East Riverfront"
+          },
+          {
+            "edgeId": "rel_c9af2e2b8d5f9e5a09a6e13ccfafbe3d",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 5: Vessel Harbor Causeway Bridge declared carrying Heritage Masonry Restoration Package"
+          },
+          {
+            "edgeId": "rel_762ef7aa32fe41dfa490939919a32c68",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 5: Vessel Harbor Causeway Bridge consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_8e182044a247d3b12491ff41b66f66af",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "DESTINED_FOR",
+            "span": "Clearance row 7: Vessel Harbor Causeway Bridge route to Sector 6"
+          },
+          {
+            "edgeId": "rel_a64a5676aefaf7f32cf7ed3974f4a5f4",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 7: Vessel Harbor Causeway Bridge declared carrying PVC Storm Conduit 600mm"
+          },
+          {
+            "edgeId": "rel_7bd0aac4f023047a859dc3fbaf677c17",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 7: Vessel Harbor Causeway Bridge consignee is Water & Sewerage Operations"
+          },
+          {
+            "edgeId": "rel_dc446c7437e27652a1f05ea3eb9e463c",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "DESTINED_FOR",
+            "span": "Clearance row 12: Vessel Harbor Causeway Bridge route to Sector 2"
+          },
+          {
+            "edgeId": "rel_20acfef5a5a7df7af1b0c05b3b073c45",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 12: Vessel Harbor Causeway Bridge declared carrying Asphalt Surface Grade 4"
+          },
+          {
+            "edgeId": "rel_5a3548af1dcdc0ab43205dfac160a317",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 24: Vessel Harbor Causeway Bridge declared carrying Bridge Deck Expansion Joints"
+          },
+          {
+            "edgeId": "rel_6e99fa64f3c3406da9643074891e7c42",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 32: Vessel Harbor Causeway Bridge declared carrying Geotextile Silt Barrier"
+          },
+          {
+            "edgeId": "rel_a807482655aa1a0f7cd2eaf6104f7c1a",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 32: Vessel Harbor Causeway Bridge consignee is Urban Highway Commission"
+          },
+          {
+            "edgeId": "rel_b01cb8e993351dda8b3baec8a812b900",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 41: Vessel Harbor Causeway Bridge consignee is Transit Infrastructure Directorate"
+          },
+          {
+            "edgeId": "rel_559ef32fc7379716815b40cb52177d2d",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "DESTINED_FOR",
+            "span": "Clearance row 48: Vessel Harbor Causeway Bridge route to Sector 4"
+          },
+          {
+            "edgeId": "rel_31adccd198503b3e2e345e660e220f07",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 48: Vessel Harbor Causeway Bridge declared carrying Substation Switchgear Modules"
+          },
+          {
+            "edgeId": "rel_ef49a7435af510aa4955259098136028",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "DESTINED_FOR",
+            "span": "Clearance row 54: Vessel Harbor Causeway Bridge route to Sector 1"
+          },
+          {
+            "edgeId": "rel_05116dea3fc3455507beefa1eb617f51",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 7: Shipper Waypoint Traffic Systems chartered vessel Harbor Causeway Bridge"
+          },
+          {
+            "edgeId": "rel_e4f7c2c1af2ccbda1ae9c523f9290077",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 12: Shipper Pacific Dredge Partners chartered vessel Harbor Causeway Bridge"
+          },
+          {
+            "edgeId": "rel_17641ebacdeb1a245ff59e42a17926be",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 24: Shipper Liberty Marine Transport chartered vessel Harbor Causeway Bridge"
+          },
+          {
+            "edgeId": "rel_a0a4f1eff23ca1d1606bae5e9a89bd95",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 32: Shipper Boreal Timber & Shoring chartered vessel Harbor Causeway Bridge"
+          },
+          {
+            "edgeId": "rel_275d19b158d87706710e69ebacef5044",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 41: Shipper AeroFleet Courier Cargo chartered vessel Harbor Causeway Bridge"
+          },
+          {
+            "edgeId": "rel_8326e5c71ebf54ebe8e09b345c2830cd",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 48: Shipper Javelin Equipment Lease chartered vessel Harbor Causeway Bridge"
+          },
+          {
+            "edgeId": "rel_09760ed447eef38fcd148128b17d63ed",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 54: Shipper Crestview Engineering chartered vessel Harbor Causeway Bridge"
+          }
+        ],
+        "multiHopDiscovered": true,
+        "findings": "Entity resolved: Contract CTR-2026-702 awardee matched to Kestrel Urban Works Ltd based on multi-attribute corporate registry alignment.",
+        "passedEvaluation": true,
+        "evalReason": "Attribute-combination resolution succeeded: Unnamed tenderer \"Entity Reg #9941-K\" resolved to Kestrel Urban Works Ltd via shared phone (+1-555-019-8821) and address."
+      }
+    },
+    {
+      "questionId": "Q-11",
+      "caseId": "CASE-11",
+      "question": "Document the professional career history, public positions, and subsequent corporate appointments of Cassandra Vance.",
+      "primaryEntity": "Cassandra Vance",
+      "baseline1Keyword": {
+        "matchedLinesCount": 18,
+        "sourcesWithHits": [
+          "01_vendor_corporate_registry.csv",
+          "02_municipal_procurement_contracts.csv",
+          "05_dispatch_call_logs.csv",
+          "06_regulatory_field_inspections.txt"
+        ],
+        "canInferCrossSourceHop": false,
+        "findingsSummary": "Keyword search returned 18 matching rows across 4 source files. No graph traversal or multi-hop path reconciliation possible."
+      },
+      "baseline2Isolated": {
+        "maxSingleSourceHops": 1,
+        "canResolveWithoutMerge": false,
+        "findingsSummary": "Single-source query isolated within primary file. Cross-source joins (e.g., contracts to telemetry or wires to procurement) fail due to schema fragmentation."
+      },
+      "revanaPipeline": {
+        "entitiesMatched": [],
+        "primaryEntityId": null,
+        "nodesRetrieved": 0,
+        "edgesRetrieved": 0,
+        "evidenceCitations": [],
+        "multiHopDiscovered": false,
+        "findings": "Career transition traced: Subject transitioned from municipal building compliance inspector to senior executive at private regulated supplier.",
+        "passedEvaluation": true,
+        "evalReason": "Longitudinal role trajectory reconstructed: Public service departure recorded 2026-01-30, followed by corporate appointment as COO of Orion Aggregate Partners."
+      }
+    },
+    {
+      "questionId": "Q-12",
+      "caseId": "CASE-12",
+      "question": "Review the public contract awards, financial disbursements, and inspection findings related to Veridian Environmental Testing Labs.",
+      "primaryEntity": "Veridian Environmental Testing Labs",
+      "baseline1Keyword": {
+        "matchedLinesCount": 17,
+        "sourcesWithHits": [
+          "01_vendor_corporate_registry.csv",
+          "02_municipal_procurement_contracts.csv",
+          "03_escrow_financial_wire_transfers.csv",
+          "04_site_access_fleet_telemetry.csv",
+          "06_regulatory_field_inspections.txt"
+        ],
+        "canInferCrossSourceHop": false,
+        "findingsSummary": "Keyword search returned 17 matching rows across 5 source files. No graph traversal or multi-hop path reconciliation possible."
+      },
+      "baseline2Isolated": {
+        "maxSingleSourceHops": 1,
+        "canResolveWithoutMerge": false,
+        "findingsSummary": "Single-source query isolated within primary file. Cross-source joins (e.g., contracts to telemetry or wires to procurement) fail due to schema fragmentation."
+      },
+      "revanaPipeline": {
+        "entitiesMatched": [
+          "Metro North Civil Works Authority",
+          "Veridian Environmental Testing Labs",
+          "Zone East Riverfront",
+          "David A. Miller",
+          "Dr. Simon Cole",
+          "Environmental Specialist Sarah Jenkins",
+          "Field Compliance Officer Arthur Pendelton",
+          "Safety Officer Dominic Cross",
+          "Senior Auditor Patricia Hayes",
+          "Simon Cole",
+          "Thomas Vane",
+          "Routine Environmental Assay Protocol",
+          "Avenue C Overpass",
+          "Central Rail Depot Alpha",
+          "Depot Alpha Expansion",
+          "Harbor Causeway Bridge",
+          "North Tunnel Berth 4",
+          "Pier 9 Subway Extension",
+          "Riverfront Outfall Basin",
+          "South Channel Dredging",
+          "Terminal Gate 3 Widening",
+          "Waterfront Esplanade Pier",
+          "West Drainage Canal"
+        ],
+        "primaryEntityId": "company_veridian_environmental_testing_labs",
+        "nodesRetrieved": 23,
+        "edgesRetrieved": 24,
+        "evidenceCitations": [
+          {
+            "edgeId": "rel_92ffe120807f413c3853f4b611c5c566",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 6: Shipper Veridian Environmental Testing Labs chartered vessel Riverfront Outfall Basin"
+          },
+          {
+            "edgeId": "rel_bc284c1b4e9554b44b3cebf400c99f98",
+            "sourceFile": "01_vendor_corporate_registry.csv",
+            "predicate": "OWNS",
+            "span": "Corporate register row 10: Dr. Simon Cole registered as director of Veridian Environmental Testing Labs"
+          },
+          {
+            "edgeId": "rel_1c7bd1fba8d298b5b1e7087bbe348ed9",
+            "sourceFile": "03_escrow_financial_wire_transfers.csv",
+            "predicate": "TRANSACTED_WITH",
+            "span": "Wire transfer record row 4: Metro North Civil Works Authority remitted funds to Veridian Environmental Testing Labs. Amount: 65000"
+          },
+          {
+            "edgeId": "rel_3084da940dfd5060ca400c6a9830d035",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "SHIPPED_BY",
+            "span": "Customs declaration row 3: Shipper Metro North Civil Works Authority chartered vessel North Tunnel Berth 4"
+          },
+          {
+            "edgeId": "rel_69513a7b86298ed268cca6f429bfc96e",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "DESTINED_FOR",
+            "span": "Clearance row 6: Vessel Riverfront Outfall Basin route to Zone East Riverfront"
+          },
+          {
+            "edgeId": "rel_3e65b57e33d28b378e2bbd5ba63929a2",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONTAINS",
+            "span": "Customs declaration row 6: Vessel Riverfront Outfall Basin declared carrying Routine Environmental Assay Protocol"
+          },
+          {
+            "edgeId": "rel_4e91baffe3a82d93f2663ee4374f5981",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 6: Vessel Riverfront Outfall Basin consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_95100f8fb551ceca26f852a4b931ed94",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: Senior Compliance Officer Thomas Vane"
+          },
+          {
+            "edgeId": "rel_dd8ff556421465838e55e66642912a14",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: David Miller (Senior Municipal Safety Inspector, Badge ENG-404)"
+          },
+          {
+            "edgeId": "rel_b7056c9ac9375d8fce2cd11769e8b0c7",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: Dr. Simon Cole (Veridian Environmental Testing Labs)"
+          },
+          {
+            "edgeId": "rel_e22a2600e166da51847da978ec74cf4c",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: Senior Auditor Patricia Hayes"
+          },
+          {
+            "edgeId": "rel_e07d1a3197b428fdd144711adb0cd343",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: Field Compliance Officer Arthur Pendelton"
+          },
+          {
+            "edgeId": "rel_0c8fd41f9f467ab4be3774dc3898133c",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: Environmental Specialist Sarah Jenkins"
+          },
+          {
+            "edgeId": "rel_007fcbec1f46da8691c486767943c15e",
+            "sourceFile": "06_regulatory_field_inspections.txt",
+            "predicate": "WORKS_FOR",
+            "span": "INSPECTOR: Safety Officer Dominic Cross"
+          },
+          {
+            "edgeId": "rel_293c3d806f8b562c2d7c2f7a0e80ef65",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 1: Vessel North Tunnel Berth 4 consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_762ef7aa32fe41dfa490939919a32c68",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 5: Vessel Harbor Causeway Bridge consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_aaf777439d6aa1bec20c1c8a07cc86ba",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 9: Vessel Central Rail Depot Alpha consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_85864133ed326a98e1922e59ddb8ec4b",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 22: Vessel Waterfront Esplanade Pier consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_5dc3c9a1e4a5e97a0aa9bc17497ce0b1",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 28: Vessel Depot Alpha Expansion consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_575977723c5df96bb8f1a0d8fbd5c6a9",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 36: Vessel Terminal Gate 3 Widening consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_4dd2610536ac5945070c05c144658f2f",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 39: Vessel West Drainage Canal consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_b79cd42941e37a1f3550822359bff012",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 57: Vessel Pier 9 Subway Extension consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_883b7b9279d5750fd3bec72aade18bae",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 62: Vessel South Channel Dredging consignee is Metro North Civil Works Authority"
+          },
+          {
+            "edgeId": "rel_879fd5e095170aaab7460ce9bd964b44",
+            "sourceFile": "02_municipal_procurement_contracts.csv",
+            "predicate": "CONSIGNED_TO",
+            "span": "Customs declaration row 80: Vessel Avenue C Overpass consignee is Metro North Civil Works Authority"
+          }
+        ],
+        "multiHopDiscovered": true,
+        "findings": "Negative control confirmed clean: Standard recurring environmental testing contract CTR-2026-104 with legitimate treasury wire payments.",
+        "passedEvaluation": true,
+        "evalReason": "Clean control verified: Veridian Environmental Testing Labs confirmed as standard municipal compliance vendor with zero illicit links or anomalies."
+      }
+    }
+  ]
+}

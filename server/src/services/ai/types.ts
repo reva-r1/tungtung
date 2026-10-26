@@ -73,6 +73,8 @@ export interface ToolDefinition {
 export interface InvestigationContext {
   prompt: string;
   seedEntityId?: string;
+  targetIdentifiers?: string[];
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
   primaryDomain: Domain;
   unlockedDomains: Set<Domain>;
   domainUnlockLogs: Array<{ domain: string; reason: string; timestamp: string }>;
@@ -94,6 +96,13 @@ export interface ReasoningOutput {
   suggestedHopExpansions?: string[];
   uncertainty?: string;
   aiInterpretation?: string;
+  narrative?: {
+    whatIFound: string;
+    howRecordsConnect: string;
+    whatThisCouldMean: string;
+    whatWeShouldExamineNext: string;
+  };
+  suggestedFollowUps?: string[];
 }
 
 export interface VerificationResult {

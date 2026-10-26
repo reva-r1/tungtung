@@ -10,12 +10,12 @@ export const aiRouter = Router();
 // AI investigation assistant query
 aiRouter.post('/investigate', async (req: Request, res: Response) => {
   try {
-    const { prompt, entityId, investigationId } = req.body;
+    const { prompt, entityId, investigationId, history } = req.body;
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    const response = await AiService.investigate(prompt, { entityId, investigationId });
+    const response = await AiService.investigate(prompt, { entityId, investigationId, history });
     res.json(response);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -84,13 +84,13 @@ aiRouter.delete('/chat/history/:sessionId', (req: Request, res: Response) => {
 });
 
 // Check AI status & configuration
-aiRouter.get('/status', (req: Request, res: Response) => {
-  const hasGroq = !!(process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim() !== '' && !process.env.GROQ_API_KEY.includes('your_'));
+aiRouter.get('/status', async (req: Request, res: Response) => {
+  const model = process.env.OLLAMA_MODEL || 'llama3.2:3b';
   res.json({
-    provider: 'Revana Technologies AI Engine (Groq 120B / Grounded Sensors)',
-    model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
-    isLiveKeyConfigured: hasGroq,
-    mode: hasGroq ? 'LIVE_GROQ_API' : 'DETERMINISTIC_LOCAL_ENGINE',
+    provider: `Revana Technologies AI Engine (Ollama ${model} / Grounded Sensors)`,
+    model,
+    isLiveKeyConfigured: true,
+    mode: 'LOCAL_OLLAMA_LLAMA',
     capabilities: [
       'Real-Time Multi-Sensor Telemetry Reasoning',
       'Open-Meteo Weather & Air Quality Live Analysis',

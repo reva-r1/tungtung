@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../services/api';
+import { useInvestigation } from '../../context/InvestigationContext';
 import {
   Sparkles,
   Send,
@@ -31,6 +32,7 @@ interface ChatMessage {
 }
 
 export const FloatingReasoningSpace: React.FC = () => {
+  const { mapInquiryToGraph, setActiveView } = useInvestigation();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
@@ -108,6 +110,11 @@ export const FloatingReasoningSpace: React.FC = () => {
         timestamp: res.timestamp || new Date().toISOString(),
       };
       setMessages(prev => [...prev, assistantMessage]);
+
+      if (res.mappedEntityIds && res.mappedEntityIds.length > 0) {
+        mapInquiryToGraph(res.mappedEntityIds, res.primaryEntityId || undefined);
+        setActiveView('investigation');
+      }
     } catch (err: any) {
       setMessages(prev => [
         ...prev,
@@ -321,7 +328,7 @@ export const FloatingReasoningSpace: React.FC = () => {
                     REVANA TECHNOLOGIES // OMNI-SENSOR REASONING SPACE
                   </span>
                   <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-700/50">
-                    Groq 120B & Sensor Engine
+                    LLaMA 3.2 & Sensor Engine
                   </span>
                 </div>
                 <div className="text-[10px] text-slate-400 flex items-center gap-1.5">

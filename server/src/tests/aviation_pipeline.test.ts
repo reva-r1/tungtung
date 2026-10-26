@@ -212,6 +212,7 @@ async function main() {
     db.prepare("DELETE FROM moving_entities WHERE id = 'AIRCRAFT_TEST01'").run();
     db.prepare("DELETE FROM entity_positions WHERE entity_id = 'AIRCRAFT_TEST01'").run();
     db.prepare("DELETE FROM world_observations WHERE entity_id = 'AIRCRAFT_TEST01'").run();
+    db.prepare("DELETE FROM world_relationships WHERE source_id = 'AIRCRAFT_TEST01' OR target_id = 'AIRCRAFT_TEST01'").run();
     db.prepare("DELETE FROM world_entities WHERE id = 'AIRCRAFT_TEST01'").run();
   });
 

@@ -68,22 +68,22 @@ export const EntityProfileView: React.FC = () => {
   const provenance = profile.provenance;
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#090d16] font-mono text-xs">
+    <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-[#0E0F11] font-sans text-xs">
       {/* Header Banner */}
-      <div className="p-5 rounded-lg bg-[#0b1120] border border-[#1e293b] flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <div className="p-3 rounded bg-[#0f172a] border border-[#1e293b]">
+      <div className="p-4 rounded bg-[#151618] border border-[#26292D] flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-3.5">
+          <div className="p-2.5 rounded bg-[#1C1E21] border border-[#26292D]">
             {entityIcon(ent.type)}
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-500/40">
+              <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-medium bg-[#1C1E21] text-[#4C90F0] border border-[#26292D]">
                 {ent.type}
               </span>
-              <span className="text-[10px] text-slate-400">ID: {ent.id}</span>
+              <span className="text-[10px] font-mono text-[#8B9097]">ID: {ent.id}</span>
             </div>
-            <h1 className="text-xl font-bold text-white tracking-wide">{ent.name}</h1>
-            <p className="text-slate-300 text-xs mt-1 max-w-3xl leading-relaxed">
+            <h1 className="text-base font-semibold text-[#E6E7E9] tracking-tight">{ent.name}</h1>
+            <p className="text-[#8B9097] text-xs mt-1 max-w-3xl leading-relaxed">
               {ent.summary}
             </p>
           </div>
@@ -92,7 +92,7 @@ export const EntityProfileView: React.FC = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setActiveView('investigation')}
-            className="px-3.5 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded bg-[#4C90F0] hover:bg-[#3A7FE0] text-white text-xs font-medium transition flex items-center gap-1.5"
           >
             <span>Open in Investigation</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -101,23 +101,23 @@ export const EntityProfileView: React.FC = () => {
       </div>
 
       {/* Provenance & Contributing Source Databases */}
-      <div className="p-5 rounded-lg bg-[#0b1120] border border-[#1e293b] space-y-4">
-        <div className="flex items-center justify-between border-b border-[#1e293b] pb-2">
-          <div className="flex items-center gap-2 text-blue-400 font-bold">
-            <Database className="w-4 h-4" />
+      <div className="p-4 rounded bg-[#151618] border border-[#26292D] space-y-3">
+        <div className="flex items-center justify-between border-b border-[#26292D] pb-2">
+          <div className="flex items-center gap-2 text-[#4C90F0] font-medium text-xs">
+            <Database className="w-3.5 h-3.5" />
             <span>Data Provenance // Contributing Source Databases</span>
           </div>
-          <span className="text-[11px] text-slate-400 font-mono">
+          <span className="text-[10px] text-[#8B9097] font-mono">
             {provenance?.contributingSources?.length || 0} Independent Sources
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
           {provenance?.contributingSources?.map((srcId: string) => (
-            <div key={srcId} className="p-3 bg-[#090d16] border border-slate-800 rounded">
-              <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Source Database</div>
-              <div className="text-sm font-bold text-slate-200">{srcId}</div>
-              <div className="text-[11px] text-emerald-400 flex items-center gap-1 mt-1">
+            <div key={srcId} className="p-2.5 bg-[#1C1E21] border border-[#26292D] rounded">
+              <div className="text-[9px] text-[#8B9097] uppercase mb-0.5">Source Database</div>
+              <div className="text-xs font-semibold text-[#E6E7E9]">{srcId}</div>
+              <div className="text-[10px] text-[#3DB46D] flex items-center gap-1 mt-1 font-mono">
                 <CheckCircle2 className="w-3 h-3" /> Record Verified
               </div>
             </div>
@@ -126,18 +126,18 @@ export const EntityProfileView: React.FC = () => {
 
         {/* Underlying Raw Records */}
         {provenance?.records?.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-slate-800 space-y-2">
-            <div className="text-[11px] text-slate-400 font-bold uppercase">
+          <div className="mt-3 pt-2.5 border-t border-[#26292D] space-y-2">
+            <div className="text-[10px] text-[#8B9097] font-medium uppercase">
               Underlying Raw Source Records ({provenance.records.length})
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto">
               {provenance.records.map((r: any, i: number) => (
-                <div key={i} className="p-3 bg-[#090d16] border border-slate-800 rounded">
-                  <div className="flex items-center justify-between text-blue-400 font-bold text-[11px] mb-1">
+                <div key={i} className="p-2.5 bg-[#1C1E21] border border-[#26292D] rounded">
+                  <div className="flex items-center justify-between text-[#4C90F0] font-mono text-[10px] mb-1">
                     <span>{r.sourceDbName} &gt; {r.sourceTable}</span>
-                    <span className="text-slate-500 text-[10px]">PK: {r.sourceRecordId}</span>
+                    <span className="text-[#8B9097]">PK: {r.sourceRecordId}</span>
                   </div>
-                  <pre className="text-slate-300 bg-black/40 p-2 rounded overflow-x-auto text-[10px]">
+                  <pre className="text-[#8B9097] bg-[#0E0F11] p-2 rounded border border-[#26292D] overflow-x-auto text-[10px] font-mono">
                     {JSON.stringify(r.rawData, null, 2)}
                   </pre>
                 </div>
@@ -148,34 +148,34 @@ export const EntityProfileView: React.FC = () => {
       </div>
 
       {/* Attributes & Graph Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left Column: Properties */}
         <div className="space-y-4">
-          <div className="p-4 rounded-lg bg-[#0f172a] border border-[#1e293b] space-y-3">
-            <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+          <div className="p-3.5 rounded bg-[#151618] border border-[#26292D] space-y-3">
+            <h3 className="text-xs font-semibold text-[#E6E7E9] uppercase tracking-wider">
               Structured Attributes
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {Object.entries(ent.properties || {}).map(([k, v]) => (
-                <div key={k} className="flex items-start justify-between border-b border-[#1e293b] pb-1.5">
-                  <span className="text-slate-400 capitalize">{k.replace(/([A-Z])/g, ' $1')}:</span>
-                  <span className="text-slate-200 font-semibold text-right max-w-[160px] truncate">{String(v)}</span>
+                <div key={k} className="flex items-start justify-between border-b border-[#26292D] pb-1">
+                  <span className="text-[#8B9097] capitalize">{k.replace(/([A-Z])/g, ' $1')}:</span>
+                  <span className="text-[#E6E7E9] font-medium text-right max-w-[160px] truncate">{String(v)}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Tags & Aliases */}
-          <div className="p-4 rounded-lg bg-[#0f172a] border border-[#1e293b] space-y-3">
-            <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+          <div className="p-3.5 rounded bg-[#151618] border border-[#26292D] space-y-3">
+            <h3 className="text-xs font-semibold text-[#E6E7E9] uppercase tracking-wider">
               Aliases & Source Tags
             </h3>
             <div className="space-y-2">
               <div>
-                <span className="text-[10px] text-slate-400 block mb-1">KNOWN ALIASES</span>
+                <span className="text-[10px] text-[#8B9097] block mb-1">KNOWN ALIASES</span>
                 <div className="flex flex-wrap gap-1">
                   {ent.aliases?.map((alias: string, i: number) => (
-                    <span key={i} className="px-2 py-0.5 rounded bg-[#090d16] border border-[#1e293b] text-blue-300 text-[10px]">
+                    <span key={i} className="px-2 py-0.5 rounded bg-[#1C1E21] border border-[#26292D] text-[#4C90F0] text-[10px] font-mono">
                       {alias}
                     </span>
                   ))}
@@ -183,10 +183,10 @@ export const EntityProfileView: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-[10px] text-slate-400 block mb-1">SYSTEM TAGS</span>
+                <span className="text-[10px] text-[#8B9097] block mb-1">SYSTEM TAGS</span>
                 <div className="flex flex-wrap gap-1">
                   {ent.tags?.map((tag: string, i: number) => (
-                    <span key={i} className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">
+                    <span key={i} className="px-2 py-0.5 rounded bg-[#1C1E21] border border-[#26292D] text-[#8B9097] text-[10px]">
                       {tag}
                     </span>
                   ))}
@@ -197,15 +197,15 @@ export const EntityProfileView: React.FC = () => {
         </div>
 
         {/* Center & Right Column: Subgraph & Connections */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-5">
           {/* Subgraph */}
-          <div className="h-80">
+          <div className="h-72">
             <EntityGraph graphData={profile.subgraph} isCompact={true} />
           </div>
 
           {/* Connected Relationships Ledger */}
-          <div className="p-4 rounded-lg bg-[#0f172a] border border-[#1e293b] space-y-3">
-            <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+          <div className="p-3.5 rounded bg-[#151618] border border-[#26292D] space-y-2.5">
+            <h3 className="text-xs font-semibold text-[#E6E7E9] uppercase tracking-wider">
               Connected Relationships ({profile.relationships?.length || 0})
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

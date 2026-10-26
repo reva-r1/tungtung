@@ -29,6 +29,7 @@ export type RelationshipType =
   | 'CONSIGNED_TO';
 
 export type RiskLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFORMATIONAL';
+export type DataMode = 'LIVE' | 'REPLAY' | 'SIMULATED';
 
 export interface DataSource {
   id: string;
@@ -110,6 +111,7 @@ export interface Entity {
   sourceRecordId?: string;
   source_record_id?: string;
   provenance?: EntityProvenance;
+  data_mode?: DataMode;
   created_at?: string;
   updated_at?: string;
 }
@@ -141,6 +143,7 @@ export interface LocationRecord {
   latitude: number;
   longitude: number;
   type: 'WAREHOUSE' | 'CHECKPOINT' | 'PORT' | 'TOLL_PLAZA' | 'INCIDENT_SITE' | 'OFFICE' | 'TRANSIT_POINT';
+  data_mode?: DataMode;
   properties: Record<string, any>;
 }
 
@@ -337,6 +340,21 @@ export interface AiInvestigationResponse {
   groundingSummary?: string;
   dataGaps?: string[];
   proposedRelationships?: ProposedRelationshipItem[];
+  diagnostics?: {
+    provider?: string;
+    model?: string;
+    statusCode?: number;
+    errorType?: string;
+    rawError?: string;
+    retryAfterSec?: number;
+  };
+  suggestedFollowUps?: string[];
+  narrative?: {
+    whatIFound: string;
+    howRecordsConnect: string;
+    whatThisCouldMean: string;
+    whatWeShouldExamineNext: string;
+  };
 }
 
 // Revana Moving Entity & Maritime Types
@@ -356,6 +374,7 @@ export interface MovingEntity {
   eta?: string;
   status?: string; // in_transit, at_anchor, moored, etc.
   last_updated_at: string;
+  data_mode?: DataMode;
   properties?: Record<string, any>;
 }
 

@@ -1,12 +1,27 @@
+@import 'leaflet.markercluster/dist/MarkerCluster.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-app: #0E0F11;
+  --bg-panel: #151618;
+  --bg-surface: #1C1E21;
+  --border-subtle: #26292D;
+  --text-primary: #E6E7E9;
+  --text-muted: #8B9097;
+  --accent-primary: #4C90F0;
+  --status-error: #E5484D;
+  --status-warning: #F5A524;
+  --status-success: #3DB46D;
+}
+
 @layer base {
   body {
-    background-color: #090d16;
-    color: #e2e8f0;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #0E0F11;
+    color: #E6E7E9;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.011em;
   }
 }
 
@@ -17,79 +32,141 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #0b1120;
+  background: #0E0F11;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #1C1E21;
   border-radius: 3px;
+  border: 1px solid #26292D;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #26292D;
 }
+
 
 /* Leaflet Dark Theme Overrides */
 .leaflet-container {
-  background-color: #090d16 !important;
-  font-family: 'JetBrains Mono', monospace !important;
+  background-color: #0E0F11 !important;
+  font-family: 'Inter', sans-serif !important;
 }
 
-.leaflet-popup-content-wrapper {
-  background: #0b1120 !important;
-  color: #e2e8f0 !important;
-  border: 1px solid #1e293b !important;
-  border-radius: 6px !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7) !important;
-}
-
-.leaflet-popup-tip {
-  background: #0b1120 !important;
-  border: 1px solid #1e293b !important;
+/* Flat Leaflet Zoom Controls */
+.leaflet-control-zoom {
+  border: 1px solid #26292D !important;
+  border-radius: 4px !important;
+  overflow: hidden;
+  box-shadow: none !important;
 }
 
 .leaflet-control-zoom a {
-  background-color: #0b1120 !important;
-  color: #94a3b8 !important;
-  border-color: #1e293b !important;
+  background-color: #151618 !important;
+  color: #8B9097 !important;
+  border: none !important;
+  border-bottom: 1px solid #26292D !important;
+  width: 28px !important;
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 14px !important;
+  transition: all 0.15s ease;
+}
+
+.leaflet-control-zoom a:last-child {
+  border-bottom: none !important;
 }
 
 .leaflet-control-zoom a:hover {
-  background-color: #1e293b !important;
-  color: #22d3ee !important;
+  background-color: #1C1E21 !important;
+  color: #E6E7E9 !important;
 }
 
-/* Tactical Marker Name Badges */
-.tactical-marker-tooltip {
-  background: rgba(9, 13, 22, 0.9) !important;
-  color: #38bdf8 !important;
-  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+.leaflet-control-zoom a:active {
+  background-color: #26292D !important;
+  color: #4C90F0 !important;
+}
+
+/* Flat MarkerCluster Badges */
+.flat-cluster-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1C1E21;
+  border: 1px solid #26292D;
+  border-radius: 50%;
+  color: #E6E7E9;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  box-shadow: none !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.flat-cluster-badge:hover {
+  background-color: #26292D;
+  border-color: #4C90F0;
+}
+
+/* Flat Hover Tooltip (Hover only, quiet Palantir/Linear style) */
+.flat-map-tooltip {
+  background: #151618 !important;
+  color: #E6E7E9 !important;
+  border: 1px solid #26292D !important;
   border-radius: 4px !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  padding: 2px 6px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7) !important;
-  backdrop-filter: blur(4px) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  padding: 3px 7px !important;
+  box-shadow: none !important;
+  white-space: nowrap;
 }
 
-.tactical-marker-tooltip::before {
-  border-top-color: rgba(56, 189, 248, 0.4) !important;
+.flat-map-tooltip::before {
+  display: none !important;
 }
 
 /* Custom Vessel Pins */
 .custom-vessel-pin {
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
 .custom-vessel-pin:hover {
   z-index: 1000 !important;
-  transform: scale(1.25);
+  transform: scale(1.2);
 }
 
-@keyframes pulse-ring {
-  0% { transform: scale(0.9); opacity: 0.9; }
-  50% { transform: scale(1.2); opacity: 0.3; }
-  100% { transform: scale(0.9); opacity: 0.9; }
+/* Interactive Citation Pills */
+.citation-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: #1C1E21;
+  border: 1px solid #26292D;
+  color: #4C90F0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.citation-pill:hover {
+  background-color: rgba(76, 144, 240, 0.12);
+  border-color: #4C90F0;
+  color: #E6E7E9;
+}
+
+/* Reusable Canvas Panels & Cards */
+.canvas-panel {
+  background-color: #151618;
+  border: 1px solid #26292D;
+}
+
+.surface-card {
+  background-color: #1C1E21;
+  border: 1px solid #26292D;
 }
 

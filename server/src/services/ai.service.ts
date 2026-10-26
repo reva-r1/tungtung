@@ -6,6 +6,7 @@ import { reasonOverEvidence } from './ai/reason.js';
 import { verifyClaims } from './ai/verify.js';
 import { executeToolByName, toolRegistry } from './ai/tools/index.js';
 import { InvestigationContext } from './ai/types.js';
+import { GraphService } from './graph.service.js';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 
@@ -38,17 +39,23 @@ export class AiService {
    */
   static async investigate(
     prompt: string,
-    contextOptions?: { entityId?: string; investigationId?: string }
+    contextOptions?: {
+      entityId?: string;
+      investigationId?: string;
+      history?: Array<{ role: 'user' | 'assistant'; content: string }>;
+    }
   ): Promise<AiInvestigationResponse> {
     const investigationId = contextOptions?.investigationId || `inv_${uuidv4().substring(0, 8)}`;
     const traceStart = new Date().toISOString();
 
-    // 1. Stage 1: Router
+    // 1. Stage 1: Router & Identifier Extraction
     const routerDecision = await classifyDomain(prompt, contextOptions?.entityId);
 
     const context: InvestigationContext = {
       prompt,
-      seedEntityId: contextOptions?.entityId,
+      seedEntityId: routerDecision.effectiveSeedEntityId,
+      targetIdentifiers: routerDecision.extractedIds,
+      conversationHistory: contextOptions?.history,
       primaryDomain: routerDecision.domain,
       unlockedDomains: new Set([routerDecision.domain]),
       domainUnlockLogs: [],
@@ -58,7 +65,12 @@ export class AiService {
       trace: [
         {
           step: 'pipeline_initiated',
-          detail: { prompt, seedEntityId: contextOptions?.entityId },
+          detail: {
+            prompt,
+            seedEntityId: routerDecision.effectiveSeedEntityId,
+            targetIdentifiers: routerDecision.extractedIds,
+            hasHistory: Boolean(contextOptions?.history && contextOptions.history.length > 0),
+          },
           timestamp: traceStart,
         },
         {
@@ -98,11 +110,9 @@ export class AiService {
       timestamp: new Date().toISOString(),
     });
 
-    const engine = retrieveResult.engine === 'deterministic-fallback' || reasonResult.engine === 'deterministic-fallback'
-      ? 'deterministic-fallback'
-      : 'llm';
-
-    const fallbackReason = retrieveResult.fallbackReason || reasonResult.fallbackReason;
+    const engine = reasonResult.engine;
+    const fallbackReason = reasonResult.fallbackReason || retrieveResult.fallbackReason;
+    const diagnostics = reasonResult.diagnostics || retrieveResult.diagnostics;
 
     // Backward-compatible fields
     const knownFacts = verifyResult.verifiedFacts.map((f) => f.text);
@@ -140,11 +150,14 @@ export class AiService {
       groundingSummary: verifyResult.groundingSummary,
       dataGaps: context.dataGaps,
       proposedRelationships: context.proposedRelationships,
+      diagnostics: reasonResult.diagnostics || retrieveResult.diagnostics,
+      suggestedFollowUps: reasonResult.output.suggestedFollowUps,
+      narrative: reasonResult.output.narrative,
     };
   }
 
   /**
-   * Omni-Sensor AI Reasoning Space with Persistent Chat Memory
+   * Omni-Sensor AI Reasoning Space with Persistent Chat Memory and Graph Entity Mapping
    */
   static async chatReasoning(
     message: string,
@@ -155,69 +168,75 @@ export class AiService {
     reasoning?: string;
     sources: string[];
     timestamp: string;
+    matchedEntities?: any[];
+    mappedEntityIds?: string[];
+    primaryEntityId?: string | null;
+    edges?: any[];
   }> {
     const sId = sessionId || `session_${uuidv4().substring(0, 8)}`;
     const now = new Date().toISOString();
 
-    // 1. Fetch conversation history from SQLite persistent memory
-    const historyRows = (db.prepare(`
-      SELECT role, content FROM ai_chat_messages WHERE session_id = ? ORDER BY timestamp DESC LIMIT 6
-    `).all(sId) as any[]).reverse();
+    // 1. First inspect if the message inquires about an entity, vessel, consignment or connection in the Knowledge Graph
+    const graphInquiry = GraphService.searchGraphInquiry(message);
+    let reply = '';
+    let sources: string[] = [];
+    let reasoning = '';
+    let mappedEntityIds: string[] = [];
+    let primaryEntityId: string | null = null;
+    let matchedEntities: any[] = [];
+    let edges: any[] = [];
 
-    // 2. Run the investigation pipeline for this user message
-    const invResult = await this.investigate(message);
+    if (graphInquiry && graphInquiry.nodes.length > 0) {
+      mappedEntityIds = graphInquiry.nodes.map((n) => n.data.id);
+      primaryEntityId = graphInquiry.primaryId;
+      matchedEntities = graphInquiry.matchedEntities;
+      edges = graphInquiry.edges;
 
-    // 3. Assemble formatted markdown reply with clean claim tier sections
-    let reply = `### Intelligence Assessment\n${invResult.aiInterpretation}\n\n`;
+      const primary = graphInquiry.matchedEntities[0];
+      const primaryProps = primary.properties ? JSON.parse(primary.properties) : {};
+      const neighborNodes = graphInquiry.nodes.filter((n) => n.data.id !== primary.id);
+      const neighborNames = neighborNodes.map((n) => n.data.name).slice(0, 5);
 
-    if (invResult.facts && invResult.facts.length > 0) {
-      reply += `#### Grounded Facts\n`;
-      invResult.facts.forEach((f) => {
-        reply += `• **[FACT]** ${f.text} *(Evidence: ${f.evidenceIds.join(', ')})*\n`;
-      });
-      reply += '\n';
+      if (graphInquiry.nodes.length > 1) {
+        reply = `Looking at **${primary.name}**, there's an active evidence trail connecting ${graphInquiry.nodes.length} entities across customs declarations, shipping manifests, and financial records. Key parties in this chain include **${neighborNames.slice(0, 4).join('**, **')}**. I've mapped the complete network onto your canvas so you can trace the connections.`;
+      } else {
+        reply = `Found the record for **${primary.name}**. It's an isolated shipping entry in the port ledger with zero anomalous or cross-dataset connections.`;
+      }
+
+      sources = [
+        `Knowledge Graph: ${primary.name}`,
+        ...graphInquiry.edges.slice(0, 4).map((e) => `${e.data.source} -> ${e.data.label || e.data.type} -> ${e.data.target}`),
+      ];
+      reasoning = `Grounded query resolution: matched ${graphInquiry.matchedEntities.length} entities and ${graphInquiry.edges.length} multi-hop relationships in intelligence graph.`;
+    } else {
+      // 2. Fallback to AI pipeline with crisp, concise synthesis (NO giant walls of text)
+      const historyRows = (db.prepare(`
+        SELECT role, content FROM ai_chat_messages WHERE session_id = ? ORDER BY timestamp DESC LIMIT 4
+      `).all(sId) as any[]).reverse();
+
+      const historyTurns = historyRows.map((h: any) => ({
+        role: (h.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+        content: h.content,
+      }));
+      const invResult = await this.investigate(message, { investigationId: sId, history: historyTurns });
+
+      reply = invResult.aiInterpretation || `Analysis complete for inquiry "${message}".`;
+      if (invResult.facts && invResult.facts.length > 0) {
+        reply += `\n\n**Corroborating Facts:**\n` + invResult.facts.slice(0, 3).map((f) => `• ${f.text}`).join('\n');
+      }
+
+      sources = Array.from(
+        new Set([
+          ...((invResult.facts || []).flatMap((f) => f.evidenceIds)),
+          'Revana Grounded Intelligence Store',
+        ])
+      );
+      reasoning = (invResult.trace || [])
+        .map((t) => `[${t.timestamp.slice(11, 19)}] ${t.step}`)
+        .join('\n');
     }
 
-    if (invResult.inferences && invResult.inferences.length > 0) {
-      reply += `#### Analytical Inferences\n`;
-      invResult.inferences.forEach((inf) => {
-        reply += `• **[INFERENCE]** ${inf.text}\n  *Reasoning*: ${inf.reasoning}\n`;
-      });
-      reply += '\n';
-    }
-
-    if (invResult.hypotheses && invResult.hypotheses.length > 0) {
-      reply += `#### Hypotheses & Strategic Ideas\n`;
-      invResult.hypotheses.slice(0, 4).forEach((h) => {
-        reply += `• **[HYPOTHESIS (${h.plausibility.toUpperCase()})]** ${h.text}\n  *Why Plausible*: ${h.whyPlausible}\n  *Confirm With*: ${h.confirmWith}\n`;
-      });
-      reply += '\n';
-    }
-
-    if (invResult.background && invResult.background.length > 0) {
-      reply += `#### Background Context\n`;
-      invResult.background.forEach((b) => {
-        reply += `• **[BACKGROUND]** ${b.text}\n`;
-      });
-      reply += '\n';
-    }
-
-    reply += `*Engine: ${invResult.engine}${invResult.fallbackReason ? ` (${invResult.fallbackReason})` : ''} • Grounding: ${invResult.groundingSummary || 'N/A'} • Confidence: ${(invResult.confidenceScore * 100).toFixed(0)}%*`;
-
-    // 4. Assemble sources and trace for reasoning drawer
-    const sources = Array.from(
-      new Set([
-        ...((invResult.facts || []).flatMap((f) => f.evidenceIds)),
-        'Revana Multi-Domain Intelligence Pipeline',
-        invResult.engine === 'llm' ? 'Groq Analyst Engine' : 'Deterministic Local Engine',
-      ])
-    );
-
-    const reasoning = (invResult.trace || [])
-      .map((t) => `[${t.timestamp.slice(11, 19)}] ${t.step}: ${t.detail ? JSON.stringify(t.detail) : ''}`)
-      .join('\n');
-
-    // 5. Save to Persistent Chat Memory in SQLite
+    // 3. Save to Persistent Chat Memory in SQLite
     const userMsgId = `msg_user_${uuidv4().substring(0, 8)}`;
     const asstMsgId = `msg_asst_${uuidv4().substring(0, 8)}`;
     const insertMsgStmt = db.prepare(`
@@ -234,6 +253,10 @@ export class AiService {
       reasoning,
       sources,
       timestamp: new Date().toISOString(),
+      matchedEntities,
+      mappedEntityIds,
+      primaryEntityId,
+      edges,
     };
   }
 

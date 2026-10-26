@@ -1,0 +1,4 @@
+vessel_name,imo,port,arrival_timestamp,declared_delay_hours,stated_reason,clearance_status
+BHARAT GAURAV,9435678,Mumbai JNPT,2024-10-17T20:00:00Z,38,Engine auxiliary cooling system slowdown,FLAGGED_INSPECTION_PENDING
+SWARNA KAMAL,9381023,Sikka,2024-10-14T14:00:00Z,10,DG Shipping scheduled auxiliary generator maintenance broadcast,CLEARED_MAINTENANCE_LOGGED
+MSC INES,9708681,Mumbai JNPT,2024-10-16T18:00:00Z,14,Severe tropical squall navigational deviation (safety advisory 44),CLEARED_WEATHER_AVOIDANCE

@@ -35,55 +35,70 @@ export function verifyClaims(
     let isValid = true;
     let failReason = '';
 
-    if (!fact.evidenceIds || fact.evidenceIds.length === 0) {
+    // Resolve and normalize cited evidence IDs
+    let effectiveIds = (fact.evidenceIds || []).map(String).map((id) => id.trim());
+    // Normalize numeric IDs (e.g. "1" -> "ev_1")
+    effectiveIds = effectiveIds.map((id) => (evidenceMap.has(id) ? id : evidenceMap.has(`ev_${id}`) ? `ev_${id}` : id));
+    // Retain only IDs that exist in the evidence map
+    let validIds = effectiveIds.filter((id) => evidenceMap.has(id));
+
+    // Token extraction for grounding check
+    const numbers = (fact.text.match(/\b\d+(\.\d+)?\b/g) || []).filter(
+      (n) => n.length >= 2 || Number(n) > 5
+    );
+    const entityTokens = (fact.text.match(/\b[A-Z][a-zA-Z0-9_-]{2,}\b/g) || []).filter(
+      (w) => !['The', 'This', 'That', 'With', 'From', 'Into', 'Over', 'When', 'What', 'Where', 'Fact'].includes(w)
+    );
+    const checkTokens = [...numbers, ...entityTokens];
+
+    // If model omitted or hallucinated IDs, check if any existing evidence item contains the fact's key tokens
+    if (validIds.length === 0 && checkTokens.length > 0 && evidenceItems.length > 0) {
+      for (const ev of evidenceItems) {
+        const evStr = JSON.stringify(ev.result ?? '').toLowerCase();
+        if (checkTokens.some((tok) => evStr.includes(tok.toLowerCase()))) {
+          validIds.push(ev.id);
+          break;
+        }
+      }
+    }
+
+    if (validIds.length === 0) {
       isValid = false;
-      failReason = 'No evidence IDs cited';
+      failReason = fact.evidenceIds && fact.evidenceIds.length > 0
+        ? `Cited evidence ID(s) [${fact.evidenceIds.join(', ')}] not found in retrieved items`
+        : 'No evidence IDs cited';
     } else {
-      // Check that all cited evidence IDs exist
-      const missingIds = fact.evidenceIds.filter((id) => !evidenceMap.has(id));
-      if (missingIds.length > 0) {
-        isValid = false;
-        failReason = `Cited evidence ID(s) not found: ${missingIds.join(', ')}`;
-      } else {
-        // Collect timestamps of cited evidence
-        for (const id of fact.evidenceIds) {
-          const ev = evidenceMap.get(id);
-          if (ev?.retrievedAt) {
-            const t = new Date(ev.retrievedAt).getTime();
-            if (!isNaN(t)) citedTimestamps.push(t);
+      // Update fact with valid resolved evidence IDs
+      fact.evidenceIds = validIds;
+
+      // Collect timestamps of cited evidence
+      for (const id of validIds) {
+        const ev = evidenceMap.get(id);
+        if (ev?.retrievedAt) {
+          const t = new Date(ev.retrievedAt).getTime();
+          if (!isNaN(t)) citedTimestamps.push(t);
+        }
+      }
+
+      // Grounding containment check: verify at least one key token appears in the cited evidence
+      if (checkTokens.length > 0) {
+        let foundTokenMatch = false;
+        for (const evId of validIds) {
+          const ev = evidenceMap.get(evId);
+          const evString = JSON.stringify(ev?.result ?? '').toLowerCase();
+
+          for (const token of checkTokens) {
+            if (evString.includes(token.toLowerCase())) {
+              foundTokenMatch = true;
+              break;
+            }
           }
+          if (foundTokenMatch) break;
         }
 
-        // Data containment check: extract numbers or capitalized entity tokens
-        const numbers = (fact.text.match(/\b\d+(\.\d+)?\b/g) || []).filter(
-          (n) => n.length >= 2 || Number(n) > 5
-        );
-        const entityTokens = (fact.text.match(/\b[A-Z][a-zA-Z0-9_-]{2,}\b/g) || []).filter(
-          (w) => !['The', 'This', 'That', 'With', 'From', 'Into', 'Over', 'When', 'What', 'Where', 'Fact'].includes(w)
-        );
-
-        const checkTokens = [...numbers, ...entityTokens];
-
-        if (checkTokens.length > 0) {
-          // Check if at least one token actually appears in cited evidence
-          let foundTokenMatch = false;
-          for (const evId of fact.evidenceIds) {
-            const ev = evidenceMap.get(evId);
-            const evString = JSON.stringify(ev?.result ?? '').toLowerCase();
-
-            for (const token of checkTokens) {
-              if (evString.includes(token.toLowerCase())) {
-                foundTokenMatch = true;
-                break;
-              }
-            }
-            if (foundTokenMatch) break;
-          }
-
-          if (!foundTokenMatch) {
-            isValid = false;
-            failReason = `None of the key tokens [${checkTokens.slice(0, 4).join(', ')}] appeared in cited evidence`;
-          }
+        if (!foundTokenMatch) {
+          isValid = false;
+          failReason = `None of the key tokens [${checkTokens.slice(0, 4).join(', ')}] appeared in cited evidence`;
         }
       }
     }
@@ -155,16 +170,28 @@ export function verifyClaims(
     ...demotedInferences,
   ];
 
-  // 3. Compute confidence score & staleness
+  // 3. Compute confidence score & calibrated staleness
   let stalenessFactor = 1.0;
   let stalenessSeconds = 0;
 
-  if (citedTimestamps.length > 0) {
+  // Distinguish live sensor feeds from static tabular/forensic records
+  const LIVE_SENSOR_TOOLS = new Set([
+    'get_live_world_summary',
+    'get_live_events',
+    'get_entity_telemetry',
+    'get_active_vessels',
+  ]);
+
+  const hasLiveSensorEvidence = Array.from(evidenceMap.values()).some(
+    (ev) => LIVE_SENSOR_TOOLS.has(ev.tool)
+  );
+
+  if (hasLiveSensorEvidence && citedTimestamps.length > 0) {
     const oldestTimestamp = Math.min(...citedTimestamps);
     const ageSeconds = Math.max(0, (Date.now() - oldestTimestamp) / 1000);
     stalenessSeconds = Math.round(ageSeconds);
 
-    // If evidence is older than 2 hours, gently scale down by 2% per hour up to 30% max penalty
+    // If live telemetry is older than 2 hours, scale down by 2% per hour up to 30% max penalty
     const ageHours = ageSeconds / 3600;
     if (ageHours > 2) {
       stalenessFactor = Math.max(0.7, 1.0 - (ageHours - 2) * 0.02);

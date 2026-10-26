@@ -157,31 +157,31 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
             'border-color': 'data(borderColor)',
             'border-width': 'data(borderWidth)',
             'label': 'data(label)',
-            'color': '#f8fafc',
-            'font-family': 'JetBrains Mono, monospace',
+            'color': '#E6E7E9',
+            'font-family': 'Inter, system-ui, sans-serif',
             'font-size': '10px',
             'text-valign': 'bottom',
             'text-margin-y': 5,
-            'text-background-color': '#090d16',
-            'text-background-opacity': 0.85,
+            'text-background-color': '#0E0F11',
+            'text-background-opacity': 0.9,
             'text-background-padding': '3px',
             'text-background-shape': 'roundrectangle',
-            'width': 36,
-            'height': 36,
+            'width': 34,
+            'height': 34,
             'overlay-opacity': 0,
           },
         },
         {
           selector: 'node:selected',
           style: {
-            'border-color': '#22d3ee',
-            'border-width': 5,
+            'border-color': '#4C90F0',
+            'border-width': 4,
           },
         },
         {
           selector: 'edge',
           style: {
-            'width': 1.8,
+            'width': 1.5,
             'line-color': 'data(lineColor)',
             'target-arrow-color': 'data(lineColor)',
             'target-arrow-shape': 'triangle',
@@ -189,8 +189,8 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
             'label': 'data(label)',
             'font-family': 'JetBrains Mono, monospace',
             'font-size': '8px',
-            'color': '#94a3b8',
-            'text-background-color': '#0b1120',
+            'color': '#8B9097',
+            'text-background-color': '#151618',
             'text-background-opacity': 0.9,
             'text-background-padding': '2px',
             'text-rotation': 'autorotate',
@@ -200,9 +200,9 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
         {
           selector: 'edge:selected',
           style: {
-            'line-color': '#22d3ee',
-            'target-arrow-color': '#22d3ee',
-            'width': 3,
+            'line-color': '#4C90F0',
+            'target-arrow-color': '#4C90F0',
+            'width': 2.5,
           },
         },
         {
@@ -359,9 +359,9 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
   };
 
   return (
-    <div className={`relative flex flex-col h-full bg-[#090d16] border border-[#1e293b] rounded-lg overflow-hidden ${className}`}>
+    <div className={`relative flex flex-col h-full bg-[#0E0F11] border border-[#26292D] rounded overflow-hidden ${className}`}>
       {/* Top Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-[#0b1120] border-b border-[#1e293b] z-10 shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-[#151618] border-b border-[#26292D] z-10 shrink-0">
         {/* Left: Search & Node Count */}
         <div className="flex items-center gap-2">
           <form onSubmit={handleSearchNode} className="relative">
@@ -370,12 +370,12 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Find in graph..."
-              className="w-36 sm:w-44 bg-[#090d16] border border-[#1e293b] rounded px-2.5 py-1 text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              className="w-36 sm:w-44 bg-[#1C1E21] border border-[#26292D] rounded px-2.5 py-1 text-xs text-[#E6E7E9] placeholder-[#8B9097] focus:outline-none focus:border-[#4C90F0]"
             />
           </form>
 
-          <span className="text-[11px] font-mono text-slate-400">
-            Nodes: <strong className="text-cyan-400">{internalGraph?.nodes.length || 0}</strong> • Edges: <strong className="text-blue-400">{internalGraph?.edges.length || 0}</strong>
+          <span className="text-[11px] font-mono text-[#8B9097]">
+            Nodes: <strong className="text-[#E6E7E9]">{internalGraph?.nodes.length || 0}</strong> • Edges: <strong className="text-[#8B9097]">{internalGraph?.edges.length || 0}</strong>
           </span>
         </div>
 
@@ -383,11 +383,11 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
         <div className="flex items-center gap-1.5">
           {/* Hop Expansion Buttons */}
           {selectedEntityId && (
-            <div className="flex items-center gap-1 bg-[#090d16] p-0.5 rounded border border-[#1e293b]">
+            <div className="flex items-center gap-1 bg-[#1C1E21] p-0.5 rounded border border-[#26292D]">
               <button
                 onClick={() => handleExpandNode(1)}
                 disabled={loading}
-                className="px-2 py-0.5 text-[10px] font-mono text-cyan-300 hover:bg-cyan-950/60 rounded transition"
+                className="px-2 py-0.5 text-[10px] font-mono text-[#4C90F0] hover:bg-[#26292D] rounded transition"
                 title="Expand selected entity by 1 Hop"
               >
                 +1 HOP
@@ -395,7 +395,7 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
               <button
                 onClick={() => handleExpandNode(2)}
                 disabled={loading}
-                className="px-2 py-0.5 text-[10px] font-mono text-cyan-300 hover:bg-cyan-950/60 rounded transition"
+                className="px-2 py-0.5 text-[10px] font-mono text-[#4C90F0] hover:bg-[#26292D] rounded transition"
                 title="Expand selected entity by 2 Hops"
               >
                 +2 HOPS
@@ -407,7 +407,7 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
           <select
             value={currentLayout}
             onChange={(e) => setCurrentLayout(e.target.value)}
-            className="bg-[#090d16] border border-[#1e293b] rounded px-2 py-1 text-[11px] font-mono text-slate-300 focus:outline-none focus:border-cyan-500"
+            className="bg-[#1C1E21] border border-[#26292D] rounded px-2 py-1 text-[11px] font-mono text-[#E6E7E9] focus:outline-none focus:border-[#4C90F0]"
           >
             <option value="cose">Force (COSE)</option>
             <option value="concentric">Concentric (Risk)</option>
@@ -418,7 +418,7 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
           {/* Shortest Path Finder Trigger */}
           <button
             onClick={() => setIsPathModalOpen(true)}
-            className="p-1.5 rounded bg-[#090d16] hover:bg-[#1e293b] border border-[#1e293b] text-amber-400 hover:text-amber-300 transition"
+            className="p-1.5 rounded bg-[#1C1E21] hover:bg-[#26292D] border border-[#26292D] text-[#F5A524] transition"
             title="Find Shortest Path between entities"
           >
             <Route className="w-3.5 h-3.5" />
@@ -427,21 +427,21 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
           {/* View Controls */}
           <button
             onClick={handleZoomIn}
-            className="p-1.5 rounded bg-[#090d16] hover:bg-[#1e293b] border border-[#1e293b] text-slate-300 transition"
+            className="p-1.5 rounded bg-[#1C1E21] hover:bg-[#26292D] border border-[#26292D] text-[#8B9097] hover:text-[#E6E7E9] transition"
             title="Zoom In"
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleZoomOut}
-            className="p-1.5 rounded bg-[#090d16] hover:bg-[#1e293b] border border-[#1e293b] text-slate-300 transition"
+            className="p-1.5 rounded bg-[#1C1E21] hover:bg-[#26292D] border border-[#26292D] text-[#8B9097] hover:text-[#E6E7E9] transition"
             title="Zoom Out"
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleFit}
-            className="p-1.5 rounded bg-[#090d16] hover:bg-[#1e293b] border border-[#1e293b] text-slate-300 transition"
+            className="p-1.5 rounded bg-[#1C1E21] hover:bg-[#26292D] border border-[#26292D] text-[#8B9097] hover:text-[#E6E7E9] transition"
             title="Fit to Screen"
           >
             <Maximize2 className="w-3.5 h-3.5" />
@@ -450,38 +450,38 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
       </div>
 
       {/* Main Cytoscape Canvas */}
-      <div ref={containerRef} className="flex-1 w-full h-full min-h-[300px] cursor-grab active:cursor-grabbing" />
+      <div ref={containerRef} className="flex-1 w-full h-full min-h-[300px] cursor-grab active:cursor-grabbing bg-[#0E0F11]" />
 
       {/* Loading Overlay */}
       {loading && (
         <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-20">
-          <div className="flex items-center gap-2 px-4 py-2 rounded bg-[#0b1120] border border-cyan-500/40 text-cyan-300 text-xs font-mono">
-            <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
-            <span>TRAVERSING GRAPH TOPOLOGY...</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-[#151618] border border-[#26292D] text-[#4C90F0] text-xs font-mono">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#4C90F0]" />
+            <span>Traversing graph topology...</span>
           </div>
         </div>
       )}
 
       {/* Legend */}
       {!isCompact && (
-        <div className="absolute bottom-2 left-2 p-2 rounded bg-[#0b1120]/90 border border-[#1e293b] backdrop-blur-xs z-10 flex flex-wrap items-center gap-3 text-[10px] font-mono text-slate-400">
+        <div className="absolute bottom-2 left-2 p-2 rounded bg-[#151618]/95 border border-[#26292D] backdrop-blur-xs z-10 flex flex-wrap items-center gap-3 text-[10px] font-mono text-[#8B9097]">
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span> Company
+            <span className="w-2.5 h-2.5 rounded-full bg-[#F5A524]"></span> Company
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]"></span> Person
+            <span className="w-2.5 h-2.5 rounded-full bg-[#4C90F0]"></span> Person
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#06b6d4]"></span> Vehicle
+            <span className="w-2.5 h-2.5 rounded-full bg-[#4C90F0]"></span> Vehicle
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#a855f7]"></span> Shipment
+            <span className="w-2.5 h-2.5 rounded-full bg-[#8B9097]"></span> Shipment
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></span> Warehouse
+            <span className="w-2.5 h-2.5 rounded-full bg-[#3DB46D]"></span> Warehouse
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full border-2 border-rose-500 bg-transparent"></span> High Risk Ring
+            <span className="w-2.5 h-2.5 rounded-full border-2 border-[#E5484D] bg-transparent"></span> High Risk
           </span>
         </div>
       )}
@@ -489,15 +489,15 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
       {/* Shortest Path Modal */}
       {isPathModalOpen && (
         <div className="absolute inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-30">
-          <div className="w-full max-w-md p-4 rounded-lg bg-[#0b1120] border border-amber-500/50 shadow-2xl space-y-4 font-mono text-xs">
-            <div className="flex items-center justify-between border-b border-[#1e293b] pb-2">
-              <div className="flex items-center gap-2 text-amber-400 font-bold">
-                <Route className="w-4 h-4" />
-                <span>SHORTEST PATH DISCOVERY ENGINE</span>
+          <div className="w-full max-w-md p-4 rounded bg-[#151618] border border-[#26292D] shadow-2xl space-y-4 font-mono text-xs">
+            <div className="flex items-center justify-between border-b border-[#26292D] pb-2">
+              <div className="flex items-center gap-2 text-[#E6E7E9] font-medium">
+                <Route className="w-4 h-4 text-[#4C90F0]" />
+                <span>Shortest Path Traversal</span>
               </div>
               <button
                 onClick={() => setIsPathModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-[#8B9097] hover:text-[#E6E7E9]"
               >
                 ✕
               </button>
@@ -505,48 +505,48 @@ export const EntityGraph: React.FC<EntityGraphProps> = ({
 
             <div className="space-y-3">
               <div>
-                <label className="text-[10px] text-slate-400 block mb-1">SOURCE ENTITY ID</label>
+                <label className="text-[10px] text-[#8B9097] block mb-1">Source Entity ID</label>
                 <input
                   type="text"
                   value={pathSource}
                   onChange={(e) => setPathSource(e.target.value)}
-                  className="w-full bg-[#090d16] border border-[#1e293b] rounded p-2 text-slate-200"
+                  className="w-full bg-[#1C1E21] border border-[#26292D] rounded p-2 text-[#E6E7E9] focus:outline-none focus:border-[#4C90F0]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-slate-400 block mb-1">TARGET ENTITY ID</label>
+                <label className="text-[10px] text-[#8B9097] block mb-1">Target Entity ID</label>
                 <input
                   type="text"
                   value={pathTarget}
                   onChange={(e) => setPathTarget(e.target.value)}
-                  className="w-full bg-[#090d16] border border-[#1e293b] rounded p-2 text-slate-200"
+                  className="w-full bg-[#1C1E21] border border-[#26292D] rounded p-2 text-[#E6E7E9] focus:outline-none focus:border-[#4C90F0]"
                 />
               </div>
 
               <button
                 onClick={handleFindShortestPath}
-                className="w-full py-2 bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/60 text-amber-200 font-bold rounded transition"
+                className="w-full py-2 bg-[#4C90F0] hover:bg-[#3A7FE0] text-white font-medium rounded transition"
               >
-                EXECUTE DIJKSTRA TRAVERSAL
+                Find Shortest Path
               </button>
 
               {pathResult && (
-                <div className="p-3 rounded bg-[#090d16] border border-[#1e293b] space-y-2">
-                  <div className="text-[10px] text-slate-400 uppercase">
+                <div className="p-3 rounded bg-[#1C1E21] border border-[#26292D] space-y-2">
+                  <div className="text-[10px] text-[#8B9097] uppercase">
                     Path Result ({pathResult.path?.length || 0} Hops)
                   </div>
                   {pathResult.path && pathResult.path.length > 0 ? (
                     <div className="space-y-1">
                       {pathResult.path.map((nodeId: string, idx: number) => (
-                        <div key={idx} className="flex items-center gap-2 text-slate-300">
-                          <span className="text-amber-400 font-bold">{idx + 1}.</span>
-                          <span className="text-cyan-300">{nodeId}</span>
+                        <div key={idx} className="flex items-center gap-2 text-[#E6E7E9]">
+                          <span className="text-[#4C90F0] font-bold">{idx + 1}.</span>
+                          <span className="text-[#E6E7E9]">{nodeId}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-rose-400">No reachable path discovered within 4 hops.</div>
+                    <div className="text-[#E5484D]">No reachable path discovered within 4 hops.</div>
                   )}
                 </div>
               )}

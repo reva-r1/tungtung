@@ -29,6 +29,7 @@ import { earthquakeRouter } from './routes/earthquake.routes.js';
 import { earthquakeService } from './services/earthquake/earthquake.service.js';
 import { environmentRouter } from './routes/environment.routes.js';
 import { environmentService } from './services/environment/environment.service.js';
+import { kgRouter } from './routes/kg.routes.js';
 
 dotenv.config();
 
@@ -67,6 +68,7 @@ app.use('/api/aviation', aviationRouter);
 app.use('/api/hydrology', hydrologyRouter);
 app.use('/api/earthquakes', earthquakeRouter);
 app.use('/api/environment', environmentRouter);
+app.use('/api/kg', kgRouter);
 
 // World Model & Connector Layer Routes (accessible via /world, /simulation, /providers and /api/*)
 app.use('/world', worldRouter);

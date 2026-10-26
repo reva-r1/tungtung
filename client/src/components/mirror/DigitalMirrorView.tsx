@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
+import { useInvestigation } from '../../context/InvestigationContext';
 import {
   Globe,
   Radio,
@@ -56,6 +57,7 @@ const createCustomIcon = (color: string, label: string) => {
 };
 
 export const DigitalMirrorView: React.FC = () => {
+  const { isMapEnabled, toggleMap } = useInvestigation();
   const [mode, setMode] = useState<'LIVE' | 'SIMULATION'>('LIVE');
   const [mapLayer, setMapLayer] = useState<'DARK' | 'SATELLITE' | 'STREET'>('DARK');
   const [loading, setLoading] = useState(false);
@@ -713,130 +715,249 @@ export const DigitalMirrorView: React.FC = () => {
           )}
         </div>
 
-        {/* Right Dock: Interactive Geospatial Mirror Map & Dossier */}
-        <div className="flex-1 flex flex-col overflow-hidden relative">
-          {/* Floating Layer Switcher */}
-          <div className="absolute top-3 right-3 z-[1000] flex bg-[#090e18]/90 backdrop-blur-md border border-slate-700 rounded-lg p-1 text-xs gap-1 shadow-xl">
-            <button
-              onClick={() => setMapLayer('DARK')}
-              className={`px-2.5 py-1 rounded font-medium transition ${
-                mapLayer === 'DARK' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Dark Mirror
-            </button>
-            <button
-              onClick={() => setMapLayer('SATELLITE')}
-              className={`px-2.5 py-1 rounded font-medium transition ${
-                mapLayer === 'SATELLITE' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Satellite
-            </button>
-            <button
-              onClick={() => setMapLayer('STREET')}
-              className={`px-2.5 py-1 rounded font-medium transition ${
-                mapLayer === 'STREET' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Street
-            </button>
+        {/* Right Dock: Interactive Geospatial Mirror Map & Dossier / Data Grid */}
+        <div className="flex-1 flex flex-col overflow-hidden relative bg-[#060910]">
+          {/* Header Controls Bar */}
+          <div className="h-10 px-3 bg-[#090e18] border-b border-slate-800 flex items-center justify-between z-10 shrink-0 select-none">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-semibold text-slate-200">
+                {isMapEnabled ? 'GEOSPATIAL DIGITAL MIRROR' : 'SENSOR & TELEMETRY DATA GRID'}
+              </span>
+              <span className="text-slate-600">·</span>
+              <span className="text-[11px] font-mono text-slate-400">
+                {displayedEntities.length} active nodes
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {isMapEnabled && (
+                <div className="flex bg-[#0d131f] border border-slate-700/80 rounded p-0.5 text-[11px] gap-1">
+                  <button
+                    onClick={() => setMapLayer('DARK')}
+                    className={`px-2 py-0.5 rounded font-medium transition cursor-pointer ${
+                      mapLayer === 'DARK' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Dark
+                  </button>
+                  <button
+                    onClick={() => setMapLayer('SATELLITE')}
+                    className={`px-2 py-0.5 rounded font-medium transition cursor-pointer ${
+                      mapLayer === 'SATELLITE' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Satellite
+                  </button>
+                  <button
+                    onClick={() => setMapLayer('STREET')}
+                    className={`px-2 py-0.5 rounded font-medium transition cursor-pointer ${
+                      mapLayer === 'STREET' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Street
+                  </button>
+                </div>
+              )}
+
+              {/* Map Toggle Button (Default: OFF) */}
+              <button
+                onClick={toggleMap}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono font-medium border transition cursor-pointer ${
+                  isMapEnabled
+                    ? 'bg-cyan-950/70 border-cyan-500/80 text-cyan-300'
+                    : 'bg-[#141d2e] border-slate-700 text-slate-300 hover:text-white hover:border-slate-500'
+                }`}
+                title={isMapEnabled ? 'Click to turn OFF map and switch to fast Data Mode' : 'Map is OFF (Data Mode). Click to turn ON map'}
+              >
+                <MapPin className={`w-3.5 h-3.5 ${isMapEnabled ? 'text-cyan-400' : 'text-slate-400'}`} />
+                <span>{isMapEnabled ? 'Map: ON' : 'Map: OFF (Data Mode)'}</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${isMapEnabled ? 'bg-cyan-400 animate-pulse' : 'bg-slate-500'}`} />
+              </button>
+            </div>
           </div>
 
-          {/* Map View */}
-          <div className="flex-1 h-full w-full">
-            <MapContainer
-              center={[12.9716, 77.5946]}
-              zoom={11}
-              style={{ height: '100%', width: '100%', minHeight: '400px', backgroundColor: '#060910' }}
-            >
-              <MapResizer />
-              <TileLayer
-                attribution='&copy; OpenStreetMap contributors'
-                url={
-                  mapLayer === 'SATELLITE'
-                    ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
-                    : mapLayer === 'STREET'
-                    ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-                    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                }
-              />
+          {/* Body: Map View OR Pure Data Grid */}
+          {isMapEnabled ? (
+            <div className="flex-1 h-full w-full relative">
+              <MapContainer
+                center={[12.9716, 77.5946]}
+                zoom={11}
+                style={{ height: '100%', width: '100%', minHeight: '400px', backgroundColor: '#060910' }}
+              >
+                <MapResizer />
+                <TileLayer
+                  attribution='&copy; OpenStreetMap contributors'
+                  url={
+                    mapLayer === 'SATELLITE'
+                      ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
+                      : mapLayer === 'STREET'
+                      ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                  }
+                />
 
-              {/* Render Entities as Map Pins */}
-              {displayedEntities.map((ent: any) => {
-                if (!ent.latitude || !ent.longitude) return null;
-                const isSim = ent.is_simulated;
-                const color = isSim
-                  ? '#f59e0b'
-                  : ent.category === 'WEATHER'
-                  ? '#38bdf8'
-                  : ent.category === 'AIR_QUALITY'
-                  ? '#a855f7'
-                  : ent.category === 'SEISMIC'
-                  ? '#ef4444'
-                  : ent.category === 'HYDROLOGICAL'
-                  ? '#06b6d4'
-                  : ent.category === 'GRID_TELEMETRY'
-                  ? '#eab308'
-                  : '#10b981';
+                {/* Render Entities as Map Pins */}
+                {displayedEntities.map((ent: any) => {
+                  if (!ent.latitude || !ent.longitude) return null;
+                  const isSim = ent.is_simulated;
+                  const color = isSim
+                    ? '#f59e0b'
+                    : ent.category === 'WEATHER'
+                    ? '#38bdf8'
+                    : ent.category === 'AIR_QUALITY'
+                    ? '#a855f7'
+                    : ent.category === 'SEISMIC'
+                    ? '#ef4444'
+                    : ent.category === 'HYDROLOGICAL'
+                    ? '#06b6d4'
+                    : ent.category === 'GRID_TELEMETRY'
+                    ? '#eab308'
+                    : '#10b981';
 
-                const label = isSim
-                  ? 'SIM'
-                  : ent.type.startsWith('WEATHER')
-                  ? 'WX'
-                  : ent.type.startsWith('AIR')
-                  ? 'AQ'
-                  : ent.type.startsWith('EARTH')
-                  ? 'EQ'
-                  : ent.type.startsWith('WATER')
-                  ? 'H2O'
-                  : ent.type.startsWith('ENERGY')
-                  ? 'NRG'
-                  : 'OBS';
+                  const label = isSim
+                    ? 'SIM'
+                    : ent.type.startsWith('WEATHER')
+                    ? 'WX'
+                    : ent.type.startsWith('AIR')
+                    ? 'AQ'
+                    : ent.type.startsWith('EARTH')
+                    ? 'EQ'
+                    : ent.type.startsWith('WATER')
+                    ? 'H2O'
+                    : ent.type.startsWith('ENERGY')
+                    ? 'NRG'
+                    : 'OBS';
 
-                return (
-                  <React.Fragment key={ent.id}>
-                    <Marker
-                      position={[ent.latitude, ent.longitude]}
-                      icon={createCustomIcon(color, label)}
-                      eventHandlers={{
-                        click: () => setSelectedEntity(ent),
-                      }}
-                    >
-                      <Popup className="custom-popup">
-                        <div className="text-xs p-1">
-                          <div className="font-bold text-slate-900">{ent.name}</div>
-                          <div className="text-[10px] text-slate-600">{ent.type} | {ent.category}</div>
-                          {isSim && (
-                            <div className="text-[10px] text-amber-700 font-bold mt-1">
-                              *** SIMULATED ALTERNATE VALUE ***
-                            </div>
-                          )}
-                          <div className="mt-1 font-mono text-[10px] bg-slate-100 p-1 rounded max-h-24 overflow-y-auto">
-                            {JSON.stringify(ent.current_state, null, 2)}
-                          </div>
-                        </div>
-                      </Popup>
-                    </Marker>
-
-                    {/* If simulated rainfall or flood risk, draw an impact circle */}
-                    {isSim && (
-                      <Circle
-                        center={[ent.latitude, ent.longitude]}
-                        radius={3500}
-                        pathOptions={{
-                          color: '#f59e0b',
-                          fillColor: '#f59e0b',
-                          fillOpacity: 0.15,
-                          dashArray: '4, 4',
+                  return (
+                    <React.Fragment key={ent.id}>
+                      <Marker
+                        position={[ent.latitude, ent.longitude]}
+                        icon={createCustomIcon(color, label)}
+                        eventHandlers={{
+                          click: () => setSelectedEntity(ent),
                         }}
-                      />
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </MapContainer>
-          </div>
+                      >
+                        <Popup className="custom-popup">
+                          <div className="text-xs p-1">
+                            <div className="font-bold text-slate-900">{ent.name}</div>
+                            <div className="text-[10px] text-slate-600">{ent.type} | {ent.category}</div>
+                            {isSim && (
+                              <div className="text-[10px] text-amber-700 font-bold mt-1">
+                                *** SIMULATED ALTERNATE VALUE ***
+                              </div>
+                            )}
+                            <div className="mt-1 font-mono text-[10px] bg-slate-100 p-1 rounded max-h-24 overflow-y-auto">
+                              {JSON.stringify(ent.current_state, null, 2)}
+                            </div>
+                          </div>
+                        </Popup>
+                      </Marker>
+
+                      {/* If simulated rainfall or flood risk, draw an impact circle */}
+                      {isSim && (
+                        <Circle
+                          center={[ent.latitude, ent.longitude]}
+                          radius={3500}
+                          pathOptions={{
+                            color: '#f59e0b',
+                            fillColor: '#f59e0b',
+                            fillOpacity: 0.15,
+                            dashArray: '4, 4',
+                          }}
+                        />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </MapContainer>
+            </div>
+          ) : (
+            /* Pure Data Telemetry Grid (Map is OFF) */
+            <div className="flex-1 flex flex-col overflow-hidden bg-[#0a0f18] p-3">
+              {/* Alert notification about Data Mode */}
+              <div className="mb-3 px-3 py-2 rounded bg-[#0f172a] border border-cyan-800/40 flex items-center justify-between text-xs font-mono">
+                <div className="flex items-center gap-2 text-cyan-300">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                  <span>Data Telemetry Mode Active • Maps disabled for direct data inspection</span>
+                </div>
+                <button
+                  onClick={toggleMap}
+                  className="px-2 py-0.5 rounded bg-cyan-900/50 hover:bg-cyan-800/60 text-cyan-300 border border-cyan-700/60 text-[11px] font-semibold transition cursor-pointer"
+                >
+                  Turn Map ON
+                </button>
+              </div>
+
+              {/* Data Table */}
+              <div className="flex-1 border border-slate-800 rounded bg-[#060910] overflow-y-auto">
+                <table className="w-full text-left text-xs font-mono">
+                  <thead className="bg-[#0b1220] border-b border-slate-800 sticky top-0 text-slate-400 text-[11px] uppercase tracking-wider">
+                    <tr>
+                      <th className="py-2.5 px-3">Node / Entity</th>
+                      <th className="py-2.5 px-3">Category</th>
+                      <th className="py-2.5 px-3">Sensor Type</th>
+                      <th className="py-2.5 px-3">Coordinates</th>
+                      <th className="py-2.5 px-3">Telemetry Payload</th>
+                      <th className="py-2.5 px-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {displayedEntities.map((ent: any) => {
+                      const isSelected = selectedEntity?.id === ent.id;
+                      return (
+                        <tr
+                          key={ent.id}
+                          onClick={() => setSelectedEntity(ent)}
+                          className={`hover:bg-slate-800/40 transition cursor-pointer ${
+                            isSelected ? 'bg-cyan-950/40 border-l-2 border-l-cyan-400' : ''
+                          }`}
+                        >
+                          <td className="py-2.5 px-3">
+                            <div className="font-semibold text-slate-200">{ent.name}</div>
+                            <div className="text-[10px] text-slate-500">ID: {ent.id}</div>
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                              {ent.category}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-300 text-[11px]">
+                            {ent.type}
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-400 text-[11px]">
+                            {ent.latitude?.toFixed(4)}, {ent.longitude?.toFixed(4)}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <div className="flex flex-wrap gap-1 max-w-md">
+                              {Object.entries(ent.current_state || {}).map(([k, v]) => (
+                                <span
+                                  key={k}
+                                  className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] text-slate-300"
+                                >
+                                  <span className="text-slate-500">{k}:</span> {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedEntity(ent);
+                              }}
+                              className="px-2 py-1 text-[10px] font-bold text-cyan-400 hover:text-white bg-cyan-950/60 hover:bg-cyan-800/60 rounded border border-cyan-800/60 transition cursor-pointer"
+                            >
+                              Inspect
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Bottom Floating Dossier / Provenance Inspector if Entity is selected */}
           {selectedEntity && (

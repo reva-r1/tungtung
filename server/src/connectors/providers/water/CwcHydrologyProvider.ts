@@ -396,7 +396,9 @@ export class CwcHydrologyProvider extends DataProvider {
 
       const entityId = `RESERVOIR_${meta.code}_KARNATAKA`;
       const observedDate = record.observation_date || record.date || new Date().toISOString().split('T')[0];
-      const observedAt = new Date(`${observedDate}T08:30:00.000Z`).toISOString(); // Standard 08:30 IST CWC reporting hour
+      // India-WRIS CWC publishes daily reservoir bulletins measured at 08:30 AM Indian Standard Time (IST, UTC+05:30).
+      // Converting 08:30 IST to UTC produces 03:00:00.000Z.
+      const observedAt = new Date(`${observedDate}T08:30:00+05:30`).toISOString();
 
       // 1 BMC = 35.3147 TMC (Thousand Million Cubic Feet)
       const liveStorageTmc = Math.round(liveStorageBmc * 35.3147 * 100) / 100;
@@ -424,6 +426,11 @@ export class CwcHydrologyProvider extends DataProvider {
           full_capacity_tmc: Math.round(meta.fullCapacityBmc * 35.3147 * 100) / 100,
           capacity_pct: capacityPct,
           observation_date: observedDate,
+          source_date: observedDate,
+          date_precision: 'DAY',
+          is_date_only: true,
+          source_reporting_standard: '08:30 IST Daily Bulletin',
+          derived_utc_instant: observedAt,
           measurement_type: 'RESERVOIR_LIVE_STORAGE',
           unit: 'BMC',
         },
@@ -447,6 +454,9 @@ export class CwcHydrologyProvider extends DataProvider {
           endpoint: '/Dataset/Reservoir',
           retrievedAt: new Date().toISOString(),
           observedAt,
+          source_date: observedDate,
+          source_reporting_standard: '08:30 IST Daily Bulletin',
+          derived_from_date: true,
           originalId: meta.code,
         },
         raw_payload: record,

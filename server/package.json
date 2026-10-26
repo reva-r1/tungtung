@@ -9,7 +9,9 @@
     "dev": "tsx watch src/index.ts",
     "test:connectors": "tsx src/tests/connectors.test.ts",
     "test:p0": "tsx src/tests/p0_connectors.test.ts",
-    "test:all": "tsx src/tests/p0_connectors.test.ts && tsx src/tests/aviation_pipeline.test.ts && tsx src/tests/hydrology_pipeline.test.ts && tsx src/tests/connectors.test.ts && tsx src/tests/phase1_isolation.test.ts"
+    "test:phase3": "tsx src/tests/phase3_data_model.test.ts",
+    "test:generalization": "tsx src/tests/generalization.test.ts",
+    "test:all": "tsx src/tests/phase3_data_model.test.ts && tsx src/tests/p0_connectors.test.ts && tsx src/tests/aviation_pipeline.test.ts && tsx src/tests/hydrology_pipeline.test.ts && tsx src/tests/connectors.test.ts && tsx src/tests/phase1_isolation.test.ts && tsx src/tests/generalization.test.ts"
   },
   "dependencies": {
     "better-sqlite3": "^11.8.1",

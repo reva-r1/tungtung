@@ -21,9 +21,11 @@ export const PROVIDER_RELIABILITY: Record<string, number> = {
   usgs_earthquakes: 0.98,
   nasa_eonet: 0.94,
   public_water_level: 0.90,
+  cwc_india_wris: 0.90,
 
   // Aviation & Maritime
   opensky_network: 0.91,
+  opensky_aviation: 0.91,
   ais_stream: 0.94,
   ais_replay: 0.88,
 

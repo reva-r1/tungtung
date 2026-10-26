@@ -141,33 +141,78 @@ export const logisticsTools: ToolDefinition[] = [
   },
   {
     name: 'search_records',
-    description: 'Search raw records across all uploaded datasets for keywords, identifiers, values, emails, phone numbers, or amounts.',
+    description: 'Search raw records across all uploaded datasets for keywords, identifiers, values, emails, phone numbers, or amounts. Supports searching specific datasets.',
     domain: 'logistics',
     parameters: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'The search term, ID, name, or value to search across all datasets' },
-        limit: { type: 'number', description: 'Maximum number of results to return (default 15)' },
+        query: { type: 'string', description: 'The search term, ID, session, ticket, or IP to search across datasets' },
+        datasetFilename: { type: 'string', description: 'Optional: Filter search to a specific dataset filename (e.g. 07_incident_tickets.csv)' },
+        limit: { type: 'number', description: 'Maximum number of results to return (default 20)' },
       },
       required: ['query'],
     },
     execute: async (args) => {
       const q = String(args.query || '').trim();
       if (!q) return { results: [] };
-      const qLike = `%${q}%`;
-      const limit = Number(args.limit) || 15;
+      const limit = Number(args.limit) || 20;
+      const datasetFilter = args.datasetFilename ? String(args.datasetFilename).trim() : undefined;
 
-      const records = db.prepare(`
+      // Extract candidate tokens & identifiers from the query
+      const tokens = new Set<string>();
+      tokens.add(q);
+
+      // Extract specific identifiers (SES_..., NET-..., AUTH-..., IPs, etc.)
+      const extractedIds = q.match(/\b([A-Za-z]{2,5}[-_][A-Za-z0-9-_]{2,}|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|[A-Za-z0-9_-]{5,})\b/g) || [];
+      extractedIds.forEach((id) => tokens.add(id));
+
+      // Quoted terms
+      const quoted = q.match(/['"]([^'"]{3,})['"]/g) || [];
+      quoted.forEach((item) => tokens.add(item.replace(/['"]/g, '').trim()));
+
+      let sql = `
         SELECT r.id, r.dataset_id, r.row_index, r.raw_data, d.name as dataset_name
         FROM raw_records r
         JOIN datasets d ON r.dataset_id = d.id
-        WHERE r.raw_data LIKE ?
-        LIMIT ?
-      `).all(qLike, limit) as any[];
+        WHERE 
+      `;
+
+      const conditions: string[] = [];
+      const params: any[] = [];
+
+      // Filter by dataset filename if provided
+      if (datasetFilter) {
+        conditions.push(`d.name LIKE ?`);
+        params.push(`%${datasetFilter}%`);
+      }
+
+      // Build OR clauses for tokens
+      const tokenConditions: string[] = [];
+      for (const t of Array.from(tokens).slice(0, 6)) {
+        if (t.length >= 2) {
+          tokenConditions.push(`r.raw_data LIKE ?`);
+          params.push(`%${t}%`);
+        }
+      }
+
+      if (tokenConditions.length > 0) {
+        conditions.push(`(${tokenConditions.join(' OR ')})`);
+      } else {
+        conditions.push(`r.raw_data LIKE ?`);
+        params.push(`%${q}%`);
+      }
+
+      sql += conditions.join(' AND ');
+      sql += ` ORDER BY r.row_index ASC LIMIT ?`;
+      params.push(limit);
+
+      const records = db.prepare(sql).all(...params) as any[];
 
       return {
         query: q,
+        datasetFilter: datasetFilter || 'all_datasets',
         count: records.length,
+        totalMatches: records.length,
         results: records.map((r: any) => ({
           recordId: r.id,
           datasetFilename: r.dataset_name,
