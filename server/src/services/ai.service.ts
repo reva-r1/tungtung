@@ -178,13 +178,26 @@ export class AiService {
     const sId = sessionId || `session_${uuidv4().substring(0, 8)}`;
     const now = new Date().toISOString();
 
-    // 1. Resolve Target Entity: from explicit entityId or query inference
+    // Helper to detect conversational greetings and casual remarks
+    const cleanMsg = (message || '').trim().toLowerCase().replace(/[^a-z0-9\s]/g, '');
+    const tokens = cleanMsg.split(/\s+/).filter(Boolean);
+    const casualExact = new Set([
+      'hi', 'hello', 'hey', 'hi bro', 'hey bro', 'yo', 'sup', 'whats up', "what's up",
+      'how are you', 'hows it going', 'how are you doing', 'who are you', 'what can you do',
+      'good morning', 'good afternoon', 'good evening', 'good night',
+      'ok', 'okay', 'cool', 'thanks', 'thank you', 'test', 'testing', 'ping', 'ready'
+    ]);
+    const isCasual = tokens.length === 0 ||
+      casualExact.has(cleanMsg) ||
+      (tokens.length <= 3 && ['hi', 'hello', 'hey', 'yo', 'sup'].includes(tokens[0]));
+
+    // 1. Resolve Target Entity: ONLY for genuine investigation questions, never for greetings
     let primaryEntity: any = null;
     let mappedEntityIds: string[] = [];
     let edges: any[] = [];
     let matchedEntities: any[] = [];
 
-    if (entityId) {
+    if (!isCasual && entityId) {
       primaryEntity = db.prepare(`
         SELECT * FROM entities 
         WHERE id = ? OR name = ? OR id LIKE ? OR name LIKE ?
@@ -211,7 +224,7 @@ export class AiService {
       }
     }
 
-    if (!primaryEntity) {
+    if (!isCasual && !primaryEntity) {
       // Graph discovery traversal for topological canvas mapping from query text
       const graphInquiry = GraphService.searchGraphInquiry(message);
       if (graphInquiry && graphInquiry.nodes.length > 0) {
@@ -230,7 +243,7 @@ export class AiService {
     let rawRecordsText = '';
     const sources: string[] = [];
 
-    if (primaryEntity) {
+    if (!isCasual && primaryEntity) {
       sources.push(`Entity: ${primaryEntity.name} (${primaryEntity.type || 'Entity'})`);
       const props = primaryEntity.properties ? JSON.parse(primaryEntity.properties) : {};
       const propEntries = Object.entries(props)
@@ -293,22 +306,32 @@ export class AiService {
     }));
 
     // 4. Build System Prompt & Call Local Ollama (llama3.2:gpu)
-    const systemPrompt = `You are a sharp, seasoned tactical intelligence analyst. You are actively collaborating with a human investigator who is examining entities and connections on an intelligence canvas.
+    let systemPrompt = '';
+    let userPrompt = '';
+
+    if (isCasual) {
+      systemPrompt = `You are a sharp, conversational tactical copilot for an intelligence investigator.
+Speak naturally like a real human team member. Keep your response short, candid, and direct (1-2 sentences max).
+Do NOT summarize entities or give unprompted reports. Acknowledge the user's greeting or remark and let them know you're standing by.`;
+      userPrompt = message;
+    } else {
+      systemPrompt = `You are a sharp, seasoned tactical intelligence analyst. You are actively collaborating with a human investigator who is examining entities and connections on an intelligence canvas.
 
 COMMUNICATION RULES:
 1. Speak like a real human investigator — natural, perceptive, direct, and candid.
 2. ABSOLUTELY NEVER use robotic headers or form checklists (do NOT say "Direct Finding:", "Verified Evidence:", "Records Checked:", "Status: Verified", or "Negative Verified").
-3. Directly answer what the user asked using the provided database records and relationships.
+3. Directly answer ONLY what the user asked. Do NOT dump an unprompted general dossier unless the user specifically asked for an overview.
 4. Truthful negatives: If the user asks about something not present (e.g. money wires, suspicious ties, unlisted directors), state plainly and naturally what was checked and that nothing was found in the files.
 5. Do NOT recite generic canned speeches or boilerplate stories. Be specific to the exact target and question.
 6. At the very end of your response, on a new line, add factual receipts as concise source tags:
    📎 [source_dataset: Row N] or 📎 [Relationship: Entity -> LINK -> Target]`;
 
-    let userPrompt = `USER QUESTION: "${message}"\n\n`;
-    if (primaryEntity) {
-      userPrompt += `DATABASE GROUND TRUTH CONTEXT:\n${entitySummaryText}\nDIRECT GRAPH CONNECTIONS:\n${directLinksText}\n\nRELEVANT SOURCE RECORDS:\n${rawRecordsText}\n`;
-    } else {
-      userPrompt += `NOTE: No specific entity is currently pinned or selected. Answer based on general investigation knowledge and available dataset context.`;
+      userPrompt = `USER QUESTION: "${message}"\n\n`;
+      if (primaryEntity) {
+        userPrompt += `DATABASE GROUND TRUTH CONTEXT:\n${entitySummaryText}\nDIRECT GRAPH CONNECTIONS:\n${directLinksText}\n\nRELEVANT SOURCE RECORDS:\n${rawRecordsText}\n`;
+      } else {
+        userPrompt += `NOTE: No specific entity is currently pinned or selected. Answer based on general investigation knowledge and available dataset context.`;
+      }
     }
 
     let reply = '';

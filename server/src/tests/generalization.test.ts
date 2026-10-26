@@ -20,6 +20,7 @@ import { isOllamaAvailable, getOllamaConfig } from '../services/ai/providers.js'
 import { verifyClaims } from '../services/ai/verify.js';
 import { AiService } from '../services/ai.service.js';
 import { InvestigationContext, EvidenceItem, FactClaim, InferenceClaim } from '../services/ai/types.js';
+import { db } from '../db/database.js';
 
 let passed = 0;
 let failed = 0;
@@ -39,6 +40,39 @@ async function runGeneralizationSuite() {
   console.log('\n=============================================================');
   console.log('  REVANA UNIVERSAL INTELLIGENCE & ADAPTIVE REASONING SUITE');
   console.log('=============================================================\n');
+
+  // Ensure test fixture records exist in database
+  const existing = db.prepare("SELECT count(*) as c FROM raw_records WHERE raw_data LIKE '%SES_20261014_9102%'").get() as any;
+  if (!existing || existing.c === 0) {
+    let ds = db.prepare("SELECT id FROM datasets WHERE name = '04_network_connections.csv'").get() as any;
+    let datasetId = ds?.id;
+    if (!datasetId) {
+      datasetId = 'DS-TEST-NET-CONN';
+      db.prepare("INSERT OR IGNORE INTO datasets (id, name, format, status, record_count, uploaded_at) VALUES (?, ?, ?, ?, ?, ?)").run(
+        datasetId, '04_network_connections.csv', 'CSV', 'LOADED', 1, new Date().toISOString()
+      );
+    }
+    db.prepare(`
+      INSERT INTO raw_records (id, dataset_id, row_index, raw_data, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      'REC-TEST-SES-9102',
+      datasetId,
+      1,
+      JSON.stringify({
+        session_id: 'SES_20261014_9102',
+        network_event_id: 'NET-77402',
+        source_asset_id: 'AST-GW-01',
+        destination_asset_id: 'AST-WRK-088',
+        source_ip: '198.51.100.44',
+        destination_ip: '10.40.10.88',
+        bytes_sent: 48920,
+        bytes_received: 21400000,
+        collection_source: 'ZEEK_CONN_LOG',
+      }),
+      new Date().toISOString()
+    );
+  }
 
   // --------------------------------------------------------------------------
   // Test 1: Identifier Extraction & Context Pollution Shedding

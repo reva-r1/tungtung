@@ -53,4 +53,21 @@ gods-eye-view/
 __pycache__/
 *.pyc
 
+# Local GSD & Agent Workflows (Do NOT push to GitHub)
+.gsd/
+.agent/
+.agents/
+.gemini/
+GSD-STYLE.md
+PROJECT_RULES.md
+VERSION
+adapters/
+scripts/
+model_capabilities.yaml
+
+# Test Archives
+*.zip
+experiments/blind_intelligence_v1/output/
+
+
 

@@ -9,6 +9,7 @@ import {
   GripHorizontal,
   Target,
   ExternalLink,
+  X,
 } from 'lucide-react';
 import { IntelligenceEntity } from '../../data/intelligenceDataset';
 import { api } from '../../services/api';
@@ -31,6 +32,7 @@ interface InvestigationChatDrawerProps {
   selectedEntityId?: string | null;
   isOpen?: boolean;
   onToggle?: () => void;
+  onClearTarget?: () => void;
   onExecuteAction: (actionType: string, payload?: any) => void;
   onFocusEntity?: (entityId: string) => void;
 }
@@ -43,6 +45,7 @@ export const InvestigationChatDrawer: React.FC<InvestigationChatDrawerProps> = (
   selectedEntityId,
   isOpen,
   onToggle,
+  onClearTarget,
   onExecuteAction,
   onFocusEntity,
 }) => {
@@ -58,13 +61,6 @@ export const InvestigationChatDrawer: React.FC<InvestigationChatDrawerProps> = (
       sender: 'assistant',
       text: 'Revana Tactical Copilot online. Powered by local LLaMA on GPU. Select any entity on the canvas or ask direct intelligence questions.',
       timestamp: 'Ready',
-      suggestedActions: [
-        {
-          label: 'Inspect Northgate Freightways Ltd',
-          actionType: 'INSPECT_EVIDENCE',
-          payload: 'company_northgate_freightways_ltd',
-        },
-      ],
     },
   ]);
 
@@ -236,6 +232,19 @@ export const InvestigationChatDrawer: React.FC<InvestigationChatDrawerProps> = (
               <span className="font-semibold text-cyan-200 truncate">{activeTargetName}</span>
               {selectedEntity?.type && (
                 <span className="text-[9.5px] text-cyan-400/60 uppercase shrink-0">({selectedEntity.type})</span>
+              )}
+              {onClearTarget && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClearTarget();
+                  }}
+                  className="ml-1 text-cyan-400/60 hover:text-cyan-200 p-0.5 rounded hover:bg-cyan-900/60 transition"
+                  title="Unselect target (ask general questions)"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               )}
             </div>
           ) : (

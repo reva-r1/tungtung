@@ -416,6 +416,7 @@ export const GraphInvestigationDashboard: React.FC = () => {
           <InvestigationChatDrawer
             selectedEntity={selectedNodeId ? entities[selectedNodeId] || null : null}
             selectedEntityId={selectedNodeId}
+            onClearTarget={() => setSelectedNodeId(null)}
             onExecuteAction={handleExecuteChatAction}
             onFocusEntity={handleSelectNode}
           />
